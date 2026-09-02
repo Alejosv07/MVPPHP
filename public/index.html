@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+</head>
+
+<body class="bg-background text-on-background font-body-md antialiased overflow-x-hidden">
+    <div id="nav-container"></div>
+    <!-- 1. HERO SECTION -->
+    <section id="hero"
+        class="relative pt-margin-desktop pb-16 md:pb-section-gap px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto overflow-visible">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center relative">
+            <!-- Left Content & Image -->
+            <div class="col-span-1 lg:col-span-8 flex flex-col items-start z-10">
+                <div class="mb-6 font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase">
+                    BALLSTON · ARLINGTON, VA
+                </div>
+                <h1
+                    class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary mb-6 max-w-3xl pr-4 leading-tight">
+                    A cleaner home. More time for living.
+                </h1>
+                <p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-xl">
+                    Professional home cleaning designed around your schedule, your space, and your standards.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 mb-12 w-full sm:w-auto">
+                    <a href="#services"
+                        class="bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps hover:bg-primary/90 transition-colors text-center w-full sm:w-auto">
+                        Explore Our Services
+                    </a>
+                </div>
+                <div class="w-full relative h-[400px] md:h-[600px] rounded-lg overflow-hidden">
+                    <img class="absolute inset-0 w-full h-full object-cover"
+                        data-alt="A sophisticated, bright, modern living room in an upscale Arlington condo. Large windows let in abundant natural light, illuminating clean, minimalist furniture, tasteful decor, and immaculate hardwood floors. The scene feels peaceful, orderly, and luxurious, shot in an editorial style with a soft, bright color palette emphasizing whites, subtle greens, and warm neutrals."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFHtDLXZNdK0IK6xSfHT2bk_FeQUJG235bBcy_S-rJHL-vIjq7YUl8u2Bvj4hyH6vbKQb7C6DqIYQjm4fpWGWKuLwOkNIeySVO-Hy4YEUgRQ8xHwiu6DEQnQDe6yXIQAKpip0f2QCMxWTZ6SzfS__DDe8yId024dbVkTciBmjigOZ14TdFF-svobY7u9mQZJV5sR--YX6EqcyVkDmMpn3YyKqtT1uww5prpRdD4JQlnJQXkiP6G147" />
+                </div>
+            </div>
+            <!-- Right Estimate Panel (Overlapping & Connected to Database Services) -->
+            <div class="col-span-1 lg:col-span-4 lg:-ml-16 mt-8 lg:mt-32 z-20">
+
+                <div class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/20">
+                    <h3 class="font-headline-sm text-headline-sm text-primary mb-6">Book Your Cleaning</h3>
+                    <form id="estimateForm" class="space-y-4">
+
+                        <!-- INFORMACIÓN DE CONTACTO DEL CLIENTE -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">First
+                                    Name *</label>
+                                <input type="text" id="clientFirstName" placeholder="Jane"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                            </div>
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Last
+                                    Name *</label>
+                                <input type="text" id="clientLastName" placeholder="Doe"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Email
+                                    Address *</label>
+                                <input type="email" id="clientEmail" placeholder="jane@example.com"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                            </div>
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Phone
+                                    Number *</label>
+                                <input type="tel" id="clientPhone" placeholder="(555) 123-4567"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                            </div>
+                        </div>
+
+                        <hr class="border-outline-variant/20 my-2">
+
+                        <!-- DETALLES DEL SERVICIO -->
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Select
+                                Service *</label>
+                            <select id="estimateService"
+                                class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0 cursor-pointer">
+                                <option value="">Loading services...</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Bedrooms</label>
+                                <select id="estimateBedrooms"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                                    <option value="1">1 Bedroom</option>
+                                    <option value="2">2 Bedrooms</option>
+                                    <option value="3">3 Bedrooms</option>
+                                    <option value="4">4+ Bedrooms</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Bathrooms</label>
+                                <select id="estimateBathrooms"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                                    <option value="1">1 Bathroom</option>
+                                    <option value="1.5">1.5 Bathrooms</option>
+                                    <option value="2">2 Bathrooms</option>
+                                    <option value="3">3+ Bathrooms</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Service
+                                    Date *</label>
+                                <input type="date" id="estimateDate"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                            </div>
+                            <div>
+                                <label
+                                    class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Preferred
+                                    Time *</label>
+                                <input type="time" id="estimateTime"
+                                    class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Service
+                                Address *</label>
+                            <input type="text" id="estimateAddress" placeholder="e.g. 123 Luxury Lane, Apt 4B"
+                                class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0">
+                        </div>
+
+                        <!-- NOTAS / INSTRUCCIONES ESPECIALES (OPCIONAL) -->
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant mb-1">Special
+                                Instructions / Notes (Optional)</label>
+                            <textarea id="clientNotes"
+                                placeholder="Add any specific requirements, access codes, or pet information here..."
+                                rows="3"
+                                class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0 resize-none"></textarea>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block font-label-caps text-label-caps text-on-surface-variant mb-2">Frequency</label>
+                            <div class="grid grid-cols-2 gap-2" id="frequencyGroup">
+                                <button
+                                    class="freq-btn border border-primary bg-surface-container-low rounded py-2 text-sm text-primary font-medium transition-colors"
+                                    type="button" data-freq="One-time">One-time</button>
+                                <button
+                                    class="freq-btn border border-outline-variant rounded py-2 text-sm text-primary hover:border-primary transition-colors"
+                                    type="button" data-freq="Weekly">Weekly</button>
+                                <button
+                                    class="freq-btn border border-outline-variant rounded py-2 text-sm text-primary hover:border-primary transition-colors"
+                                    type="button" data-freq="Bi-weekly">Bi-weekly</button>
+                                <button
+                                    class="freq-btn border border-outline-variant rounded py-2 text-sm text-primary hover:border-primary transition-colors"
+                                    type="button" data-freq="Monthly">Monthly</button>
+                            </div>
+                        </div>
+
+                        <!-- Resultado del estimado -->
+                        <div id="estimateResultContainer"
+                            class="hidden p-3 bg-surface-container-low rounded-lg text-center">
+                            <p class="text-xs uppercase text-on-surface-variant font-semibold">Estimated Price</p>
+                            <p id="estimatePriceDisplay" class="text-xl font-bold text-primary">$0.00</p>
+                        </div>
+
+                        <button
+                            class="w-full bg-primary text-on-primary py-3 rounded font-label-caps text-label-caps hover:bg-primary/90 transition-colors mt-2"
+                            type="submit">
+                            Confirm & Book Reservation
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </section>
+    <!-- 2. TRUST STRIP -->
+    <section
+        class="border-y border-outline-variant/30 bg-surface-container-low py-12 px-margin-mobile md:px-margin-desktop">
+        <div class="max-w-container-max mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="text-center md:text-left">
+                <h4 class="font-headline-sm text-headline-sm text-primary mb-2">Trusted by homeowners across Arlington
+                </h4>
+                <div class="flex flex-wrap justify-center md:justify-start gap-6 font-body-md text-on-surface-variant">
+                    <span class="flex items-center gap-1"><span class="material-symbols-outlined text-yellow-500"
+                            style="font-variation-settings: 'FILL' 1;">star</span> 4.9 / 5 Average Rating</span>
+                    <span class="flex items-center gap-1"><span class="material-symbols-outlined"
+                            style="font-variation-settings: 'FILL' 1;">group</span> 2,500+ Happy Customers</span>
+                    <span class="flex items-center gap-1"><span class="material-symbols-outlined"
+                            style="font-variation-settings: 'FILL' 1;">thumb_up</span> 98% Would Recommend Us</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-8 opacity-70 grayscale">
+                <!-- Placeholder for platform logos -->
+                <div class="font-bold text-xl tracking-tighter">Google</div>
+                <div class="font-bold text-xl text-red-600 grayscale-0 opacity-100">yelp<span
+                        class="text-red-600">*</span></div>
+                <div class="font-bold text-xl">thumbtack</div>
+            </div>
+        </div>
+    </section>
+    <!-- 3. LOCAL BALLSTON INTRODUCTION -->
+    <section class="py-section-gap px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+            <div class="order-2 md:order-1 relative h-[500px] rounded-xl overflow-hidden shadow-lg">
+                <img alt="Modern Arlington apartment living room" class="absolute inset-0 w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnsvNuJqTr0QVA8LGEW9dFB6ok8tVACPqE_P-U_aWU4OLzE6Km4HOqwSH81ovySSAP8AcOZN-nMudVx56wvUGj7AvTo6RQWBzy3s5TX5pOdMLj2wwZ4nXT5CBTQ6JgSOFg67gHTS0-JUDBBvVECIRqg33ia5TBwvkVNZ08gxLDKLJnJXmOf2So165LEZZl0hG-PojoN2EDlX-CAo_Ca2LDLRoytIsUqTFfUJ8WGP946M91hT-q6cl8" />
+            </div>
+            <div class="order-1 md:order-2 flex flex-col items-start">
+                <span
+                    class="font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase mb-4">Local
+                    Experts</span>
+                <h2
+                    class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary mb-6">
+                    Cleaning that keeps up with Ballston.</h2>
+                <p class="font-body-lg text-body-lg text-on-surface-variant mb-6">
+                    Life in Arlington moves fast. Between commuting via the Orange Line, grabbing coffee on Wilson
+                    Boulevard, and enjoying your weekends, cleaning is the last thing you want to worry about.
+                </p>
+                <p class="font-body-md text-body-md text-on-surface-variant mb-8">
+                    We specialize in serving the busy professionals living in the apartments, condos, and townhomes of
+                    Ballston and surrounding neighborhoods. Our teams understand the unique needs of modern Arlington
+                    living—from tight security access to high-end finishes that require careful attention.
+                </p>
+                <a class="border-b-2 border-primary text-primary font-label-caps text-label-caps pb-1 hover:text-primary/70 hover:border-primary/70 transition-colors inline-flex items-center gap-2"
+                    href="#services">
+                    Explore Our Services <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                </a>
+            </div>
+        </div>
+    </section>
+    <!-- 4. WHY PURENEST -->
+    <section class="bg-surface-container py-section-gap px-margin-mobile md:px-margin-desktop">
+        <div class="max-w-container-max mx-auto">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <h2
+                    class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary mb-4">
+                    Why Arlington homeowners choose PureNest</h2>
+                <p class="font-body-lg text-body-lg text-on-surface-variant">We're raising the standard for residential
+                    cleaning with a service you can rely on completely.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+                <!-- Asymmetric Layout -->
+                <div
+                    class="md:col-span-7 bg-surface-container-lowest p-10 rounded-xl soft-shadow border border-outline-variant/10 flex flex-col justify-center">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-6"
+                        style="font-variation-settings: 'FILL' 1;">verified</span>
+                    <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Vetted Professionals</h3>
+                    <p class="font-body-md text-body-md text-on-surface-variant">Every cleaner undergoes rigorous
+                        background checks, in-person interviews, and extensive training. We only hire the top 2% of
+                        applicants, ensuring your home is always in trusted, capable hands.</p>
+                </div>
+                <div
+                    class="md:col-span-5 bg-primary text-on-primary p-10 rounded-xl soft-shadow flex flex-col justify-center">
+                    <span class="material-symbols-outlined text-4xl mb-6"
+                        style="font-variation-settings: 'FILL' 1;">event_available</span>
+                    <h3 class="font-headline-sm text-headline-sm mb-4">Flexible Scheduling</h3>
+                    <p class="font-body-md text-body-md text-on-primary/80">Life changes, and your cleaning schedule
+                        should too. Easily adjust, pause, or reschedule your cleanings online with zero hassle.</p>
+                </div>
+                <div
+                    class="md:col-span-5 bg-surface-container-lowest p-10 rounded-xl soft-shadow border border-outline-variant/10 flex flex-col justify-center">
+                    <span class="material-symbols-outlined text-4xl text-primary mb-6"
+                        style="font-variation-settings: 'FILL' 1;">touch_app</span>
+                    <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Simple Online Booking</h3>
+                    <p class="font-body-md text-body-md text-on-surface-variant">No endless back-and-forth for quotes.
+                        Get a transparent price and book your cleaning entirely online in less than 60 seconds.</p>
+                </div>
+                <div class="md:col-span-7 relative rounded-xl overflow-hidden min-h-[300px]">
+                    <img alt="Detail of a clean home" class="absolute inset-0 w-full h-full object-cover"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBa_gakRiStf5pAgCORJvaeWGfORvfdl26KCwvK0j_HTXfaca-d8ed0MEdcQJrvnVblq_P2I7z5ujMSsnK7Wkl9X2MOrURpqvR7-lQrvgUUZdlvzI-a2Ew_0M6gaw-mBFAOuJhWsD_6JvaLyKt2P80OcwfCuisRdJFaNhQSWY1GfdfoePfsCNE6qtaFGSv8C9SxntMB4dt9GCJfwcD1h8F5ovNCtTr6ut7yO0q96-yenoC2MaOrMr7B" />
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-10">
+                        <h3 class="font-headline-sm text-headline-sm text-white mb-2">Consistent Quality</h3>
+                        <p class="font-body-md text-body-md text-white/80">We use a detailed 50-point checklist for
+                            every clean. If we miss something, let us know within 24 hours and we'll re-clean it for
+                            free.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 5. HOW IT WORKS -->
+    <section class="py-section-gap px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+        <div class="text-center mb-16">
+            <h2
+                class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary">
+                From booking to beautifully clean.</h2>
+        </div>
+        <div class="flex flex-col md:flex-row gap-12 relative">
+            <!-- Connecting line for desktop -->
+            <div class="hidden md:block absolute top-12 left-[10%] right-[10%] h-0.5 bg-outline-variant/30 -z-10"></div>
+            <div class="flex-1 flex flex-col items-center text-center">
+                <div
+                    class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center font-display-lg-mobile text-display-lg-mobile text-primary mb-6 border-4 border-surface-container-lowest">
+                    01</div>
+                <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Tell us about your home</h3>
+                <p class="font-body-md text-body-md text-on-surface-variant">Enter your details online to get an
+                    instant, transparent quote based on your home's size and needs.</p>
+            </div>
+            <div class="flex-1 flex flex-col items-center text-center">
+                <div
+                    class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center font-display-lg-mobile text-display-lg-mobile text-primary mb-6 border-4 border-surface-container-lowest">
+                    02</div>
+                <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Choose your schedule</h3>
+                <p class="font-body-md text-body-md text-on-surface-variant">Select a date and time that works for you.
+                    We offer one-time cleans or regular recurring service.</p>
+            </div>
+            <div class="flex-1 flex flex-col items-center text-center">
+                <div
+                    class="w-24 h-24 rounded-full bg-primary flex items-center justify-center font-display-lg-mobile text-display-lg-mobile text-on-primary mb-6 border-4 border-surface-container-lowest shadow-lg">
+                    03</div>
+                <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Come home to clean</h3>
+                <p class="font-body-md text-body-md text-on-surface-variant">Our vetted professionals will arrive with
+                    all necessary supplies, leaving your home spotless and refreshed.</p>
+            </div>
+        </div>
+    </section>
+    <!-- 6. CLEANING QUALITY & CHECKLIST -->
+    <section class="bg-primary text-on-primary py-section-gap px-margin-mobile md:px-margin-desktop overflow-hidden">
+        <div class="max-w-container-max mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="order-2 lg:order-1 relative rounded-xl overflow-hidden h-[600px]">
+                <img alt="Immaculately clean kitchen" class="absolute inset-0 w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAX8N_CbLhJi3pa2_X15SSEo7j4CD5RmOAxQFcgpuidKQozeBfGUFUK3fqxy5Dmk79hEgALzIC4Mld6Qs53al-qPGyW3jdxdOHV_fsY6JaKTnxvk5iMgt8fILD4mK94SZXRDduSMYOQ08aYKssGmGY-syBvUQRTYYCPfz1aYkFEokL0t0dyZCHXPS1DwvR-DYGaYeYJUQaSV5znitRlMw77QRrOul8eJW6JRQiWvtqaWImwT_R-2DmF" />
+                <div
+                    class="absolute bottom-6 left-6 bg-surface-container-lowest/90 backdrop-blur-sm text-primary p-4 rounded-lg flex items-center gap-3 soft-shadow">
+                    <span class="material-symbols-outlined text-green-600 text-3xl"
+                        style="font-variation-settings: 'FILL' 1;">verified</span>
+                    <div>
+                        <div class="font-bold text-sm">PureNest Quality Guarantee</div>
+                        <div class="text-xs text-on-surface-variant">Not happy? We'll re-clean for free.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="order-1 lg:order-2 flex flex-col items-start">
+                <h2
+                    class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg mb-8">
+                    Nothing overlooked.</h2>
+                <p class="font-body-lg text-body-lg text-on-primary/80 mb-10">Our comprehensive 50-point checklist
+                    ensures every corner of your home receives the attention it deserves.</p>
+                <div class="w-full space-y-8">
+                    <!-- Checklist Item 1 -->
+                    <div>
+                        <h4
+                            class="font-headline-sm text-headline-sm border-b border-on-primary/20 pb-2 mb-4 flex items-center gap-3">
+                            <span class="material-symbols-outlined">kitchen</span> Kitchens
+                        </h4>
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-on-primary/80">
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Clean and sanitize sink
+                            </li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Wipe down appliance
+                                exteriors</li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Clean inside microwave
+                            </li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Wipe countertops and
+                                backsplash</li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Vacuum and mop floors
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Checklist Item 2 -->
+                    <div>
+                        <h4
+                            class="font-headline-sm text-headline-sm border-b border-on-primary/20 pb-2 mb-4 flex items-center gap-3">
+                            <span class="material-symbols-outlined">bathroom</span> Bathrooms
+                        </h4>
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-on-primary/80">
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Scrub and disinfect
+                                toilet</li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Clean shower and tub
+                                enclosures</li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Wipe mirrors and fixtures
+                            </li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Clean sink and vanity
+                            </li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Empty trash bins</li>
+                        </ul>
+                    </div>
+                    <!-- Checklist Item 3 -->
+                    <div>
+                        <h4
+                            class="font-headline-sm text-headline-sm border-b border-on-primary/20 pb-2 mb-4 flex items-center gap-3">
+                            <span class="material-symbols-outlined">living</span> Living Areas &amp; Bedrooms
+                        </h4>
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-on-primary/80">
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Dust all accessible
+                                surfaces</li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Vacuum carpets and rugs
+                            </li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Make beds (upon request)
+                            </li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> Wipe baseboards and sills
+                            </li>
+                            <li class="flex items-start gap-2"><span
+                                    class="material-symbols-outlined text-[18px]">check</span> General tidying</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 7. SERVICES SECTION -->
+    <section class="py-section-gap px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto" id="services">
+        <div class="text-center mb-16">
+            <h2
+                class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary mb-4">
+                Cleaning services designed around your home.</h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">From regular maintenance to
+                deep cleans, we offer a service level that fits your specific needs.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="public-services-container">
+        </div>
+    </section>
+
+
+    <!-- 12. FAQ SECTION (CRITICAL) -->
+    <section class="bg-background py-section-gap px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto"
+        id="reviews-locations">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+            <!-- Left: Reviews & Social Proof -->
+            <div class="space-y-12">
+                <div>
+                    <h2
+                        class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary mb-4">
+                        Trusted by your neighbors.</h2>
+                    <p class="font-body-lg text-body-lg text-on-surface-variant">See why Arlington homeowners choose
+                        PureNest for a cleaner, calmer home.</p>
+                </div>
+                <div class="space-y-6">
+                    <!-- Testimonial 1 -->
+                    <div
+                        class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow">
+                        <div class="flex text-yellow-500 mb-3">
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                        </div>
+                        <p class="font-body-md text-on-surface-variant mb-4 italic">"The team is incredibly thorough and
+                            professional. We finally stopped spending our weekends cleaning."</p>
+                        <div class="font-label-caps text-label-caps text-primary">Michael R. (Clarendon, Arlington)
+                        </div>
+                    </div>
+                    <!-- Testimonial 2 -->
+                    <div
+                        class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow">
+                        <div class="flex text-yellow-500 mb-3">
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                        </div>
+                        <p class="font-body-md text-on-surface-variant mb-4 italic">"PureNest has completely changed our
+                            weekly routine. The apartment is spotless every time."</p>
+                        <div class="font-label-caps text-label-caps text-primary">Sarah M. (Ballston, Arlington)</div>
+                    </div>
+                    <!-- Testimonial 3 -->
+                    <div
+                        class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow">
+                        <div class="flex text-yellow-500 mb-3">
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">star</span>
+                        </div>
+                        <p class="font-body-md text-on-surface-variant mb-4 italic">"Everything from booking to the
+                            actual cleaning has been seamless. Highly recommend."</p>
+                        <div class="font-label-caps text-label-caps text-primary">Jessica T. (Virginia Square,
+                            Arlington)</div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-8 pt-4 border-t border-outline-variant/20">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-lg">Google</span>
+                        <span class="text-sm text-on-surface-variant">4.9/5 Rating</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-lg text-red-600">Yelp</span>
+                        <span class="text-sm text-on-surface-variant">4.8/5 Rating</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-lg">Thumbtack</span>
+                        <span class="text-sm text-on-surface-variant">5.0/5 Rating</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Right: Locations Visual -->
+            <div class="flex flex-col space-y-8">
+                <div class="relative rounded-xl overflow-hidden h-[500px] shadow-lg">
+                    <img alt="Service area map of Arlington" class="absolute inset-0 w-full h-full object-cover"
+                        src="assets/img/MapServices2.webp" />
+                </div>
+                <div>
+                    <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Serving Ballston and beyond.</h3>
+                    <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Ballston</div>
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Clarendon</div>
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Virginia Square</div>
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Rosslyn</div>
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Lyon Village</div>
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Bluemont</div>
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Crystal City</div>
+                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Pentagon City</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="bg-surface-container py-section-gap px-margin-mobile md:px-margin-desktop" id="faq">
+        <div class="max-w-3xl mx-auto">
+            <div class="text-center mb-16">
+                <h2
+                    class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary mb-4">
+                    Frequently Asked Questions</h2>
+                <p class="font-body-lg text-body-lg text-on-surface-variant">Everything you need to know about booking
+                    and working with PureNest.</p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <details
+                    class="group bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+                    <summary
+                        class="flex justify-between items-center font-headline-sm text-headline-sm text-primary cursor-pointer p-6 hover:bg-surface-container-low transition-colors">
+                        <span>Do I need to be home during the cleaning?</span>
+                        <span
+                            class="material-symbols-outlined transition-transform duration-300 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-6 pt-0 font-body-md text-on-surface-variant border-t border-outline-variant/10 mt-2">
+                        No, you do not need to be home. Most of our clients provide us with a spare key, door code, or
+                        lockbox access. We are fully insured and our cleaners are thoroughly background-checked. If you
+                        prefer to be home, that is perfectly fine too!
+                    </div>
+                </details>
+                <!-- FAQ 2 -->
+                <details
+                    class="group bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+                    <summary
+                        class="flex justify-between items-center font-headline-sm text-headline-sm text-primary cursor-pointer p-6 hover:bg-surface-container-low transition-colors">
+                        <span>Do you bring your own cleaning supplies?</span>
+                        <span
+                            class="material-symbols-outlined transition-transform duration-300 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-6 pt-0 font-body-md text-on-surface-variant border-t border-outline-variant/10 mt-2">
+                        Yes, our teams arrive fully equipped with all necessary cleaning supplies and professional-grade
+                        equipment, including vacuums and mops. If you have specific products you prefer we use (e.g.,
+                        specific hardwood floor cleaner), just let us know and leave them out for us.
+                    </div>
+                </details>
+                <!-- FAQ 3 -->
+                <details
+                    class="group bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+                    <summary
+                        class="flex justify-between items-center font-headline-sm text-headline-sm text-primary cursor-pointer p-6 hover:bg-surface-container-low transition-colors">
+                        <span>What is your cancellation or rescheduling policy?</span>
+                        <span
+                            class="material-symbols-outlined transition-transform duration-300 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-6 pt-0 font-body-md text-on-surface-variant border-t border-outline-variant/10 mt-2">
+                        We require 48 hours notice for cancellations or rescheduling to avoid a fee. Cancellations made
+                        within 48 hours of the appointment will incur a 50% charge, and same-day cancellations or
+                        lock-outs will be charged the full amount.
+                    </div>
+                </details>
+                <!-- FAQ 4 -->
+                <details
+                    class="group bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+                    <summary
+                        class="flex justify-between items-center font-headline-sm text-headline-sm text-primary cursor-pointer p-6 hover:bg-surface-container-low transition-colors">
+                        <span>Are your cleaners vetted and insured?</span>
+                        <span
+                            class="material-symbols-outlined transition-transform duration-300 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-6 pt-0 font-body-md text-on-surface-variant border-t border-outline-variant/10 mt-2">
+                        Absolutely. We only hire top-tier professionals who pass comprehensive national and local
+                        background checks. PureNest is also fully bonded and insured for up to $2 million in liability,
+                        giving you complete peace of mind.
+                    </div>
+                </details>
+                <!-- FAQ 5 -->
+                <details
+                    class="group bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+                    <summary
+                        class="flex justify-between items-center font-headline-sm text-headline-sm text-primary cursor-pointer p-6 hover:bg-surface-container-low transition-colors">
+                        <span>What if I am not satisfied with the clean?</span>
+                        <span
+                            class="material-symbols-outlined transition-transform duration-300 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-6 pt-0 font-body-md text-on-surface-variant border-t border-outline-variant/10 mt-2">
+                        We offer a PureNest Quality Guarantee. If you are not completely satisfied with any part of your
+                        clean, contact us within 24 hours of your service, and we will return to re-clean the missed
+                        area at no additional charge.
+                    </div>
+                </details>
+                <!-- FAQ 6 -->
+                <details
+                    class="group bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+                    <summary
+                        class="flex justify-between items-center font-headline-sm text-headline-sm text-primary cursor-pointer p-6 hover:bg-surface-container-low transition-colors">
+                        <span>Do you clean with eco-friendly products?</span>
+                        <span
+                            class="material-symbols-outlined transition-transform duration-300 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-6 pt-0 font-body-md text-on-surface-variant border-t border-outline-variant/10 mt-2">
+                        We use professional-grade, safe cleaning solutions. If you prefer a completely
+                        green/eco-friendly cleaning, please select that option during booking. We can accommodate
+                        eco-friendly requests using trusted plant-based products.
+                    </div>
+                </details>
+                <!-- FAQ 7 -->
+                <details
+                    class="group bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+                    <summary
+                        class="flex justify-between items-center font-headline-sm text-headline-sm text-primary cursor-pointer p-6 hover:bg-surface-container-low transition-colors">
+                        <span>How is payment handled?</span>
+                        <span
+                            class="material-symbols-outlined transition-transform duration-300 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-6 pt-0 font-body-md text-on-surface-variant border-t border-outline-variant/10 mt-2">
+                        Payment is processed securely online via credit or debit card. A hold is placed on your card the
+                        day before service, but you are not actually charged until the cleaning is completed. We do not
+                        accept cash or checks.
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+    <div id="footer-container"></div>
+    <script type="module" src="js/modules/layout-loader.js"></script>
+    <script type="module" src="js/modules/public-main.js"></script>
+</body>
+
+</html>

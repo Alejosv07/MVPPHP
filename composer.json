@@ -1,0 +1,9 @@
+{
+    "name": "purenest/api",
+    "description": "API REST PureNest",
+    "autoload": {
+        "psr-4": {
+            "App\\": "api/src/"
+        }
+    }
+}

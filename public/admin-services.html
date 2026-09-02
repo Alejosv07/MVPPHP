@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+
+<body
+    class="bg-background text-on-background min-h-screen flex selection:bg-primary-fixed selection:text-primary-container">
+    <div id="sideAdminMenu"></div>
+    <div id="sidebar-backdrop"
+        onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <div
+        class="md:hidden fixed top-0 left-0 w-full z-10 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 flex-shrink-0">
+                <img alt="Admin User Profile" class="w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbBo2Ftpqk0meUql9w_WjDlyGnnsIj_3erLBPH-jIlcxFmJg2wZ-NJTPfALW0szHLgXffQI3TIvWNeAz3ALftLmt1kuJkDfZbj6lAN8qugxplf3bxm1h-6DTDFpF4PgB53LF5MVCNAigSaeVtB2apGiFVEpjR_VXuOb8gbUg5WrKi83JTWc59c0Qo1E9ysfRXEwNHj0jBYIl769v1z5zmHVLR66NO_SeYmRmjldFARfEpPB3dPgpyL">
+            </div>
+            <span class="font-headline-sm text-sm text-primary font-bold">PureNest Admin</span>
+        </div>
+        <button
+            onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')"
+            class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+
+    <main class="mb-20 lg:mb-0 ml-64 mt-16 p-margin-desktop w-full max-w-container-max mx-auto pb-section-gap">
+        <form id="serviceForm" novalidate>
+            <div class="mb-12">
+                <h2 id="pageTitle" class="font-headline-lg text-headline-lg text-primary mb-2">Service</h2>
+                <p id="pageSubtitle" class="font-body-md text-body-md text-on-surface-variant">Define a premium offering
+                    for the PureNest catalog.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column: Form Sections -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Section 1: Basic Information -->
+                    <section
+                        class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30">
+                        <h3
+                            class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
+                            1. Basic Information
+                        </h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
+                                    for="serviceName">Service Name *</label>
+                                <input class="w-full form-input-line font-body-lg text-body-lg text-primary"
+                                    id="serviceName" placeholder="e.g., Deep Move-In Cleaning" type="text" />
+                            </div>
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
+                                    for="serviceDescription">Description *</label>
+                                <textarea
+                                    class="w-full form-input-line font-body-md text-body-md text-primary resize-none"
+                                    id="serviceDescription" placeholder="Describe the service details and benefits..."
+                                    rows="3"></textarea>
+                            </div>
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
+                                    for="servicePrice">Price per Hour ($) *</label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute left-0 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-lg text-body-lg">$</span>
+                                    <input class="w-full form-input-line font-body-lg text-body-lg text-primary pl-6"
+                                        id="servicePrice" placeholder="150" type="number" step="0.01" min="1" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 3: Configuration -->
+                    <section
+                        class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30">
+                        <h3
+                            class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
+                            3. Configuration
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
+                                    for="serviceDuration">Est. Duration (Hours) *</label>
+                                <select
+                                    class="w-full form-input-line font-body-md text-body-md text-primary cursor-pointer"
+                                    id="serviceDuration">
+                                    <option value="1.0">1.0</option>
+                                    <option value="2.0">2.0</option>
+                                    <option value="3.0">3.0</option>
+                                    <option value="4.0">4.0+</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
+                                    for="serviceCategory">Category *</label>
+                                <select
+                                    class="w-full form-input-line font-body-md text-body-md text-primary cursor-pointer"
+                                    id="serviceCategory">
+                                    <option value="">Loading categories...</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2 pt-4 flex items-center justify-between">
+                                <div>
+                                    <p class="font-headline-sm text-headline-sm text-primary">Service Status</p>
+                                    <p class="font-body-md text-body-md text-on-surface-variant text-sm">Visible to
+                                        clients immediately upon creation.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input id="serviceStatus" checked class="sr-only peer" type="checkbox" />
+                                    <div
+                                        class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
+                                    </div>
+                                    <span id="statusLabel"
+                                        class="ml-3 font-label-caps text-label-caps text-primary">Active</span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Column: Image & Actions -->
+                <div class="space-y-8">
+                    <!-- Section 2: Service Image -->
+                    <section
+                        class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30 flex flex-col h-full">
+                        <h3
+                            class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
+                            2. Service Image
+                        </h3>
+                        <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" class="hidden" />
+
+                        <div id="imageDropArea"
+                            class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/50 rounded-xl p-6 bg-surface-warm text-center cursor-pointer hover:bg-surface-container transition-colors group">
+                            <div
+                                class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 group-hover:scale-105 transition-transform shadow-sm">
+                                <span class="material-symbols-outlined text-outline">add_photo_alternate</span>
+                            </div>
+                            <p class="font-body-md text-body-md text-primary font-medium mb-1">Click to upload image</p>
+                            <p class="font-body-md text-body-md text-on-surface-variant text-sm">High-res JPEG or PNG.
+                            </p>
+
+                            <div
+                                class="mt-6 w-full rounded-xl overflow-hidden aspect-video relative bg-surface-container-high flex items-center justify-center">
+                                <img id="imagePreview" class="w-full h-full object-cover transition-all duration-300"
+                                    src="" alt="Service Preview" />
+                                <div
+                                    class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span class="material-symbols-outlined text-white text-3xl">edit</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Sticky Bottom Action Bar -->
+            <div
+                class="lg:fixed lg:bottom-0 lg:right-0 lg:w-[calc(100%-256px)] bg-surface-container-lowest border-t border-outline-variant/30 p-6 flex justify-end gap-4 z-40">
+                <button type="button" id="btnCancel"
+                    class="px-8 py-3 rounded-xl border border-primary text-primary font-label-caps text-label-caps hover:bg-surface-warm transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="btnSubmit"
+                    class="px-8 py-3 rounded-xl bg-primary text-on-primary font-label-caps text-label-caps hover:bg-primary-container transition-colors shadow-sm">
+                    Create Service
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/admin-service-form.js"></script>
+</body>
+
+</html>

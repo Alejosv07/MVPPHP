@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Statistics</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+
+<body
+    class="bg-background text-on-background min-h-screen flex selection:bg-primary-fixed selection:text-primary-container">
+    <div id="sideAdminMenu"></div>
+
+    <div id="sidebar-backdrop"
+        onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <div
+        class="print:hidden md:hidden fixed top-0 left-0 w-full z-10 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 flex-shrink-0">
+                <img alt="Admin User Profile" class="w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbBo2Ftpqk0meUql9w_WjDlyGnnsIj_3erLBPH-jIlcxFmJg2wZ-NJTPfALW0szHLgXffQI3TIvWNeAz3ALftLmt1kuJkDfZbj6lAN8qugxplf3bxm1h-6DTDFpF4PgB53LF5MVCNAigSaeVtB2apGiFVEpjR_VXuOb8gbUg5WrKi83JTWc59c0Qo1E9ysfRXEwNHj0jBYIl769v1z5zmHVLR66NO_SeYmRmjldFARfEpPB3dPgpyL">
+            </div>
+            <span class="font-headline-sm text-sm text-primary font-bold">PureNest Admin</span>
+        </div>
+        <button
+            onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')"
+            class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+
+    <main class="mb-20 lg:mb-0 flex-1 md:ml-64 overflow-y-auto w-full relative bg-background">
+        <header
+            class="flex-wrap gap-2 lg:gap-2 pb-6 print:pt-2 pt-20 lg:pt-6 bg-background/80 backdrop-blur-md px-margin-mobile md:px-margin-desktop py-6 flex justify-between items-center border-b border-outline-variant/30">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-primary">Business Statistics</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Understand your reservations, demand,
+                    and revenue at a glance.</p>
+            </div>
+            <div class="flex gap-4 no-print">
+                <button onclick="window.print()"
+                    class="flex items-center gap-2 px-6 py-3 border border-primary text-primary rounded-lg font-label-caps text-label-caps hover:bg-surface-container-low transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">download</span> Export PDF
+                </button>
+            </div>
+        </header>
+
+        <div class="px-margin-mobile md:px-margin-desktop py-8 max-w-container-max mx-auto w-full">
+
+            <!-- Filter Bar -->
+            <div
+                class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 mb-8 no-print soft-shadow flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <input id="filterStartDate" class="input-underline text-sm py-1.5 w-36" type="date"
+                        value="2026-08-01" />
+                    <span class="text-secondary text-sm">to</span>
+                    <input id="filterEndDate" class="input-underline text-sm py-1.5 w-36" type="date"
+                        value="2026-08-31" />
+                    <button id="btnApplyFilters"
+                        class="bg-surface-container-highest text-primary px-4 py-1.5 rounded text-sm font-medium hover:bg-outline-variant/50 transition-colors">Apply
+                        Filters</button>
+                </div>
+            </div>
+
+            <!-- KPI Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 soft-shadow">
+                    <p class="break-all text-secondary text-xs uppercase tracking-wider font-semibold mb-1">Total
+                        Revenue</p>
+                    <p id="kpiRevenue" class="break-all text-2xl font-light text-primary mb-2">$0.00</p>
+                </div>
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 soft-shadow">
+                    <p class="break-all text-secondary text-xs uppercase tracking-wider font-semibold mb-1">Total
+                        Reservations</p>
+                    <p id="kpiReservations" class="break-all text-2xl font-light text-primary mb-2">0</p>
+                </div>
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 soft-shadow">
+                    <p class="break-all text-secondary text-xs uppercase tracking-wider font-semibold mb-1">Confirmed
+                    </p>
+                    <p id="kpiConfirmed" class="break-all text-2xl font-light text-primary mb-2">0</p>
+                    <p id="kpiConfirmedRate" class="break-all text-sm text-secondary">0% rate</p>
+                </div>
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 soft-shadow">
+                    <p class="break-all text-secondary text-xs uppercase tracking-wider font-semibold mb-1">Average
+                        Reservation
+                    </p>
+                    <p id="kpiAvgRes" class="break-all text-2xl font-light text-primary mb-2">$0.00</p>
+                </div>
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 soft-shadow">
+                    <p class="break-all text-secondary text-xs uppercase tracking-wider font-semibold mb-1">Cancellation
+                        Rate</p>
+                    <p id="kpiCancelRate" class="break-all text-2xl font-light text-primary mb-2">0%</p>
+                </div>
+            </div>
+
+            <!-- Business Insights Row -->
+            <div class="break-all grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+                <div
+                    class="bg-[#061b0e] text-white print:bg-surface-container-lowest print:text-on-background print:border print:border-outline-variant/30 print:shadow-sm rounded-xl p-6 flex flex-col justify-between">
+                    <div>
+                        <p
+                            class="text-white/70 print:text-secondary text-xs uppercase tracking-wider font-semibold mb-2">
+                            Most Booked Service
+                        </p>
+                        <h3 id="insightMostBookedName" class="text-xl font-medium mb-1">-</h3>
+                    </div>
+                    <div class="mt-4 flex items-end justify-between">
+                        <p class="text-3xl font-light"><span id="insightMostBookedCount">0</span> <span
+                                class="text-sm text-white/70 print:text-secondary">bookings</span></p>
+                        <span
+                            class="material-symbols-outlined text-white/50 print:text-secondary/30 text-4xl">cleaning_services</span>
+                    </div>
+                </div>
+                <div
+                    class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-6 soft-shadow flex flex-col justify-between">
+                    <div>
+                        <p class="text-secondary text-xs uppercase tracking-wider font-semibold mb-2">Highest Revenue
+                            Service</p>
+                        <h3 id="insightHighRevName" class="text-xl font-medium text-primary mb-1">-</h3>
+                    </div>
+                    <div class="mt-4 flex items-end justify-between">
+                        <p id="insightHighRevAmount" class="text-3xl font-light text-primary">$0.00</p>
+                        <span class="material-symbols-outlined text-secondary/30 text-4xl">attach_money</span>
+                    </div>
+                </div>
+                <div
+                    class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-6 soft-shadow flex flex-col justify-between">
+                    <div>
+                        <p class="text-secondary text-xs uppercase tracking-wider font-semibold mb-2">Busiest Day</p>
+                        <h3 id="insightBusiestDay" class="text-xl font-medium text-primary mb-1">-</h3>
+                    </div>
+                    <div class="mt-4 flex items-end justify-between">
+                        <p class="text-3xl font-light text-primary"><span id="insightBusiestCount">0</span> <span
+                                class="text-sm text-secondary">res</span></p>
+                        <span class="material-symbols-outlined text-secondary/30 text-4xl">calendar_today</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-6 soft-shadow">
+                    <h3 class="text-lg font-medium text-primary mb-6">Revenue Over Time</h3>
+                    <div class="h-64 w-full">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-6 soft-shadow">
+                    <h3 class="text-lg font-medium text-primary mb-6">Reservations Over Time (Status)</h3>
+                    <div class="h-64 w-full">
+                        <canvas id="reservationsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Performance Table -->
+            <div
+                class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-6 mb-12 soft-shadow overflow-x-auto">
+                <h3 class="text-lg font-medium text-primary mb-6">Service Performance</h3>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-outline-variant/30">
+                            <th class="py-3 px-4 text-xs uppercase tracking-wider text-secondary font-semibold">Rank
+                            </th>
+                            <th class="py-3 px-4 text-xs uppercase tracking-wider text-secondary font-semibold">Service
+                            </th>
+                            <th
+                                class="py-3 px-4 text-xs uppercase tracking-wider text-secondary font-semibold text-right">
+                                Reservations</th>
+                            <th
+                                class="py-3 px-4 text-xs uppercase tracking-wider text-secondary font-semibold text-right">
+                                Revenue</th>
+                            <th
+                                class="py-3 px-4 text-xs uppercase tracking-wider text-secondary font-semibold text-right">
+                                Avg. Value</th>
+                            <th
+                                class="py-3 px-4 text-xs uppercase tracking-wider text-secondary font-semibold text-right">
+                                % Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="servicePerformanceBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="h-section-gap no-print"></div>
+        </div>
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/admin-statistics.js"></script>
+</body>
+
+</html>

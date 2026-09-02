@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+</head>
+
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
+    <!-- TopNavBar (Transactional - Suppressed as per logic, returning empty header space or minimal logo only) -->
+    <!-- Applying the UX Goal: Linear/Transactional or Task-focused, hide the shell to prioritize Canvas -->
+    <header
+        class="fixed top-0 left-0 w-full z-50 flex justify-center items-center h-20 bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 px-margin-mobile md:px-margin-desktop">
+        <div class="font-headline-md text-headline-md font-bold text-primary"><a href="index.html">PureNest</a></div>
+    </header>
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center pt-32 pb-section-gap px-margin-mobile md:px-margin-desktop">
+        <div class="w-full max-w-2xl">
+            <div class="text-center mb-12">
+                <div
+                    class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-fixed mb-6 soft-shadow">
+                    <span class="material-symbols-outlined text-primary-container text-3xl"
+                        style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                </div>
+                <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary mb-4">Reservation
+                    request received.</h1>
+                <p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg mx-auto">We've received your
+                    request. Our team will review your reservation and notify you by email.</p>
+            </div>
+            <!-- Confirmation Card -->
+            <div
+                class="bg-surface-container-lowest rounded-xl soft-shadow border border-outline-variant/30 p-8 md:p-10 mb-8 relative overflow-hidden">
+                <!-- Decorative accent -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-surface-tint"></div>
+                <div
+                    class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-outline-variant/30 pb-6">
+                    <div>
+                        <p class="font-label-caps text-label-caps text-on-surface-variant mb-1">Reservation ID</p>
+                        <p class="font-headline-sm text-headline-sm text-primary">#RES-10482</p>
+                    </div>
+                    <div
+                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-status-star/10 border border-status-star/20">
+                        <span class="material-symbols-outlined text-status-star text-sm"
+                            style="font-variation-settings: 'FILL' 1;">pending</span>
+                        <span class="font-label-caps text-label-caps text-status-star">PENDING</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Service Requested</p>
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary"
+                                style="font-variation-settings: 'FILL' 0;">cleaning_services</span>
+                            <p class="font-body-md text-body-md text-primary">Home Cleaning</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-label-caps text-label-caps text-on-surface-variant mb-2">Requested Date</p>
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary"
+                                style="font-variation-settings: 'FILL' 0;">calendar_today</span>
+                            <p class="font-body-md text-body-md text-primary">Sept 14, 2026</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-surface-container rounded-lg p-4 flex items-start gap-3">
+                    <span class="material-symbols-outlined text-on-surface-variant mt-0.5"
+                        style="font-variation-settings: 'FILL' 0;">info</span>
+                    <p class="font-body-md text-body-md text-on-surface-variant text-sm">You don't need an account.
+                        We'll keep you updated by email.</p>
+                </div>
+            </div>
+            <!-- Actions -->
+            <div class="flex justify-center mt-12">
+                <a href="index.html"
+                    class="bg-surface-container-lowest text-primary font-label-caps text-label-caps px-8 py-4 rounded-full border border-primary hover:bg-surface-container-low transition-colors duration-200">
+                    Back to PureNest
+                </a>
+            </div>
+        </div>
+    </main>
+    <!-- Footer (Standard Editorial) -->
+    <footer
+        class="w-full bg-surface-container-highest dark:bg-surface-container-lowest px-margin-mobile md:px-margin-desktop py-section-gap grid grid-cols-1 md:grid-cols-4 gap-gutter mt-auto">
+        <div class="md:col-span-1 flex flex-col gap-4">
+            <span class="font-headline-md text-headline-md text-primary dark:text-primary-fixed">PureNest</span>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-auto">© 2024 PureNest Cleaning Services. All
+                rights reserved.</p>
+        </div>
+        <div class="md:col-span-3 flex flex-wrap gap-8 justify-start md:justify-end items-start pt-2">
+            <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                href="#">Privacy Policy</a>
+            <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                href="#">Terms of Service</a>
+            <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                href="#">Contact Us</a>
+            <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100"
+                href="#">Careers</a>
+        </div>
+    </footer>
+</body>
+
+</html>

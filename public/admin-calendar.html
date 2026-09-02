@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+
+<body
+    class="bg-background text-on-background min-h-screen flex flex-col md:flex-row selection:bg-primary-fixed selection:text-primary-container">
+    <div id="sideAdminMenu"></div>
+
+    <div id="sidebar-backdrop"
+        onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <div
+        class="md:hidden fixed top-0 left-0 w-full z-10 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 flex-shrink-0">
+                <img alt="Admin User Profile" class="w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbBo2Ftpqk0meUql9w_WjDlyGnnsIj_3erLBPH-jIlcxFmJg2wZ-NJTPfALW0szHLgXffQI3TIvWNeAz3ALftLmt1kuJkDfZbj6lAN8qugxplf3bxm1h-6DTDFpF4PgB53LF5MVCNAigSaeVtB2apGiFVEpjR_VXuOb8gbUg5WrKi83JTWc59c0Qo1E9ysfRXEwNHj0jBYIl769v1z5zmHVLR66NO_SeYmRmjldFARfEpPB3dPgpyL">
+            </div>
+            <span class="font-headline-sm text-sm text-primary font-bold">PureNest Admin</span>
+        </div>
+        <button
+            onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')"
+            class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+    <!-- Main Content Area -->
+    <main class="mb-20 lg:mb-0 flex-1 md:ml-64 overflow-y-auto w-full relative bg-background">
+        <!-- Header -->
+        <header
+            class="flex-wrap gap-2 lg:gap-2 bg-background/80 backdrop-blur-md px-margin-mobile md:px-margin-desktop pb-6 pt-20 lg:pt-6 flex justify-between items-center border-b border-outline-variant/30">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-primary">Calendar Management</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Review schedules and manage
+                    reservations.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="admin-reservation.html"
+                    class="bg-primary text-on-primary font-label-caps text-label-caps px-6 py-3 rounded flex items-center gap-2 hover:opacity-90 transition-opacity">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    NEW RESERVATION
+                </a>
+            </div>
+        </header>
+        <div class="px-margin-mobile md:px-margin-desktop py-8 max-w-container-max mx-auto w-full">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-gutter">
+                <!-- Calendar Section (Takes up 2/3 on large screens) -->
+                <section class="xl:col-span-2 space-y-6">
+                    <!-- Controls & Legend -->
+                    <div
+                        class="flex flex-wrap flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-container-lowest py-6 lg:p-6 rounded-xl shadow-[0_8px_40px_rgba(27,48,34,0.04)] border border-outline-variant/30">
+                        <div class="flex items-center gap-4">
+                            <button
+                                class="p-2 hover:bg-surface-variant rounded-full transition-colors text-on-surface-variant">
+                                <span class="material-symbols-outlined">chevron_left</span>
+                            </button>
+                            <h3 class="font-headline-sm text-headline-sm text-primary">September 2024</h3>
+                            <button
+                                class="p-2 hover:bg-surface-variant rounded-full transition-colors text-on-surface-variant">
+                                <span class="material-symbols-outlined">chevron_right</span>
+                            </button>
+                        </div>
+                        <div class="px-6 lg:p-0 flex flex-wrap gap-4 font-body-md text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-tertiary-fixed-dim"></span>
+                                <span class="text-on-surface-variant">Pending</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-primary-fixed-dim"></span>
+                                <span class="text-on-surface-variant">Confirmed</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-emerald-300"></span>
+                                <span class="text-on-surface-variant">Completed</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-error-container"></span>
+                                <span class="text-on-surface-variant">Cancelled/Rejected</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Calendar Grid -->
+
+                    <!-- 1. Contenedor exterior con ancho completo y scroll horizontal -->
+                    <div class="w-full overflow-x-auto pb-4 pt-1">
+
+                        <!-- 2. La tarjeta interior con un ancho mínimo fijo (min-w-[360px]) para forzar el scroll en celulares -->
+                        <div
+                            class="bg-surface-container-lowest p-4 md:p-6 rounded-xl shadow-[0_8px_40px_rgba(27,48,34,0.04)] border border-outline-variant/30 min-w-[360px] md:min-w-0 w-full">
+
+                            <!-- Days Header -->
+                            <div class="grid grid-cols-7 gap-1 md:gap-2 mb-3 md:mb-4 text-center">
+                                <div class="font-label-caps text-[10px] md:text-label-caps text-outline">SUN</div>
+                                <div class="font-label-caps text-[10px] md:text-label-caps text-outline">MON</div>
+                                <div class="font-label-caps text-[10px] md:text-label-caps text-outline">TUE</div>
+                                <div class="font-label-caps text-[10px] md:text-label-caps text-outline">WED</div>
+                                <div class="font-label-caps text-[10px] md:text-label-caps text-outline">THU</div>
+                                <div class="font-label-caps text-[10px] md:text-label-caps text-outline">FRI</div>
+                                <div class="font-label-caps text-[10px] md:text-label-caps text-outline">SAT</div>
+                            </div>
+
+                            <!-- Days Grid -->
+                            <div class="grid grid-cols-7 gap-1 md:gap-2">
+                                <!-- Week 1 (Empty slots for padding) -->
+                                <div class="aspect-square p-1 md:p-2 rounded-lg bg-transparent"></div>
+                                <div class="aspect-square p-1 md:p-2 rounded-lg bg-transparent"></div>
+                                <div class="aspect-square p-1 md:p-2 rounded-lg bg-transparent"></div>
+
+                                <!-- Sept 1 - 7 -->
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between group">
+                                    <span class="text-xs md:font-body-md text-on-surface">1</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between group">
+                                    <span class="text-xs md:font-body-md text-on-surface">2</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-dim opacity-50 flex flex-col justify-between relative overflow-hidden">
+                                    <span class="text-xs md:font-body-md text-on-surface-variant">3</span>
+                                    <div
+                                        class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIj48L3JlY3Q+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjY2MiPjwvcmVjdD4KPC9zdmc+')] opacity-20">
+                                    </div>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between group">
+                                    <span class="text-xs md:font-body-md text-on-surface">4</span>
+                                </div>
+
+                                <!-- Week 2 -->
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">5</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">6</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">7</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">8</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">9</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">10</span>
+                                </div>
+
+                                <!-- Sept 11: CONFIRMED -->
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg bg-primary-fixed-dim border border-primary-fixed hover:brightness-95 cursor-pointer transition-all flex flex-col justify-between shadow-sm relative">
+                                    <span class="text-xs md:font-body-md text-on-primary-fixed font-medium">11</span>
+                                    <div
+                                        class="w-full bg-primary-container text-on-primary-container text-[8px] md:text-[10px] uppercase font-bold tracking-wider px-0.5 md:px-1 py-0.5 rounded-sm truncate mt-auto">
+                                        Confirmed
+                                    </div>
+                                </div>
+
+                                <!-- Week 3 -->
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">12</span>
+                                </div>
+
+                                <!-- Sept 13: PENDING -->
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg bg-surface-container-lowest border border-tertiary-fixed-dim hover:border-tertiary-container cursor-pointer transition-colors flex flex-col justify-between relative">
+                                    <span class="text-xs md:font-body-md text-on-surface">13</span>
+                                    <div
+                                        class="absolute top-1 right-1 md:top-2 md:right-2 w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-tertiary-fixed-dim">
+                                    </div>
+                                    <div
+                                        class="w-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant text-[8px] md:text-[10px] uppercase font-bold tracking-wider px-0.5 md:px-1 py-0.5 rounded-sm truncate mt-auto">
+                                        Pending
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">14</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">15</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">16</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">17</span>
+                                </div>
+                                <div
+                                    class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-container-lowest hover:border-primary cursor-pointer transition-colors flex flex-col justify-between">
+                                    <span class="text-xs md:font-body-md text-on-surface">18</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div
+                        class="p-4 bg-surface-container-low rounded-lg border border-outline-variant/30 flex items-start gap-3">
+                        <span class="material-symbols-outlined text-outline mt-0.5">info</span>
+                        <p class="font-body-md text-sm text-on-surface-variant">A confirmed reservation makes the date
+                            unavailable to customers. Ensure staff is assigned to confirmed dates.</p>
+                    </div>
+                </section>
+                <!-- Reservations List (Side panel) -->
+                <section class="flex flex-col gap-6">
+                    <div
+                        class="bg-surface-container-lowest p-6 rounded-xl shadow-[0_8px_40px_rgba(27,48,34,0.04)] border border-outline-variant/30 flex-1 flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-headline-sm text-headline-sm text-primary">Agenda</h3>
+                            <button class="text-outline hover:text-primary transition-colors">
+                                <span class="material-symbols-outlined">filter_list</span>
+                            </button>
+                        </div>
+                        <!-- Filter Pills -->
+                        <div class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                            <button
+                                class="px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-caps text-[10px] whitespace-nowrap">All</button>
+                            <button
+                                class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Pending</button>
+                            <button
+                                class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Confirmed</button>
+                            <button
+                                class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Completed</button>
+                            <button
+                                class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Cancelled</button>
+                        </div>
+                        <!-- List Items -->
+                        <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+                            <!-- Item 1 (Confirmed) -->
+                            <div
+                                class="p-4 rounded-lg border border-outline-variant/30 bg-surface hover:shadow-sm transition-shadow cursor-pointer relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed-dim"></div>
+                                <div class="pl-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <p class="font-label-caps text-[10px] text-on-surface-variant">SEPT 11, 2024</p>
+                                        <span
+                                            class="px-2 py-0.5 bg-primary-fixed-dim/20 text-on-primary-fixed-variant rounded text-[10px] font-bold uppercase tracking-wider">Confirmed</span>
+                                    </div>
+                                    <h4 class="font-body-md font-medium text-on-surface mb-1">Deep Clean - 3BR Apartment
+                                    </h4>
+                                    <p class="font-body-md text-sm text-on-surface-variant mb-2">10:00 AM - 2:00 PM</p>
+                                    <div class="flex items-center gap-2">
+                                        <img class="w-6 h-6 rounded-full object-cover"
+                                            data-alt="A small, circular avatar portrait of a professional female cleaner wearing a neat, minimalist dark grey uniform against a clean, light-mode background. The lighting is soft and bright, emphasizing trust and premium service quality."
+                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-czpULqCRDzMTEYYukjxGclBkKA7ec76wLN83qWvsiX_njrWHZMAHWF2VNJfhmMXQ24bkHzdjfyKtBcbbzCZIceZ23ki1MqOhnQy8ktvyC9fNoFDIwoUOAoWqHdWk23YTpxOlTS5PG2wJJvQkQu01hYLZE-t7VMgifQcBA889D8ZAugkJqlr66okXFKzLeJwwL71gFGEq8fCQ8UGhpzAiNm5r_6hZyoEwH8u7bbF2jakuk4Q7Hjuc" />
+                                        <span class="font-body-md text-xs text-on-surface-variant">Assigned: Sarah
+                                            J.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Item 2 (Pending) -->
+                            <div
+                                class="p-4 rounded-lg border border-outline-variant/30 bg-surface hover:shadow-sm transition-shadow cursor-pointer relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary-fixed-dim"></div>
+                                <div class="pl-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <p class="font-label-caps text-[10px] text-on-surface-variant">SEPT 13, 2024</p>
+                                        <span
+                                            class="px-2 py-0.5 bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant rounded text-[10px] font-bold uppercase tracking-wider">Pending</span>
+                                    </div>
+                                    <h4 class="font-body-md font-medium text-on-surface mb-1">Standard Clean - 2BR Condo
+                                    </h4>
+                                    <p class="font-body-md text-sm text-on-surface-variant mb-2">1:00 PM - 3:00 PM</p>
+                                    <div class="flex items-center gap-2 text-error">
+                                        <span class="material-symbols-outlined text-[16px]">warning</span>
+                                        <span class="font-body-md text-xs">Unassigned</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/admin-calendar.js"></script>
+</body>
+
+
+</html>

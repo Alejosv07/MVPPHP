@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+</head>
+
+<body class="bg-background text-on-background font-body-md antialiased overflow-x-hidden">
+    <div id="nav-container"></div>
+
+
+    <!-- Main Content: Split Screen Login -->
+    <main class="flex-grow flex flex-col md:flex-row pt-24 md:pt-0">
+        <!-- Left Side: Editorial Image -->
+        <div class="hidden md:block md:w-1/2 relative h-screen bg-surface-variant">
+            <div class="absolute inset-0 bg-cover bg-center"
+                style="background-image: url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80')">
+            </div>
+            <div class="absolute inset-0 bg-primary/5"></div>
+        </div>
+
+        <!-- Right Side: Login Form -->
+        <div
+            class="w-full md:w-1/2 flex items-center justify-center p-8 md:p-margin-desktop min-h-[calc(100vh-80px)] md:min-h-screen bg-surface">
+            <div class="w-full max-w-md animate-fade-in-up">
+                <div class="mb-12">
+                    <h1 class="font-headline-lg text-headline-lg text-primary mb-4">Welcome back.</h1>
+                    <p class="font-body-lg text-body-lg text-on-surface-variant">Log in to manage your cleanings and
+                        preferences.</p>
+                </div>
+
+                <!-- Alert de Error/Éxito -->
+                <div id="alert-message" class="hidden mb-6 p-4 rounded text-sm font-medium"></div>
+
+                <!-- Form con ID asignado -->
+                <form id="loginForm" class="space-y-8">
+                    <!-- Email Input -->
+                    <div class="relative">
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
+                            for="email">Email Address</label>
+                        <input
+                            class="input-editorial w-full font-body-md text-body-md text-primary pb-2 transition-colors"
+                            id="email" name="email" placeholder="name@example.com" required type="email">
+                    </div>
+
+                    <!-- Password Input -->
+                    <div class="relative">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant"
+                                for="password">Password</label>
+                            <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors"
+                                href="forgot-password.html">Forgot password?</a>
+                        </div>
+                        <input
+                            class="input-editorial w-full font-body-md text-body-md text-primary pb-2 transition-colors"
+                            id="password" name="password" placeholder="••••••••" required type="password">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button id="submitBtn"
+                        class="w-full bg-primary-container text-on-primary font-body-md text-body-md py-4 rounded hover:bg-[#15251b] transition-colors duration-300 flex justify-center items-center gap-2 mt-4 shadow-[0px_4px_12px_rgba(27,48,34,0.08)]"
+                        type="submit">
+                        <span>Log In</span>
+                        <span class="material-symbols-outlined text-[20px]"
+                            data-icon="arrow_forward">arrow_forward</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-container"></div>
+    <!-- Script de Login -->
+    <script type="module" src="js/modules/login.js"></script>
+</body>
+
+</html>

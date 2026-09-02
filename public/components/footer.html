@@ -1,0 +1,118 @@
+<!-- FOOTER: Shared Component -->
+<footer class="bg-primary text-on-primary w-full pt-section-gap pb-12 px-margin-mobile md:px-margin-desktop">
+    <div class="max-w-container-max mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            <div class="space-y-6">
+                <div class="font-headline-sm text-headline-sm font-bold">PureNest</div>
+                <p class="font-body-md text-on-primary/70 max-w-xs">Professional home cleaning designed around your
+                    schedule, your space, and your standards.</p>
+                <div class="flex space-x-4">
+                    <a class="w-10 h-10 rounded-full border border-on-primary/20 flex items-center justify-center hover:bg-on-primary/10 transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined text-[20px]">photo_camera</span>
+                    </a>
+                    <a class="w-10 h-10 rounded-full border border-on-primary/20 flex items-center justify-center hover:bg-on-primary/10 transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined text-[20px]">public</span>
+                    </a>
+                </div>
+            </div>
+            <div>
+                <h4 class="font-label-caps text-label-caps text-on-primary/50 mb-6 tracking-widest uppercase">
+                    Services</h4>
+                <ul class="space-y-3 font-body-md">
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Home Cleaning</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Deep Cleaning</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Move In / Move Out</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Airbnb Cleaning</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-label-caps text-label-caps text-on-primary/50 mb-6 tracking-widest uppercase">
+                    Service Areas</h4>
+                <ul class="space-y-3 font-body-md">
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Ballston</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Clarendon</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Virginia Square</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Rosslyn</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Lyon Village</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Arlington</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-label-caps text-label-caps text-on-primary/50 mb-6 tracking-widest uppercase">
+                    Company &amp; Legal</h4>
+                <ul class="space-y-3 font-body-md">
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">About Us</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#reviews-locations">Reviews</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#faq">FAQs</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Privacy Policy</a></li>
+                    <li><a class="hover:text-primary-fixed transition-colors" href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div
+            class="border-t border-on-primary/10 pt-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+            <div class="flex flex-col md:flex-row gap-8 md:gap-16">
+                <div>
+                    <div class="font-label-caps text-label-caps text-on-primary/50 mb-2 uppercase">Call Us, SMS
+                    </div>
+                    <div class="font-headline-sm text-headline-sm text-tertiary-fixed-dim">(571) 882 2712</div>
+                </div>
+                <div>
+                    <div class="font-label-caps text-label-caps text-on-primary/50 mb-2 uppercase">Email Us</div>
+                    <div class="font-headline-sm text-headline-sm text-tertiary-fixed-dim">hello@purenest.com</div>
+                </div>
+            </div>
+            <div class="text-on-primary/50 text-sm">
+                © 2024 PureNest Cleaning. All Rights Reserved.
+            </div>
+        </div>
+    </div>
+</footer>
+<div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div class="hidden mb-4 w-[320px] bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden border border-outline-variant/20 transition-all duration-300"
+        id="chat-window">
+        <div class="bg-primary p-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-on-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-on-primary text-sm">support_agent</span>
+                </div>
+                <span class="font-headline-sm text-lg text-on-primary">PureNest Support</span>
+            </div>
+            <button class="text-on-primary/70 hover:text-on-primary"
+                onclick="document.getElementById('chat-window').classList.add('hidden')">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <p class="text-body-md text-on-surface-variant">Hi there! How can we help you today?</p>
+            <div class="space-y-2">
+                <button
+                    class="w-full text-left p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low transition-colors flex justify-between items-center group">
+                    <span class="text-body-md font-medium text-primary">Request an Estimate</span>
+                    <span
+                        class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </button>
+                <button
+                    class="w-full text-left p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low transition-colors flex justify-between items-center group">
+                    <span class="text-body-md font-medium text-primary">Talk to Support</span>
+                    <span
+                        class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </button>
+                <button
+                    class="w-full text-left p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low transition-colors flex justify-between items-center group">
+                    <span class="text-body-md font-medium text-primary">Track My Booking</span>
+                    <span
+                        class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <button
+        class="w-16 h-16 rounded-full bg-primary shadow-lg flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
+        onclick="document.getElementById('chat-window').classList.toggle('hidden')">
+        <!-- Google Chat Icon -->
+        <span class="material-symbols-outlined text-white">chat</span>
+    </button>
+</div>
