@@ -6,7 +6,7 @@ on:
 
 jobs:
   web-deploy:
-    name: SFTP Deploy
+    name: FTP Deploy
     runs-on: ubuntu-latest
     steps:
       - name: Get latest code
@@ -15,7 +15,9 @@ jobs:
       - name: Sync files to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: p.mutechlabs.com
+          server: ftp.mutechlabs.com
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
           server-dir: /public_html/
