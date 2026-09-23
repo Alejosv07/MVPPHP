@@ -1,5 +1,4 @@
-const API_BASE_URL = 'https://cleaning.mutechlabs.com/purenest/api';
-
+const API_BASE_URL = 'https://cleaning.mutechlabs.com/api/public';
 async function apiFetch(endpoint, options = {}) {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${API_BASE_URL}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, "$1");
