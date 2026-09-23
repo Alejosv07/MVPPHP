@@ -18,7 +18,13 @@ class ServiceModel {
                 FROM services s 
                 JOIN service_categories c ON s.category_id = c.id
                 ORDER BY s.created_at DESC";
-        return $this->db->query($sql)->fetchAll();
+        $services = $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($services as &$service) {
+            $service['features'] = $this->getFeaturesByService((int)$service['id']);
+        }
+
+        return $services;
     }
 
     public function getById(int $id): array|false {
@@ -29,7 +35,13 @@ class ServiceModel {
             WHERE s.id = ?
         ");
         $stmt->execute([$id]);
-        return $stmt->fetch();
+        $service = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($service) {
+            $service['features'] = $this->getFeaturesByService($id);
+        }
+
+        return $service;
     }
 
     public function create(array $data): int {
@@ -75,13 +87,13 @@ class ServiceModel {
     }
 
     public function getFeaturesByService(int $serviceId): array {
-    $stmt = $this->db->prepare("
-        SELECT f.id, f.name 
-        FROM features f 
-        JOIN service_feature_relations sfr ON f.id = sfr.feature_id 
-        WHERE sfr.service_id = ?
-    ");
-    $stmt->execute([$serviceId]);
-    return $stmt->fetchAll();
-}
+        $stmt = $this->db->prepare("
+            SELECT f.id, f.name 
+            FROM features f 
+            JOIN service_feature_relations sfr ON f.id = sfr.feature_id 
+            WHERE sfr.service_id = ?
+        ");
+        $stmt->execute([$serviceId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

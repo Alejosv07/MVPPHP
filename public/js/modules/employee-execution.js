@@ -1,4 +1,5 @@
 import { API } from './api.js';
+import { Modal } from './modal.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initDailyOperations();
@@ -16,7 +17,7 @@ function getLoggedUser() {
     try {
         const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user') || localStorage.getItem('user');
         if (!rawUser) return null;
-        
+
         if (rawUser.trim().startsWith('{')) {
             return JSON.parse(rawUser);
         }
@@ -140,7 +141,7 @@ function populateDaysSelector() {
     const today = new Date();
     const currentDay = today.getDate();
     const year = yearSelect && yearSelect.value !== 'all' ? Number(yearSelect.value) : today.getFullYear();
-    
+
     let monthIndex = today.getMonth();
     if (monthSelect && monthSelect.value && monthSelect.value !== 'all') {
         const monthNum = getMonthNumber(monthSelect.value);
@@ -182,12 +183,12 @@ async function loadReservations() {
 
         let reservations = await API.reservations.getAll(queryMonth, queryYear);
         let data = Array.isArray(reservations) ? reservations : (reservations.data || []);
-        
+
         const loggedUser = getLoggedUser();
         const isAdmin = loggedUser && loggedUser.role && loggedUser.role.toUpperCase() === 'ADMIN';
 
         let targetDay = daySelect && daySelect.value && daySelect.value !== 'all' ? Number(daySelect.value) : currentDayNum;
-        
+
         let serviceId = serviceSelect && serviceSelect.value !== 'all' ? serviceSelect.value : null;
         let selectedServiceRawName = '';
         if (serviceSelect && serviceSelect.selectedOptions && serviceSelect.selectedOptions[0]) {
@@ -205,13 +206,13 @@ async function loadReservations() {
                     return false;
                 }
             }
-            
+
             const normalizedResStatus = (res.status || '').trim().toUpperCase();
 
             if (normalizedResStatus === 'PENDING') {
                 return false;
             }
-            
+
             const [resYear, resMonth, resDay] = res.service_date.split('-').map(Number);
 
             if (daySelect && daySelect.value !== 'all' && resDay !== targetDay) {
@@ -251,7 +252,7 @@ async function loadReservations() {
 function renderReservationsTable(reservations) {
     const tbody = document.querySelector('tbody.divide-y');
     let mobileContainer = document.getElementById('mobile-reservations-container');
-    
+
     if (!tbody) return;
     tbody.innerHTML = '';
     if (mobileContainer) mobileContainer.innerHTML = '';
@@ -276,16 +277,15 @@ function renderReservationsTable(reservations) {
         const statusKey = (res.status || '').trim().toUpperCase();
         const statusConfig = getStatusUIConfig(statusKey);
         const statusDisplayLabel = statusKey.replace(/_/g, ' ');
-        
+
         const isDisabled = statusKey === 'COMPLETED' || statusKey === 'CANCELLED';
         const disabledClass = isDisabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:bg-surface-container-high';
         const disabledAttr = isDisabled ? 'disabled' : '';
 
-        // 1. Renderizar Fila de Escritorio (Desktop Table Row)
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-surface-container-low/45 transition-colors cursor-pointer';
         tr.onclick = () => selectReservation(res.id);
-        
+
         tr.innerHTML = `
             <td class="py-4 px-4 align-top">
                 <div class="font-headline-sm text-[16px] text-on-surface font-semibold">${res.preferred_time || '08:00 AM'}</div>
@@ -341,7 +341,6 @@ function renderReservationsTable(reservations) {
         `;
         tbody.appendChild(tr);
 
-        // 2. Renderizar Tarjeta Móvil (Mobile Card View)
         if (mobileContainer) {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'p-4 space-y-3 hover:bg-surface-warm/50 transition-colors border-b border-outline-variant/20 cursor-pointer';
@@ -398,7 +397,7 @@ function renderReservationsTable(reservations) {
     });
 }
 
-window.selectReservation = async function(id) {
+window.selectReservation = async function (id) {
     try {
         const response = await API.reservations.getById(id);
         const res = response && response.data ? response.data : response;
@@ -409,14 +408,14 @@ window.selectReservation = async function(id) {
 
         const resId = res.id || res.reservation_id || 0;
         const formattedId = String(resId).padStart(4, '0');
-        
+
         const firstName = res.first_name || res.nombre || res.client_name || 'No';
         const lastName = res.last_name || res.apellido || '';
         const initials = getInitials(firstName, lastName);
-        
+
         const phone = res.phone_number || res.telefono || res.phone || 'No Phone';
         const totalPrice = res.total_price || res.precio_total || res.total || '0.00';
-        
+
         const serviceName = res.service_name || res.nombre_servicio || 'General Service';
         const serviceDate = res.service_date || res.fecha_servicio || 'N/A';
         const preferredTime = res.preferred_time || res.hora || '08:00 AM';
@@ -509,7 +508,12 @@ window.selectReservation = async function(id) {
     }
 }
 
-window.updateStatus = async function(id, newStatus) {
+window.updateStatus = async function (id, newStatus) {
+    if (newStatus === 'COMPLETED') {
+        showCompletionRatingModal(id);
+        return;
+    }
+
     try {
         await API.reservations.update(id, { status: newStatus });
         await loadReservations();
@@ -517,6 +521,65 @@ window.updateStatus = async function(id, newStatus) {
         console.error('Error updating status:', error);
         alert('Could not update status.');
     }
+};
+
+function showCompletionRatingModal(reservationId) {
+    const modalContent = `
+        <div class="space-y-4 text-left pt-2">
+            <div>
+                <label class="block text-xs font-semibold text-outline uppercase mb-1">Rate the Customer / Service Experience (1 - 5 Stars)</label>
+                <select id="modalStaffRating" class="w-full bg-surface-container-low p-2 rounded border border-outline-variant text-on-surface">
+                    <option value="5">⭐⭐⭐⭐⭐ (5 - Excellent)</option>
+                    <option value="4">⭐⭐⭐⭐ (4 - Very Good)</option>
+                    <option value="3">⭐⭐⭐ (3 - Average)</option>
+                    <option value="2">⭐⭐ (2 - Below Expectations)</option>
+                    <option value="1">⭐ (1 - Poor)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-outline uppercase mb-1">Staff Notes / Observations (Optional)</label>
+                <textarea id="modalStaffNotes" rows="3" placeholder="Add any details about the property, client cooperation, or special conditions..." class="w-full bg-surface-container-low p-2 rounded border border-outline-variant text-on-surface text-sm"></textarea>
+            </div>
+        </div>
+    `;
+
+    Modal.show({
+        type: 'info',
+        title: 'Complete Reservation & Review',
+        message: 'Please provide your final evaluation before closing this service ticket.',
+        htmlContent: modalContent,
+        confirmText: 'Submit & Complete',
+        showCancel: true,
+        onConfirm: async () => {
+            const rating = document.getElementById('modalStaffRating').value;
+            const notes = document.getElementById('modalStaffNotes').value.trim();
+
+            try {
+                await API.reservations.update(reservationId, { status: 'COMPLETED' });
+
+                try {
+                    await API.ratings.submitStaffRating(reservationId, {
+                        staff_rating: Number(rating),
+                        staff_notes: notes
+                    });
+                } catch (ratingErr) {
+                    console.warn('Could not save rating via endpoint (check backend implementation):', ratingErr);
+                }
+
+                Modal.close();
+                await loadReservations();
+
+                const detailsPanel = document.querySelector('.xl\\:col-span-4');
+                if (detailsPanel) {
+                    detailsPanel.innerHTML = `<div class="text-center py-10 text-outline text-xs">Select a reservation to view details.</div>`;
+                }
+            } catch (error) {
+                console.error('Error completing reservation:', error);
+                alert('An error occurred while completing the reservation.');
+            }
+            return false;
+        }
+    });
 }
 
 function setupFilters() {
@@ -532,7 +595,7 @@ function setupFilters() {
 }
 
 function setupClearFiltersTrigger() {
-    const clearButtons = Array.from(document.querySelectorAll('button')).filter(btn => 
+    const clearButtons = Array.from(document.querySelectorAll('button')).filter(btn =>
         btn.textContent.includes('Clear filters') || btn.querySelector('.material-symbols-outlined')?.textContent === 'restart_alt'
     );
 
@@ -570,21 +633,21 @@ function getInitials(firstName = '', lastName = '') {
 function getStatusUIConfig(status) {
     const s = (status || '').trim().toUpperCase();
     switch (s) {
-        case 'CONFIRMED': 
+        case 'CONFIRMED':
             return { class: 'bg-primary-fixed text-primary-container' };
-        case 'INITIATED': 
+        case 'INITIATED':
             return { class: 'bg-blue-100 text-blue-800' };
-        case 'ON_THE_WAY': 
+        case 'ON_THE_WAY':
             return { class: 'bg-amber-100 text-amber-800' };
-        case 'RESCHEDULED': 
+        case 'RESCHEDULED':
             return { class: 'bg-purple-100 text-purple-800' };
-        case 'COMPLETED': 
+        case 'COMPLETED':
             return { class: 'bg-emerald-100 text-emerald-800' };
-        case 'CANCELLED': 
+        case 'CANCELLED':
             return { class: 'bg-error-container text-on-error-container' };
-        case 'REJECTED': 
+        case 'REJECTED':
             return { class: 'bg-surface-variant text-on-surface-variant border border-outline-variant/55' };
-        default: 
+        default:
             return { class: 'bg-surface-container text-on-surface-variant' };
     }
 }
@@ -612,14 +675,9 @@ function updateDashboardMetrics(reservations) {
     const elPending = document.getElementById('metric-pending');
     const elActive = document.getElementById('metric-active');
     const elCompleted = document.getElementById('metric-completed');
-    const elTotalDesc = document.getElementById('metric-total-desc');
 
     if (elTotal) elTotal.textContent = total;
     if (elPending) elPending.textContent = pendingCount;
     if (elActive) elActive.textContent = activeCount;
     if (elCompleted) elCompleted.textContent = completedCount;
-
-    if (elTotalDesc) {
-        elTotalDesc.innerHTML = `<span class="w-2 h-2 rounded-full bg-surface-tint"></span> Showing ${total} active records`;
-    }
 }

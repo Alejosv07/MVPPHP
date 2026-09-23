@@ -83,7 +83,7 @@ class EmailService
         }
     }
 
-private static function buildPasswordResetTemplate(string $userName, string $code): string
+    private static function buildPasswordResetTemplate(string $userName, string $code): string
     {
         return "
         <!DOCTYPE html>
@@ -278,6 +278,82 @@ private static function buildPasswordResetTemplate(string $userName, string $cod
                     </p>
                 </div>
 
+                <div class='footer'>
+                    &copy; " . date('Y') . " LuxuriaPure Cleaning Services. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+
+    public static function sendOtpEmail(string $recipientEmail, string $code): bool
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'balrking072@gmail.com';
+            $mail->Password   = 'tzxyzvbbewjctwjy';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom('balrking072@gmail.com', 'LuxuriaPure Cleaning Services');
+            $mail->addAddress($recipientEmail, 'Valued Customer');
+
+            $mail->isHTML(true);
+            $mail->Subject = "Your Security Verification PIN - LuxuriaPure";
+            $mail->Body    = self::buildOtpTemplate($code);
+
+            return $mail->send();
+        } catch (Exception $e) {
+            error_log("Error sending OTP email: {$mail->ErrorInfo}");
+            return false;
+        }
+    }
+
+    private static function buildOtpTemplate(string $code): string
+    {
+        return "
+        <!DOCTYPE html>
+        <html lang='en'>
+        <head>
+            <meta charset='UTF-8'>
+            <title>Security Verification PIN</title>
+            <style>
+                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfbf9; margin: 0; padding: 40px 15px; color: #0f172a; }
+                .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d9d2c9; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
+                .brand-header { background-color: #0f172a; padding: 32px 20px; text-align: center; }
+                .brand-header h1 { font-family: Georgia, serif; color: #d4af37; margin: 0; font-size: 28px; font-weight: normal; letter-spacing: -0.025em; text-transform: uppercase; }
+                .content { padding: 40px 32px; }
+                .greeting { font-family: Georgia, serif; font-size: 22px; font-weight: normal; margin: 0 0 12px 0; color: #0f172a; }
+                .message { font-size: 15px; line-height: 1.6; color: #475569; margin: 0 0 28px 0; }
+                .code-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 28px; }
+                .code-text { font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #d4af37; font-family: monospace; }
+                .footer { background-color: #f1f5f9; padding: 24px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
+            </style>
+        </head>
+        <body>
+            <div class='wrapper'>
+                <div class='brand-header'>
+                    <h1>LuxuriaPure</h1>
+                </div>
+                <div class='content'>
+                    <h2 class='greeting'>Hello,</h2>
+                    <p class='message'>
+                        You have requested to securely view your booking history and submit feedback. Below is your 4-digit verification PIN, valid for 10 minutes:
+                    </p>
+                    <div class='code-box'>
+                        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; font-weight: 600;'>Your Security PIN</div>
+                        <div class='code-text'>{$code}</div>
+                    </div>
+                    <p style='font-size: 13px; color: #475569; line-height: 1.5; text-align: center;'>
+                        If you did not request this code, you can safely ignore this message.
+                    </p>
+                </div>
                 <div class='footer'>
                     &copy; " . date('Y') . " LuxuriaPure Cleaning Services. All rights reserved.
                 </div>

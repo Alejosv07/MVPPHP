@@ -63,6 +63,30 @@ export const API = {
             body: JSON.stringify(payload)
         })
     },
+    authCustomer: {
+        sendOtp: async (email) => apiFetch('/auth/send-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        }),
+        verifyOtp: async (email, code) => apiFetch('/auth/verify-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email, code })
+        })
+    },
+    ratings: {
+        submitCustomerRating: async (reservationId, data) => {
+            return await apiFetch(`/reservations/${reservationId}/customer-rating`, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        },
+        submitStaffRating: async (reservationId, data) => {
+            return await apiFetch(`/reservations?id=${reservationId}&action=staff-rating`, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
+    },
     admins: {
         getAll: async () => apiFetch('/admins'),
         getById: async (id) => apiFetch(`/admins?id=${id}`),

@@ -7,10 +7,10 @@ use PDO;
 use PDOException;
 
 class Database {
-    private string $host = '127.0.0.1';
-    private string $db_name = 'purenest_db';
-    private string $username = 'root';
-    private string $password = '1234';
+    private string $host = 'localhost'; 
+    private string $db_name = 'dbfd54m5pulgei'; 
+    private string $username = 'uleq3tipddiim'; 
+    private string $password = 'b1o`)2%(fww*'; 
     private ?PDO $conn = null;
 
     public function getConnection(): ?PDO {

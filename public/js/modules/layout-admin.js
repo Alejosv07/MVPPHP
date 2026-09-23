@@ -51,7 +51,7 @@ async function initApp() {
             initLogout();
         }
     } catch (error) {
-        console.error('Error al cargar la barra lateral:', error);
+        console.error('Error:', error);
     }
 }
 

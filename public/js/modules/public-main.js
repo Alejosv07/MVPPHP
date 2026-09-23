@@ -56,17 +56,60 @@ async function loadPublicServices() {
                         ? (service.image_url.startsWith('http') ? service.image_url : `http://localhost/purenest/public${service.image_url}`)
                         : 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800';
 
+                    let detailsList = [];
+                    try {
+                        const rawDetails = service.details || service.features || service.service_features;
+                        if (rawDetails) {
+                            const parsed = typeof rawDetails === 'string' ? JSON.parse(rawDetails) : rawDetails;
+                            if (Array.isArray(parsed)) {
+                                detailsList = parsed.map(item => {
+                                    if (typeof item === 'object' && item !== null) {
+                                        return item.name || item.feature_name || '';
+                                    }
+                                    return String(item);
+                                }).filter(Boolean);
+                            }
+                        }
+                    } catch (e) {
+                        const rawDetails = service.details || service.features || '';
+                        detailsList = typeof rawDetails === 'string' ? rawDetails.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    }
+
+                    let detailsHTML = '';
+                    if (Array.isArray(detailsList) && detailsList.length > 0) {
+                        detailsHTML = `
+                            <div class="mt-4 mb-4 space-y-1.5">
+                                <span class="font-label-caps text-xs text-outline uppercase tracking-wider block mb-2">INCLUDES:</span>
+                                <ul class="space-y-1 text-sm text-on-surface-variant">
+                                    ${detailsList.map(item => `
+                                        <li class="flex items-start gap-2">
+                                            <span class="material-symbols-outlined text-[16px] text-primary">check</span>
+                                            <span>${escapeHTML(String(item).trim())}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+
+                    const priceLabel = service.price_per_hour !== undefined ? `Starting at $${Number(service.price_per_hour).toFixed(0)}` : '';
+
                     const cardDiv = document.createElement('div');
-                    cardDiv.className = 'group cursor-pointer';
+                    cardDiv.className = 'bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow flex flex-col justify-between';
                     cardDiv.innerHTML = `
-                        <div class="relative h-[300px] rounded-xl overflow-hidden mb-6 bg-surface-container-high">
-                            <img alt="${escapeHTML(service.name)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="${imageUrl}">
+                        <div>
+                            <div class="relative h-[220px] rounded-xl overflow-hidden mb-6 bg-surface-container-high">
+                                <img alt="${escapeHTML(service.name)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105" src="${imageUrl}">
+                            </div>
+                            <h3 class="font-headline-sm text-headline-sm text-primary mb-1">${escapeHTML(service.name)}</h3>
+                            <p class="font-label-caps text-accent-rust font-bold mb-3">${priceLabel}</p>
+                            <p class="font-body-md text-body-md text-on-surface-variant mb-4">${escapeHTML(service.description || 'Professional cleaning service tailored to your needs.')}</p>
+                            ${detailsHTML}
                         </div>
-                        <h3 class="font-headline-sm text-headline-sm text-primary mb-3">${escapeHTML(service.name)}</h3>
-                        <p class="font-body-md text-body-md text-on-surface-variant mb-4">${escapeHTML(service.description || 'Professional cleaning service tailored to your needs.')}</p>
-                        <div class="flex items-center justify-between">
-                            <span class="font-label-caps text-primary font-bold">Professional Service</span>
-                            <a class="font-label-caps text-label-caps text-primary border-b border-primary pb-1 group-hover:text-primary/70 transition-colors inline-block" href="#booking-section">Request Service</a>
+                        <div class="pt-4 border-t border-outline-variant/10">
+                            <button type="button" onclick="selectServiceCard('${service.id}')" class="w-full border border-primary text-primary py-2.5 rounded font-label-caps text-label-caps hover:bg-primary hover:text-on-primary transition-colors text-center">
+                                SELECT ${escapeHTML(service.name).toUpperCase()}
+                            </button>
                         </div>
                     `;
                     servicesContainer.appendChild(cardDiv);
@@ -78,6 +121,19 @@ async function loadPublicServices() {
         Modal.error('Failed to load available services. Please try again later.', 'Connection Error');
     }
 }
+
+window.selectServiceCard = function (serviceId) {
+    const serviceSelect = document.getElementById('estimateService');
+    if (serviceSelect) {
+        serviceSelect.value = serviceId;
+        serviceSelect.dispatchEvent(new Event('change'));
+    }
+
+    const formSection = document.getElementById('estimateForm') || document.getElementById('hero');
+    if (formSection) {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
 
 function escapeHTML(str) {
     return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
@@ -181,7 +237,7 @@ function setupEstimateForm() {
             try { rawSpecificDates = JSON.parse(rawSpecificDates); } catch (e) { rawSpecificDates = []; }
         }
         const blockedSpecificDates = Array.isArray(rawSpecificDates) ? rawSpecificDates : [];
-        
+
         if (blockedSpecificDates.includes(serviceDate)) {
             triggerError('estimateDate', 'The business is closed on this specific date due to administrator restrictions. Please choose another date.');
             return;
@@ -191,10 +247,10 @@ function setupEstimateForm() {
         if (typeof rawGlobalDays === 'string') {
             try { rawGlobalDays = JSON.parse(rawGlobalDays); } catch (e) { rawGlobalDays = []; }
         }
-        
+
         const dayOfWeek = selectedDate.getDay();
         const normalizedGlobalDays = Array.isArray(rawGlobalDays) ? rawGlobalDays.map(Number) : [];
-        
+
         if (normalizedGlobalDays.includes(dayOfWeek)) {
             triggerError('estimateDate', 'Bookings are globally disabled for this day of the week. Please select another date.');
             return;
@@ -304,6 +360,29 @@ function setupEstimateForm() {
     });
 }
 
+window.submitClientRating = async function(reservationId) {
+    const rating = document.getElementById(`clientRating-${reservationId}`).value;
+    const notes = document.getElementById(`clientNotes-${reservationId}`).value.trim();
+
+    try {
+        await API.ratings.submitCustomerRating(reservationId, {
+            customer_rating: Number(rating),
+            customer_notes: notes
+        });
+        
+        Modal.show({
+            type: 'success',
+            title: 'Thank You!',
+            message: 'Your feedback has been successfully submitted.',
+            confirmText: 'Done',
+            showCancel: false
+        });
+    } catch (err) {
+        console.error(err);
+        Modal.error('Could not submit rating. Please try again.', 'Rating Error');
+    }
+};
+
 function setupSupportWidget() {
     document.addEventListener('click', async (e) => {
         const target = e.target.closest('button, a, div, span');
@@ -333,88 +412,130 @@ function setupSupportWidget() {
         if (text.includes('Track My Booking')) {
             e.preventDefault();
 
-            const trackingFormHTML = `
-                <div class="flex flex-col gap-3 pt-2">
-                    <label class="text-xs sm:text-sm text-on-surface-variant font-medium">Enter your Reservation ID or Email:</label>
-                    <input type="text" id="trackingIdentifierInput" placeholder="e.g. 12 or jane@example.com" class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none">
+            const step1HTML = `
+                <div class="flex flex-col gap-3 pt-2" id="otpStep1">
+                    <label class="text-xs sm:text-sm text-on-surface-variant font-medium">Enter your email address to receive a security PIN:</label>
+                    <input type="email" id="trackingEmailInput" placeholder="jane@example.com" class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none">
                 </div>
             `;
 
             Modal.show({
                 type: 'info',
-                title: 'Track My Booking',
-                message: 'Please provide your details below to check your booking history.',
-                htmlContent: trackingFormHTML,
-                confirmText: 'Search Booking',
+                title: 'Secure Booking Access',
+                message: 'We will send a 4-digit verification code to your email.',
+                htmlContent: step1HTML,
+                confirmText: 'Send Security PIN',
                 showCancel: true,
                 onConfirm: async () => {
-                    const inputElement = document.getElementById('trackingIdentifierInput');
-                    const identifier = inputElement ? inputElement.value.trim().toLowerCase() : '';
+                    const emailInput = document.getElementById('trackingEmailInput');
+                    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
 
-                    if (!identifier) {
-                        Modal.error('Please enter a valid ID or email address.', 'Tracking Error');
+                    if (!email || !email.includes('@')) {
+                        Modal.error('Please enter a valid email address.', 'Validation Error');
                         return false;
                     }
 
                     try {
-                        const response = await API.reservations.getAll();
-                        let reservations = response;
-                        if (response && typeof response === 'object' && !Array.isArray(response)) {
-                            reservations = response.data || response.reservations || [];
-                        }
+                        await API.authCustomer.sendOtp(email);
 
-                        const foundList = reservations.filter(r =>
-                            String(r.id) === identifier ||
-                            (r.email && String(r.email).toLowerCase() === identifier)
-                        );
+                        const step2HTML = `
+                            <div class="flex flex-col gap-3 pt-2" id="otpStep2">
+                                <p class="text-xs text-emerald-600 font-medium">A 4-digit PIN has been sent to <b>${email}</b>.</p>
+                                <label class="text-xs sm:text-sm text-on-surface-variant font-medium">Enter the 4-digit PIN:</label>
+                                <input type="text" maxlength="4" id="trackingPinInput" placeholder="1234" class="w-full text-center tracking-widest text-xl input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none">
+                            </div>
+                        `;
 
-                        Modal.close();
+                        Modal.show({
+                            type: 'info',
+                            title: 'Verify Security PIN',
+                            message: 'Check your inbox and enter your code below.',
+                            htmlContent: step2HTML,
+                            confirmText: 'Verify & View Bookings',
+                            showCancel: true,
+                            onConfirm: async () => {
+                                const pinInput = document.getElementById('trackingPinInput');
+                                const pinCode = pinInput ? pinInput.value.trim() : '';
 
-                        if (foundList.length > 0) {
-                            foundList.sort((a, b) => new Date(b.service_date) - new Date(a.service_date));
+                                if (!pinCode || pinCode.length !== 4) {
+                                    Modal.error('Please enter a valid 4-digit PIN.', 'Verification Error');
+                                    return false;
+                                }
 
-                            let listHTML = `<div class="space-y-3 max-h-[350px] overflow-y-auto pr-1 mt-2 text-left">`;
+                                try {
+                                    const response = await API.authCustomer.verifyOtp(email, pinCode);
+                                    let reservations = response.reservations || (response.data && response.data.reservations) || [];
 
-                            foundList.forEach(found => {
-                                const statusColor = found.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                                    found.status === 'CONFIRMED' ? 'bg-primary-fixed text-primary-container' :
-                                        'bg-tertiary-fixed text-tertiary-container';
+                                    if (reservations.length > 0) {
+                                        reservations.sort((a, b) => new Date(b.service_date) - new Date(a.service_date));
 
-                                const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
+                                        let listHTML = `<div class="space-y-3 max-h-[350px] overflow-y-auto pr-1 mt-2 text-left">`;
 
-                                listHTML += `
-                                    <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1.5 shadow-sm">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-xs font-bold text-primary">#RES-${String(found.id).padStart(4, '0')} - ${escapeHTML(found.service_name || 'Cleaning Service')}</span>
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${found.status || 'PENDING'}</span>
-                                        </div>
-                                        <div class="text-xs text-on-surface-variant flex flex-col gap-0.5">
-                                            <span><b>Date:</b> ${found.service_date} at ${found.preferred_time || 'N/A'}</span>
-                                            <span><b>Address:</b> ${escapeHTML(found.service_address || 'N/A')}</span>
-                                            <span><b>Total:</b> ${displayPrice}</span>
-                                        </div>
-                                    </div>
-                                `;
-                            });
-                            listHTML += `</div>`;
+                                        reservations.forEach(found => {
+                                            const statusColor = found.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
+                                                found.status === 'CONFIRMED' ? 'bg-primary-fixed text-primary-container' :
+                                                    'bg-tertiary-fixed text-tertiary-container';
 
-                            Modal.show({
-                                type: 'info',
-                                title: `Booking History (${foundList.length} found)`,
-                                message: `Showing all services associated with: ${identifier}`,
-                                confirmText: 'Close',
-                                showCancel: false,
-                                htmlContent: listHTML
-                            });
-                        } else {
-                            Modal.error('No reservations were found matching that ID or email.', 'Tracking Result');
-                        }
+                                            const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
+
+                                            const isCompleted = found.status === 'COMPLETED';
+                                            const ratingSection = isCompleted ? `
+                                                <div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-1.5">
+                                                    <span class="text-[11px] font-bold text-primary">Rate your Cleaner / Staff:</span>
+                                                    <div class="flex items-center gap-2">
+                                                        <select id="clientRating-${found.id}" class="text-xs bg-surface-container-low p-1 rounded border border-outline-variant">
+                                                            <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                                                            <option value="4">⭐⭐⭐⭐ (4)</option>
+                                                            <option value="3">⭐⭐⭐ (3)</option>
+                                                            <option value="2">⭐⭐ (2)</option>
+                                                            <option value="1">⭐ (1)</option>
+                                                        </select>
+                                                        <input type="text" id="clientNotes-${found.id}" placeholder="Leave a note..." class="text-xs p-1 bg-surface-container-low rounded border border-outline-variant flex-1">
+                                                        <button onclick="submitClientRating(${found.id})" class="px-2.5 py-1 bg-primary text-on-primary rounded text-xs font-semibold">Send</button>
+                                                    </div>
+                                                </div>
+                                            ` : '';
+
+                                            listHTML += `
+                                                <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1.5 shadow-sm">
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-xs font-bold text-primary">#RES-${String(found.id).padStart(4, '0')} - ${escapeHTML(found.service_name || 'Cleaning Service')}</span>
+                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${found.status || 'PENDING'}</span>
+                                                    </div>
+                                                    <div class="text-xs text-on-surface-variant flex flex-col gap-0.5">
+                                                        <span><b>Date:</b> ${found.service_date} at ${found.preferred_time || 'N/A'}</span>
+                                                        <span><b>Address:</b> ${escapeHTML(found.service_address || 'N/A')}</span>
+                                                        <span><b>Total:</b> ${displayPrice}</span>
+                                                    </div>
+                                                    ${ratingSection}
+                                                </div>
+                                            `;
+                                        });
+                                        listHTML += `</div>`;
+
+                                        Modal.show({
+                                            type: 'info',
+                                            title: `Verified Booking History (${reservations.length})`,
+                                            message: `Authenticated successfully for: ${email}`,
+                                            confirmText: 'Close',
+                                            showCancel: false,
+                                            htmlContent: listHTML
+                                        });
+                                    } else {
+                                        Modal.error('No reservations were found for this email address.', 'Result');
+                                    }
+                                } catch (error) {
+                                    console.error('Error verifying PIN:', error);
+                                    Modal.error('Invalid or expired PIN code. Please try again.', 'Verification Error');
+                                }
+                                return false;
+                            }
+                        });
+
                     } catch (error) {
-                        console.error('Error tracking reservation:', error);
-                        Modal.close();
-                        Modal.error('Could not retrieve booking details at this moment. Please try again later.', 'Error');
+                        console.error('Error sending OTP:', error);
+                        Modal.error('Could not send verification code. Please check the email address.', 'Error');
                     }
-
                     return false;
                 }
             });

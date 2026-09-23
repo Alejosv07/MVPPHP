@@ -41,6 +41,7 @@ use App\Controllers\ReservationController;
 use App\Controllers\AdminController;
 use App\Controllers\AuditController;
 use App\Controllers\SystemScheduleController;
+use App\Controllers\CustomerAuthController;
 
 $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
@@ -80,19 +81,27 @@ if ($id === null && isset($_GET['id']) && is_numeric($_GET['id'])) {
 
 match ($resource) {
     'auth' => match ($param1) {
-        'login'          => (new AuthController())->login(),
+        'login'           => (new AuthController())->login(),
         'forgot-password' => (new AuthController())->forgotPassword(),
         'reset-password'  => (new AuthController())->resetPassword(),
-        default          => Response::json(['message' => 'Invalid authentication action'], 404)
+        'send-otp'        => (new CustomerAuthController())->sendOtp(),
+        'verify-otp'      => (new CustomerAuthController())->verifyOtp(),
+        default           => Response::json(['message' => 'Invalid authentication action'], 404)
+    },
+'reservations' => match (true) {
+        $id !== null && $subResource === 'customer-rating' && $method === 'POST' 
+            => (new CustomerAuthController())->submitCustomerRating($id),
+        $id !== null && isset($_GET['action']) && $_GET['action'] === 'staff-rating' && $method === 'POST'
+            => (new CustomerAuthController())->submitStaffRating($id),
+        default => (new ReservationController())->handle($method, $id, $subResource)
     },
 
-    'categories'     => (new CategoryController())->handle($method, $id),
-    'features'       => (new FeatureController())->handle($method, $id),
-    'services'       => (new ServiceController())->handle($method, $id),
-    'customers'      => (new CustomerController())->handle($method, $id),
-    'reservations'   => (new ReservationController())->handle($method, $id, $subResource),
-    'admins'         => (new AdminController())->handle($method, $id, $subResource),
-    'audit-logs'     => (new AuditController())->handle($param1),
+    'categories'      => (new CategoryController())->handle($method, $id),
+    'features'        => (new FeatureController())->handle($method, $id),
+    'services'        => (new ServiceController())->handle($method, $id),
+    'customers'       => (new CustomerController())->handle($method, $id),
+    'admins'          => (new AdminController())->handle($method, $id, $subResource),
+    'audit-logs'      => (new AuditController())->handle($param1),
     'system-schedule' => (new SystemScheduleController())->handle($method),
-    default          => Response::json(['message' => 'Endpoint not found'], 404)
+    default           => Response::json(['message' => 'Endpoint not found'], 404)
 };
