@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Models;
@@ -6,15 +7,50 @@ namespace App\Models;
 use App\Config\Database;
 use PDO;
 
-class ReservationModel {
+class ReservationModel
+{
     private PDO $db;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db = (new Database())->getConnection();
     }
 
-    public function getAll(): array {
-        $stmt = $this->db->query("
+public function getAll(?int $staffId = null): array
+    {
+        $sql = "
+            SELECT 
+                r.*, 
+                c.first_name, 
+                c.last_name, 
+                c.email, 
+                c.phone_number,
+                s.name AS service_name,
+                u.name AS staff_name
+            FROM reservations r
+            LEFT JOIN customers c ON r.customer_id = c.id
+            LEFT JOIN services s ON r.service_id = s.id
+            LEFT JOIN users u ON r.staff_id = u.id
+        ";
+
+        $params = [];
+        if ($staffId !== null) {
+            $sql .= " WHERE r.staff_id = :staff_id";
+            $params[':staff_id'] = $staffId;
+        }
+
+        $sql .= " ORDER BY r.id DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getByMonthAndYear(int $month, int $year, ?int $staffId = null): array
+    {
+        $formattedMonth = str_pad((string)$month, 2, '0', STR_PAD_LEFT);
+
+        $sql = "
             SELECT 
                 r.*, 
                 c.first_name, 
@@ -25,12 +61,25 @@ class ReservationModel {
             FROM reservations r
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
-            ORDER BY r.id DESC
-        ");
+            WHERE r.service_date LIKE :yearMonth
+        ";
+
+        $params = [':yearMonth' => "{$year}-{$formattedMonth}%"];
+
+        if ($staffId !== null) {
+            $sql .= " AND r.staff_id = :staff_id";
+            $params[':staff_id'] = $staffId;
+        }
+
+        $sql .= " ORDER BY r.id DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getById(int $id): ?array {
+    public function getById(int $id): ?array
+    {
         $stmt = $this->db->prepare("
             SELECT 
                 r.*, 
@@ -38,10 +87,12 @@ class ReservationModel {
                 c.last_name, 
                 c.email, 
                 c.phone_number,
-                s.name AS service_name
+                s.name AS service_name,
+                u.name AS staff_name
             FROM reservations r
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
+            LEFT JOIN users u ON r.staff_id = u.id
             WHERE r.id = :id
             LIMIT 1
         ");
@@ -50,7 +101,8 @@ class ReservationModel {
         return $res ?: null;
     }
 
-    public function createWithCustomer(array $data): int {
+    public function createWithCustomer(array $data): int
+    {
         $this->db->beginTransaction();
 
         try {
@@ -104,20 +156,23 @@ class ReservationModel {
 
             $stmtHistory = $this->db->prepare("
                 INSERT INTO reservation_history (reservation_id, user_id, previous_status, new_status, comment)
-                VALUES (:reservation_id, NULL, NULL, 'PENDING', 'Reservation created successfully.')
+                VALUES (:reservation_id, :user_id, NULL, 'PENDING', 'Reservation created successfully.')
             ");
-            $stmtHistory->execute([':reservation_id' => $reservationId]);
+            $stmtHistory->execute([
+                ':reservation_id' => $reservationId,
+                ':user_id'        => $data['user_id'] ?? null
+            ]);
 
             $this->db->commit();
             return $reservationId;
-
         } catch (\Exception $e) {
             $this->db->rollBack();
             throw $e;
         }
     }
 
-    public function update(int $id, array $data): bool {
+    public function update(int $id, array $data): bool
+    {
         $this->db->beginTransaction();
 
         try {
@@ -173,14 +228,14 @@ class ReservationModel {
 
             $this->db->commit();
             return true;
-
         } catch (\Exception $e) {
             $this->db->rollBack();
             throw $e;
         }
     }
 
-    public function updateStatus(int $id, string $status, ?int $userId, ?string $comment): bool {
+    public function updateStatus(int $id, string $status, ?int $userId, ?string $comment): bool
+    {
         $stmtPrev = $this->db->prepare("SELECT status FROM reservations WHERE id = :id LIMIT 1");
         $stmtPrev->execute([':id' => $id]);
         $prev = $stmtPrev->fetch(PDO::FETCH_ASSOC);
@@ -202,14 +257,15 @@ class ReservationModel {
                 ':user_id'     => $userId,
                 ':prev_status' => $previousStatus,
                 ':new_status'  => $status,
-                ':comment'     => $comment ?? "Status changed to {$status}"
+                ':comment'     => $comment ?? "Status changed from {$previousStatus} to {$status}"
             ]);
         }
 
         return $updated;
     }
 
-    public function getHistory(int $reservationId): array {
+    public function getHistory(int $reservationId): array
+    {
         $stmt = $this->db->prepare("
             SELECT rh.*, u.name AS user_name
             FROM reservation_history rh
@@ -219,5 +275,55 @@ class ReservationModel {
         ");
         $stmt->execute([':id' => $reservationId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function updateStatusWithDetails(int $id, string $status, ?int $userId, ?string $comment, ?float $totalPrice, ?string $serviceDate, ?string $preferredTime, ?int $staffId = null): bool
+    {
+        $stmtPrev = $this->db->prepare("SELECT status, total_price, service_date, preferred_time, staff_id FROM reservations WHERE id = :id LIMIT 1");
+        $stmtPrev->execute([':id' => $id]);
+        $prev = $stmtPrev->fetch(PDO::FETCH_ASSOC);
+
+        if (!$prev) return false;
+
+        $previousStatus = $prev['status'];
+        $finalPrice = $totalPrice !== null ? $totalPrice : $prev['total_price'];
+        $finalDate = $serviceDate !== null ? $serviceDate : $prev['service_date'];
+        $finalTime = $preferredTime !== null ? $preferredTime : $prev['preferred_time'];
+        $finalStaff = $staffId !== null ? $staffId : $prev['staff_id'];
+
+        $stmt = $this->db->prepare("
+            UPDATE reservations 
+            SET status = :status, 
+                total_price = :total_price, 
+                service_date = :service_date, 
+                preferred_time = :preferred_time,
+                staff_id = :staff_id
+            WHERE id = :id
+        ");
+
+        $updated = $stmt->execute([
+            ':status' => $status,
+            ':total_price' => $finalPrice,
+            ':service_date' => $finalDate,
+            ':preferred_time' => $finalTime,
+            ':staff_id' => $finalStaff,
+            ':id' => $id
+        ]);
+
+        if ($updated) {
+            $historyStmt = $this->db->prepare("
+                INSERT INTO reservation_history (reservation_id, user_id, previous_status, new_status, comment)
+                VALUES (:id, :user_id, :prev_status, :new_status, :comment)
+            ");
+            $historyStmt->execute([
+                ':id'          => $id,
+                ':user_id'     => $userId,
+                ':prev_status' => $previousStatus,
+                ':new_status'  => $status,
+                ':comment'     => $comment ?? "Status/Staff updated successfully"
+            ]);
+        }
+
+        return $updated;
     }
 }

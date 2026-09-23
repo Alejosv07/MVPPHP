@@ -47,7 +47,7 @@ async function loadPublicServices() {
                     const opt = document.createElement('option');
                     opt.value = service.id;
                     const price = service.price_per_hour !== undefined ? Number(service.price_per_hour).toFixed(2) : '0.00';
-                    opt.textContent = `${service.name} ($${price}/hr)`;
+                    opt.textContent = `${service.name} (From $${price}/hr)`;
                     serviceSelect.appendChild(opt);
                 }
 
@@ -65,8 +65,8 @@ async function loadPublicServices() {
                         <h3 class="font-headline-sm text-headline-sm text-primary mb-3">${escapeHTML(service.name)}</h3>
                         <p class="font-body-md text-body-md text-on-surface-variant mb-4">${escapeHTML(service.description || 'Professional cleaning service tailored to your needs.')}</p>
                         <div class="flex items-center justify-between">
-                            <span class="font-label-caps text-primary font-bold">From $${Number(service.price_per_hour || 0).toFixed(2)}/hr</span>
-                            <a class="font-label-caps text-label-caps text-primary border-b border-primary pb-1 group-hover:text-primary/70 transition-colors inline-block" href="#booking-section">Book This</a>
+                            <span class="font-label-caps text-primary font-bold">Professional Service</span>
+                            <a class="font-label-caps text-label-caps text-primary border-b border-primary pb-1 group-hover:text-primary/70 transition-colors inline-block" href="#booking-section">Request Service</a>
                         </div>
                     `;
                     servicesContainer.appendChild(cardDiv);
@@ -168,19 +168,86 @@ function setupEstimateForm() {
 
         if (!serviceAddress) { triggerError('estimateAddress', 'Please enter your service address.'); return; }
 
+        let systemSchedule = {};
+        try {
+            const scheduleResponse = await API.systemSchedule.get();
+            systemSchedule = scheduleResponse.data || scheduleResponse || {};
+        } catch (err) {
+            console.warn('Could not fetch system schedule restrictions:', err);
+        }
+
+        let rawSpecificDates = systemSchedule.blocked_specific_dates || [];
+        if (typeof rawSpecificDates === 'string') {
+            try { rawSpecificDates = JSON.parse(rawSpecificDates); } catch (e) { rawSpecificDates = []; }
+        }
+        const blockedSpecificDates = Array.isArray(rawSpecificDates) ? rawSpecificDates : [];
+        
+        if (blockedSpecificDates.includes(serviceDate)) {
+            triggerError('estimateDate', 'The business is closed on this specific date due to administrator restrictions. Please choose another date.');
+            return;
+        }
+
+        let rawGlobalDays = systemSchedule.global_blocked_days || [];
+        if (typeof rawGlobalDays === 'string') {
+            try { rawGlobalDays = JSON.parse(rawGlobalDays); } catch (e) { rawGlobalDays = []; }
+        }
+        
+        const dayOfWeek = selectedDate.getDay();
+        const normalizedGlobalDays = Array.isArray(rawGlobalDays) ? rawGlobalDays.map(Number) : [];
+        
+        if (normalizedGlobalDays.includes(dayOfWeek)) {
+            triggerError('estimateDate', 'Bookings are globally disabled for this day of the week. Please select another date.');
+            return;
+        }
+
+        const globalStart = systemSchedule.global_block_time_start;
+        const globalEnd = systemSchedule.global_block_time_end;
+        if (globalStart && globalEnd) {
+            const timeToMinutes = (t) => {
+                const [h, m] = t.split(':').map(Number);
+                return h * 60 + m;
+            };
+
+            const selectedMinutes = timeToMinutes(preferredTime);
+            const startMinutes = timeToMinutes(globalStart);
+            const endMinutes = timeToMinutes(globalEnd);
+
+            if (selectedMinutes >= startMinutes && selectedMinutes <= endMinutes) {
+                triggerError('estimateTime', `Bookings are globally blocked between ${globalStart} and ${globalEnd}. Please select a different time.`);
+                return;
+            }
+        }
+
         const service = loadedServices.find(s => String(s.id) === String(serviceId));
         if (!service) return;
 
-        const baseRate = Number(service.price_per_hour);
-        const baseDuration = Number(service.estimated_duration_hours || 2);
-        const sizeMultiplier = 1 + ((bedrooms + (bathrooms * 0.5) - 1.5) * 0.2);
-        const estimatedTotal = baseRate * baseDuration * Math.max(sizeMultiplier, 1);
+        let blockedDays = [];
+        try {
+            blockedDays = service.blocked_days ? (Array.isArray(service.blocked_days) ? service.blocked_days : JSON.parse(service.blocked_days)) : [];
+        } catch (err) {
+            blockedDays = [];
+        }
 
-        const resultContainer = document.getElementById('estimateResultContainer');
-        const priceDisplay = document.getElementById('estimatePriceDisplay');
-        if (resultContainer && priceDisplay) {
-            priceDisplay.textContent = `$${estimatedTotal.toFixed(2)} (${selectedFrequency})`;
-            resultContainer.classList.remove('hidden');
+        const normalizedBlockedDays = blockedDays.map(Number);
+        if (normalizedBlockedDays.includes(dayOfWeek)) {
+            triggerError('estimateDate', 'Selected day is blocked for this specific service. Please choose another date.');
+            return;
+        }
+
+        if (service.block_time_start && service.block_time_end) {
+            const timeToMinutes = (t) => {
+                const [h, m] = t.split(':').map(Number);
+                return h * 60 + m;
+            };
+
+            const selectedMinutes = timeToMinutes(preferredTime);
+            const startMinutes = timeToMinutes(service.block_time_start);
+            const endMinutes = timeToMinutes(service.block_time_end);
+
+            if (selectedMinutes >= startMinutes && selectedMinutes <= endMinutes) {
+                triggerError('estimateTime', `This service cannot be scheduled between ${service.block_time_start} and ${service.block_time_end}.`);
+                return;
+            }
         }
 
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -206,7 +273,7 @@ function setupEstimateForm() {
                 bedrooms: bedrooms,
                 bathrooms: bathrooms,
                 frequency: selectedFrequency,
-                total_price: Number(estimatedTotal.toFixed(2)),
+                total_price: 0.00,
                 status: 'PENDING',
                 special_instructions: finalInstructions
             };
@@ -215,13 +282,12 @@ function setupEstimateForm() {
 
             Modal.show({
                 type: 'success',
-                title: 'Reservation Confirmed!',
-                message: `Thank you ${firstName}! Your cleaning has been successfully booked for $${estimatedTotal.toFixed(2)} (${selectedFrequency}). We've sent a confirmation to your email.`,
+                title: 'Service Request Sent!',
+                message: `Thank you ${firstName}! Your service request has been successfully submitted. Our team will review your details and send you a price estimate shortly.`,
                 confirmText: 'Done',
                 showCancel: false,
                 onConfirm: () => {
                     form.reset();
-                    if (resultContainer) resultContainer.classList.add('hidden');
                     setMinDateForService();
                 }
             });
@@ -245,7 +311,7 @@ function setupSupportWidget() {
 
         const text = target.textContent ? target.textContent.trim() : '';
 
-        if (text.includes('Request an Estimate')) {
+        if (text.includes('Request an Estimate') || text.includes('Request Service')) {
             e.preventDefault();
             const formSection = document.getElementById('estimateForm') || document.getElementById('hero');
             if (formSection) {
@@ -314,6 +380,8 @@ function setupSupportWidget() {
                                     found.status === 'CONFIRMED' ? 'bg-primary-fixed text-primary-container' :
                                         'bg-tertiary-fixed text-tertiary-container';
 
+                                const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
+
                                 listHTML += `
                                     <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1.5 shadow-sm">
                                         <div class="flex justify-between items-center">
@@ -321,9 +389,9 @@ function setupSupportWidget() {
                                             <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${found.status || 'PENDING'}</span>
                                         </div>
                                         <div class="text-xs text-on-surface-variant flex flex-col gap-0.5">
-                                            <span>📅 <b>Date:</b> ${found.service_date} at ${found.preferred_time || 'N/A'}</span>
-                                            <span>📍 <b>Address:</b> ${escapeHTML(found.service_address || 'N/A')}</span>
-                                            <span>💰 <b>Total:</b> $${Number(found.total_price || 0).toFixed(2)}</span>
+                                            <span><b>Date:</b> ${found.service_date} at ${found.preferred_time || 'N/A'}</span>
+                                            <span><b>Address:</b> ${escapeHTML(found.service_address || 'N/A')}</span>
+                                            <span><b>Total:</b> ${displayPrice}</span>
                                         </div>
                                     </div>
                                 `;

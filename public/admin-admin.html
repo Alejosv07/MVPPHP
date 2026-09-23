@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+
+<body
+    class="bg-background text-on-background min-h-screen flex flex-col md:flex-row selection:bg-primary-fixed selection:text-primary-container">
+    <div id="sideAdminMenu"></div>
+
+    <div id="sidebar-backdrop"
+        onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <div
+        class="md:hidden fixed top-0 left-0 w-full z-10 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 flex-shrink-0">
+                <img alt="Admin User Profile" class="w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbBo2Ftpqk0meUql9w_WjDlyGnnsIj_3erLBPH-jIlcxFmJg2wZ-NJTPfALW0szHLgXffQI3TIvWNeAz3ALftLmt1kuJkDfZbj6lAN8qugxplf3bxm1h-6DTDFpF4PgB53LF5MVCNAigSaeVtB2apGiFVEpjR_VXuOb8gbUg5WrKi83JTWc59c0Qo1E9ysfRXEwNHj0jBYIl769v1z5zmHVLR66NO_SeYmRmjldFARfEpPB3dPgpyL">
+            </div>
+            <span class="font-headline-sm text-sm text-primary font-bold">PureNest Admin</span>
+        </div>
+        <button
+            onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')"
+            class="print:hidden p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+    <!-- Main Content Area -->
+    <main class="mb-20 lg:mb-0 flex-1 md:ml-64 overflow-y-auto w-full relative bg-background">
+        <!-- Header -->
+        <header
+            class="flex-wrap gap-2 lg:gap-2 bg-background/80 backdrop-blur-md px-margin-mobile md:px-margin-desktop pb-6 pt-20 lg:pt-6 flex justify-between items-center border-b border-outline-variant/30">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-primary"><span
+                        class="material-symbols-outlined text-primary text-[28px]">admin_panel_settings</span>Administrators
+                    Management</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage system administrators,
+                    permissions, security credentials, and account statuses.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="printAdminsBtn"
+                    class="print:hidden border border-outline-variant/50 bg-surface-container-lowest text-primary py-2.5 px-4 rounded-DEFAULT font-label-caps text-label-caps hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    Print
+                </button>
+                <a href="admin-reservation.html"
+                    class="print:hidden bg-primary text-on-primary font-label-caps text-label-caps px-6 py-3 rounded flex items-center gap-2 hover:opacity-90 transition-opacity">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    NEW ADMINISTRATOR
+                </a>
+            </div>
+        </header>
+        <div class="px-margin-mobile md:px-margin-desktop py-8 max-w-container-max mx-auto w-full">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div
+                    class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-[0_4px_40px_rgba(27,48,34,0.04)] flex items-center justify-between">
+                    <div>
+                        <p
+                            class="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant font-medium">
+                            Total Administrator</p>
+                        <p class="font-headline-md text-headline-md font-bold text-primary mt-1">8</p>
+                        <p class="text-[12px] text-on-surface-variant mt-1 flex items-center gap-1"><span
+                                class="material-symbols-outlined text-[16px] text-primary">verified_user</span> System
+                            operators</p>
+                    </div>
+                    <div
+                        class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-[24px]">group</span>
+                    </div>
+                </div>
+                <div
+                    class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-[0_4px_40px_rgba(27,48,34,0.04)] flex items-center justify-between">
+                    <div>
+                        <p
+                            class="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant font-medium">
+                            Active Administrator</p>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <p class="font-headline-md text-headline-md font-bold text-primary">7</p>
+                            <span
+                                class="text-[12px] font-medium text-primary-container bg-primary-fixed px-2 py-0.5 rounded-full">87.5%</span>
+                        </div>
+                        <p class="text-[12px] text-on-surface-variant mt-1">is_active = true</p>
+                    </div>
+                    <div
+                        class="w-12 h-12 rounded-lg bg-primary-fixed/40 flex items-center justify-center text-primary-container">
+                        <span class="material-symbols-outlined text-[24px]">check_circle</span>
+                    </div>
+                </div>
+                <div
+                    class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-[0_4px_40px_rgba(27,48,34,0.04)] flex items-center justify-between">
+                    <div>
+                        <p
+                            class="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant font-medium">
+                            Admins</p>
+                        <p class="font-headline-md text-headline-md font-bold text-primary mt-1">2</p>
+                        <p class="text-[12px] text-on-surface-variant mt-1">Full root privileges</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-surface-warm flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-[24px]">security</span>
+                    </div>
+                </div>
+                <div
+                    class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-[0_4px_40px_rgba(27,48,34,0.04)] flex items-center justify-between">
+                    <div>
+                        <p
+                            class="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant font-medium">
+                            Pending Reset Tokens</p>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <p class="font-headline-md text-headline-md font-bold text-accent-rust">1</p>
+                            <span
+                                class="text-[11px] font-medium bg-tertiary-fixed text-on-tertiary-fixed-variant px-2 py-0.5 rounded-full">Exp
+                                in 2h</span>
+                        </div>
+                        <p class="text-[12px] text-on-surface-variant mt-1">reset_code active</p>
+                    </div>
+                    <div
+                        class="w-12 h-12 rounded-lg bg-tertiary-fixed/30 flex items-center justify-center text-accent-rust">
+                        <span class="material-symbols-outlined text-[24px]">key</span>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="mb-6 p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3 flex-1 min-w-[280px] max-w-md">
+                    <div class="relative w-full">
+                        <span
+                            class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+                        <input
+                            class="w-full pl-10 pr-4 py-2 bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md placeholder:text-outline-muted transition-all"
+                            placeholder="Search by name, email, or role..." type="text">
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <label class="font-label-caps text-[11px] uppercase text-on-surface-variant">Role:</label>
+                        <select
+                            class="bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT px-3 py-2 text-[14px] font-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none min-w-[130px]">
+                            <option>All Roles</option>
+                            <option>Admin</option>
+                            <option>Staff</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="font-label-caps text-[11px] uppercase text-on-surface-variant">Status:</label>
+                        <select
+                            class="bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT px-3 py-2 text-[14px] font-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none min-w-[140px]">
+                            <option>All Statuses</option>
+                            <option>Active (is_active=true)</option>
+                            <option>Inactive (is_active=false)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="font-label-caps text-[11px] uppercase text-on-surface-variant">Token:</label>
+                        <select
+                            class="bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT px-3 py-2 text-[14px] font-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none min-w-[130px]">
+                            <option>All</option>
+                            <option>Active Reset Token</option>
+                            <option>No Token</option>
+                            <option>Expired Token</option>
+                        </select>
+                    </div>
+                    <button
+                        class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-DEFAULT transition-colors"
+                        title="Clear filters">
+                        <span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
+                    </button>
+                </div>
+            </div>
+
+            <div
+                class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-[0_4px_40px_rgba(27,48,34,0.04)] overflow-hidden mb-12">
+                
+                <!-- VISTA MÓVIL: Tarjetas Adaptativas -->
+                <div id="mobile-admins-container" class="block md:hidden divide-y divide-outline-variant/20 bg-surface/30">
+                    <!-- Inyectado dinámicamente por JS -->
+                </div>
+
+                <!-- VISTA ESCRITORIO: Tabla Clásica -->
+                <div class="overflow-x-auto hidden md:block">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-outline-variant/30 bg-surface-warm/30">
+                                <th
+                                    class="py-3.5 px-5 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    Administrator</th>
+                                <th
+                                    class="py-3.5 px-5 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    Role</th>
+                                <th
+                                    class="py-3.5 px-5 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    Password Hash</th>
+                                <th
+                                    class="py-3.5 px-5 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    Reset Token / Code</th>
+                                <th
+                                    class="py-3.5 px-5 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    Status</th>
+                                <th
+                                    class="py-3.5 px-5 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    Timestamps</th>
+                                <th
+                                    class="py-3.5 px-5 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider text-right">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant/20 font-body-md text-[14px]">
+                            <!-- Rows injected dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination Footer -->
+                <div
+                    class="p-4 border-t border-outline-variant/30 flex items-center justify-between bg-surface-container-lowest">
+                    <span id="pagination-info" class="font-body-md text-[14px] text-on-surface-variant">Showing 0 to 0
+                        of 0 administrators</span>
+                    <div id="pagination-buttons" class="flex items-center space-x-2">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div
+            class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm overflow-y-auto">
+            <div
+                class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-2xl w-full max-w-xl my-8 overflow-hidden transform transition-all text-left flex flex-col">
+                <!-- Modal Header -->
+                <div
+                    class="p-6 border-b border-outline-variant/20 flex items-center justify-between bg-surface-warm/40">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined text-[22px]">manage_accounts</span>
+                        </div>
+                        <div>
+                            <h3 class="font-headline-sm text-headline-sm text-primary font-bold">Administrator Details
+                            </h3>
+                            <p class="font-body-md text-[13px] text-on-surface-variant">Create or modify system
+                                administrator credentials &amp; permissions.</p>
+                        </div>
+                    </div>
+                    <button
+                        class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-DEFAULT transition-colors">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+                <!-- Modal Form Body -->
+                <div class="p-6 space-y-5 max-h-[calc(85vh-160px)] overflow-y-auto">
+                    <!-- Full Name -->
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Full
+                            Name *</label>
+                        <input
+                            class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/50 rounded-DEFAULT focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-primary"
+                            placeholder="e.g. Eleanor Vance" type="text" value="Eleanor Vance">
+                    </div>
+                    <!-- Email Address -->
+                    <div>
+                        <label
+                            class="block font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Email
+                            Address *</label>
+                        <input
+                            class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/50 rounded-DEFAULT focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-primary"
+                            placeholder="admin@purenest.com" type="email" value="eleanor.vance@purenest.com">
+                    </div>
+                    <!-- Password with generator & toggle -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Password
+                                (Hashed / bcrypt)</label>
+                            <button id="generatePasswordBtn"
+                                class="text-[12px] text-primary hover:underline flex items-center gap-1 font-medium"
+                                type="button">
+                                <span class="material-symbols-outlined text-[14px]">autorenew</span> Generate Secure
+                                Password
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <input id="modal-password"
+                                class="w-full pl-4 pr-10 py-2.5 bg-surface-container-lowest border border-outline-variant/50 rounded-DEFAULT focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-primary"
+                                type="password" value="SuperSecret123!$">
+                            <button id="togglePasswordBtn"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary"
+                                type="button">
+                                <span id="togglePasswordIcon"
+                                    class="material-symbols-outlined text-[18px]">visibility</span>
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-on-surface-variant mt-1">Stored securely as a salted bcrypt hash in
+                            the database.</p>
+                    </div>
+                    <!-- Role and is_active switch row -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div>
+                            <label
+                                class="block font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">System
+                                Role *</label>
+                            <select
+                                class="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/50 rounded-DEFAULT focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-primary">
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="STAFF">STAFF</option>
+                            </select>
+                        </div>
+                        <!-- Status toggle -->
+                        <div class="sm:pt-6">
+                            <label
+                                class="flex items-center justify-between p-2.5 bg-surface-container-low/40 rounded-DEFAULT border border-outline-variant/30 cursor-pointer">
+                                <div>
+                                    <span class="font-medium text-body-md text-primary block">Active Account</span>
+                                    <span class="text-[11px] text-on-surface-variant font-mono">is_active = true</span>
+                                </div>
+                                <div class="relative inline-block w-10 h-6 shrink-0">
+                                    <div
+                                        class="w-10 h-6 bg-primary rounded-full transition-colors flex items-center justify-end px-1">
+                                        <div class="w-4 h-4 bg-on-primary rounded-full"></div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Security & Reset Code Section (DB Attributes: reset_code, reset_expires_at) -->
+                    <div class="p-4 bg-surface-warm/50 rounded-xl border border-outline-variant/30 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span
+                                class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]">lock_reset</span> Password Reset
+                                Token (reset_code)
+                            </span>
+                            <button id="btnIssueReset"
+                                class="text-[12px] font-medium text-primary hover:underline flex items-center gap-1"
+                                type="button">
+                                <span class="material-symbols-outlined text-[14px]">add_link</span> Issue Reset Link
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label
+                                    class="block text-[11px] text-on-surface-variant mb-1 font-mono">reset_code</label>
+                                <input
+                                    class="w-full px-3 py-1.5 bg-surface-container-lowest/60 border border-outline-variant/30 rounded text-[13px] text-on-surface-variant font-mono"
+                                    readonly="" type="text" value="None (No pending token)">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[11px] text-on-surface-variant mb-1 font-mono">reset_expires_at</label>
+                                <input
+                                    class="w-full px-3 py-1.5 bg-surface-container-lowest/60 border border-outline-variant/30 rounded text-[13px] text-on-surface-variant font-mono"
+                                    readonly="" type="text" value="—">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Audit Timestamps metadata -->
+                    <div
+                        class="flex items-center justify-between text-[11px] text-on-surface-variant pt-2 border-t border-outline-variant/20 font-mono">
+                        <span>created_at: 2023-10-12 09:14:22 UTC</span>
+                        <span>updated_at: 2023-10-24 16:30:10 UTC</span>
+                    </div>
+                </div>
+                <!-- Modal Footer Actions -->
+                <div
+                    class="p-6 border-t border-outline-variant/20 bg-surface-warm/30 flex items-center justify-end gap-3">
+                    <button
+                        class="px-5 py-2.5 border border-outline-variant/50 text-on-surface rounded-DEFAULT font-label-caps text-label-caps hover:bg-surface-container-low transition-colors">
+                        Cancel
+                    </button>
+                    <button
+                        class="px-6 py-2.5 bg-primary text-on-primary rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm">
+                        <span class="material-symbols-outlined text-[18px]">check</span>
+                        Save Administrator
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/admin-admin.js"></script>
+</body>
+
+
+</html>

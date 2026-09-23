@@ -5,8 +5,23 @@ async function initApp() {
     if (!sideBarContainer) return;
 
     try {
+        const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+        let role = '';
+        if (rawUser) {
+            try {
+                const user = JSON.parse(rawUser);
+                role = (user.role || '').toUpperCase();
+            } catch (e) {
+                role = '';
+            }
+        }
+
+        const componentPath = (role === 'STAFF' || role === 'EMPLOYEE') 
+            ? 'components/sidebar-staff.html' 
+            : 'components/sidebar-admin.html';
+
         const [sideMenuHtml] = await Promise.all([
-            loadComponent('components/sidebar-admin.html')
+            loadComponent(componentPath)
         ]);
 
         if (sideMenuHtml) {
@@ -32,8 +47,6 @@ async function initApp() {
                 sidebarHeader.appendChild(closeBtn);
             }
 
-            injectMobileBottomNav();
-
             highlightActiveMenu();
             initLogout();
         }
@@ -42,51 +55,13 @@ async function initApp() {
     }
 }
 
-function injectMobileBottomNav() {
-    if (document.getElementById('mobile-bottom-nav')) return;
-
-    const currentPage = window.location.pathname.split('/').pop() || 'admin-index.html';
-
-    const navHTML = `
-    <nav id="mobile-bottom-nav" class="fixed bottom-4 left-4 right-4 z-30 flex items-center gap-2 px-3 py-2 bg-surface-container-lowest/90 backdrop-blur-md rounded-full shadow-xl border border-outline-variant/20 overflow-x-auto scrollbar-none print:hidden md:hidden">
-        
-        <a class="flex flex-col items-center justify-center shrink-0 ${currentPage === 'admin-index.html' ? 'bg-primary-container text-on-primary-container rounded-full px-4 py-2' : 'text-on-surface-variant px-3 py-2'} active:scale-90 transition-transform" href="admin-index.html">
-            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' ${currentPage === 'admin-index.html' ? '1' : '0'};">dashboard</span>
-            <span class="font-label-caps text-[10px] mt-0.5">Dashboard</span>
-        </a>
-
-        <a class="flex flex-col items-center justify-center shrink-0 ${currentPage === 'admin-calendar.html' ? 'bg-primary-container text-on-primary-container rounded-full px-4 py-2' : 'text-on-surface-variant px-3 py-2'} active:scale-90 transition-transform" href="admin-calendar.html">
-            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' ${currentPage === 'admin-calendar.html' ? '1' : '0'};">calendar_today</span>
-            <span class="font-label-caps text-[10px] mt-0.5">Calendar</span>
-        </a>
-
-        <a class="flex flex-col items-center justify-center shrink-0 ${currentPage === 'admin-reservation-index.html' ? 'bg-primary-container text-on-primary-container rounded-full px-4 py-2' : 'text-on-surface-variant px-3 py-2'} active:scale-90 transition-transform" href="admin-reservation-index.html">
-            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' ${currentPage === 'admin-reservation-index.html' ? '1' : '0'};">event_available</span>
-            <span class="font-label-caps text-[10px] mt-0.5">Reservations</span>
-        </a>
-
-        <a class="flex flex-col items-center justify-center shrink-0 ${currentPage === 'admin-services-index.html' ? 'bg-primary-container text-on-primary-container rounded-full px-4 py-2' : 'text-on-surface-variant px-3 py-2'} active:scale-90 transition-transform" href="admin-services-index.html">
-            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' ${currentPage === 'admin-services-index.html' ? '1' : '0'};">cleaning_services</span>
-            <span class="font-label-caps text-[10px] mt-0.5">Services</span>
-        </a>
-
-        <a class="flex flex-col items-center justify-center shrink-0 ${currentPage === 'admin-statitics.html' ? 'bg-primary-container text-on-primary-container rounded-full px-4 py-2' : 'text-on-surface-variant px-3 py-2'} active:scale-90 transition-transform" href="admin-statitics.html">
-            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' ${currentPage === 'admin-statitics.html' ? '1' : '0'};">bar_chart</span>
-            <span class="font-label-caps text-[10px] mt-0.5">Stats</span>
-        </a>
-
-    </nav>`;
-
-    document.body.insertAdjacentHTML('beforeend', navHTML);
-}
-
 function highlightActiveMenu() {
     const currentPage = window.location.pathname.split('/').pop() || 'admin-index.html';
     const navLinks = document.querySelectorAll('aside nav a, aside .mt-auto a');
 
     navLinks.forEach(link => {
         const href = link.getAttribute('href');
-        
+
         if (href === currentPage) {
             link.className = "flex items-center gap-3 py-3 w-full rounded-r-lg group text-primary dark:text-primary-fixed font-bold border-l-4 border-primary pl-4 translate-x-1 duration-200";
             const icon = link.querySelector('.material-symbols-outlined');
@@ -105,6 +80,7 @@ function initLogout() {
         btnLogout.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('purenest_user');
+            localStorage.removeItem('luxuriapure_user');
             window.location.href = 'http://localhost/purenest/public/login.html';
         });
     }

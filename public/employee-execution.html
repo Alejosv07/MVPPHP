@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row selection:bg-primary-fixed selection:text-primary-container">
+    <div id="sideAdminMenu"></div>
+    <div id="sidebar-backdrop" onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+    
+    <div class="md:hidden fixed top-0 left-0 w-full z-10 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 flex-shrink-0">
+                <img alt="Admin User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbBo2Ftpqk0meUql9w_WjDlyGnnsIj_3erLBPH-jIlcxFmJg2wZ-NJTPfALW0szHLgXffQI3TIvWNeAz3ALftLmt1kuJkDfZbj6lAN8qugxplf3bxm1h-6DTDFpF4PgB53LF5MVCNAigSaeVtB2apGiFVEpjR_VXuOb8gbUg5WrKi83JTWc59c0Qo1E9ysfRXEwNHj0jBYIl769v1z5zmHVLR66NO_SeYmRmjldFARfEpPB3dPgpyL">
+            </div>
+            <span class="font-headline-sm text-sm text-primary font-bold">PureNest Admin</span>
+        </div>
+        <button onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')" class="print:hidden p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="mb-20 lg:mb-0 flex-1 md:ml-64 overflow-y-auto w-full relative bg-background">
+        <header class="flex-wrap gap-2 lg:gap-2 bg-background/85 backdrop-blur-md px-margin-mobile md:px-margin-desktop pb-6 pt-20 lg:pt-6 flex justify-between items-center border-b border-outline-variant/30">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-primary"><span class="material-symbols-outlined text-primary text-[28px]">admin_panel_settings</span>Daily Operations</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage today's scheduled residential sanctuaries, coordinate field specialists, and trigger two-touch customer status signals.</p>
+            </div>
+        </header>
+
+        <div class="px-margin-mobile md:px-margin-desktop py-8 max-w-container-max mx-auto w-full">
+            <div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_1px_8px_rgba(27,48,34,0.04)] space-y-4">
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-3 w-full lg:w-auto flex-1">
+                        <!-- Day Select -->
+                        <div class="flex flex-col">
+                            <label class="font-label-caps text-label-caps uppercase text-outline mb-1">Day</label>
+                            <div class="relative flex items-center bg-surface-container-low rounded-lg px-3 py-2">
+                                <span class="material-symbols-outlined text-outline text-[18px] mr-2">calendar_month</span>
+                                <select class="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none cursor-pointer">
+                                    <option selected="" value="24">24 (Today)</option>
+                                    <option value="all">All Days</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Month Select -->
+                        <div class="flex flex-col">
+                            <label class="font-label-caps text-label-caps uppercase text-outline mb-1">Month</label>
+                            <div class="relative flex items-center bg-surface-container-low rounded-lg px-3 py-2">
+                                <select class="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none cursor-pointer">
+                                    <option selected="" value="10">October</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Year Select -->
+                        <div class="flex flex-col">
+                            <label class="font-label-caps text-label-caps uppercase text-outline mb-1">Year</label>
+                            <div class="relative flex items-center bg-surface-container-low rounded-lg px-3 py-2">
+                                <select class="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none cursor-pointer">
+                                    <option selected="" value="2024">2024</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Service Select -->
+                        <div class="flex flex-col">
+                            <label class="font-label-caps text-label-caps uppercase text-outline mb-1">Service Tier</label>
+                            <div class="relative flex items-center bg-surface-container-low rounded-lg px-3 py-2">
+                                <select class="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none cursor-pointer">
+                                    <option selected="" value="all">All Services</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Status Select -->
+                        <div class="flex flex-col">
+                            <label class="font-label-caps text-label-caps uppercase text-outline mb-1">Status</label>
+                            <div class="relative flex items-center bg-surface-container-low rounded-lg px-3 py-2">
+                                <select class="w-full bg-transparent font-body-md text-body-md text-on-surface outline-none cursor-pointer">
+                                    <option selected="" value="all">All Statuses</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Action Clear -->
+                    <div class="flex items-center gap-3 self-end lg:self-center pt-2 lg:pt-0">
+                        <button class="px-3 py-2 text-xs font-semibold text-outline hover:text-on-surface transition-colors flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                            <span>Clear filters</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0_1px_8px_rgba(27,48,34,0.04)] flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-caps text-label-caps uppercase text-outline">Total Schedule</span>
+                        <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+                            <span class="material-symbols-outlined text-on-surface text-[18px]">assignment</span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div id="metric-total" class="font-headline-lg text-headline-lg font-normal text-on-surface">0</div>
+                        <p id="metric-total-desc" class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5 mt-1">
+                            <span class="w-2 h-2 rounded-full bg-surface-tint"></span> Loading routes...
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-[#fde8db] p-5 rounded-xl shadow-[0_1px_8px_rgba(27,48,34,0.04)] flex flex-col justify-between text-on-tertiary-fixed">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-caps text-label-caps uppercase text-on-tertiary-fixed font-semibold tracking-wider">Pending / Scheduled</span>
+                        <div class="w-8 h-8 rounded-full bg-white/60 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-accent-rust text-[18px]">schedule</span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div id="metric-pending" class="font-headline-lg text-headline-lg font-normal text-on-tertiary-fixed">0</div>
+                        <p class="text-xs text-on-tertiary-fixed-variant mt-1 font-medium">Awaiting departure sequence</p>
+                    </div>
+                </div>
+                <div class="bg-[#e2f0e6] p-5 rounded-xl shadow-[0_1px_8px_rgba(27,48,34,0.04)] flex flex-col justify-between text-primary-container">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-caps text-label-caps uppercase text-on-primary-fixed-variant font-semibold tracking-wider">In Field Active</span>
+                        <div class="w-8 h-8 rounded-full bg-white/70 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-surface-tint text-[18px]">near_me</span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div id="metric-active" class="font-headline-lg text-headline-lg font-normal text-primary-container">0</div>
+                        <p class="text-xs text-on-primary-fixed-variant mt-1 font-medium">Active field specialists</p>
+                    </div>
+                </div>
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0_1px_8px_rgba(27,48,34,0.04)] flex flex-col justify-between border-l-4 border-l-surface-tint">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-caps text-label-caps uppercase text-outline">Completed</span>
+                        <div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
+                            <span class="material-symbols-outlined text-surface-tint text-[18px]">task_alt</span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div id="metric-completed" class="font-headline-lg text-headline-lg font-normal text-on-surface">0</div>
+                        <p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5 mt-1">
+                            <span class="material-symbols-outlined text-[16px] text-surface-tint">thumb_up</span> 100% Quality guarantee logged
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Table and Sidebar Layout -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start mt-6">
+                <!-- TABLE LIST VIEW (8 cols) -->
+                <div class="xl:col-span-8 flex flex-col gap-4">
+                    <div class="bg-surface-container-lowest rounded-xl shadow-[0_1px_8px_rgba(27,48,34,0.04)] overflow-hidden">
+                        <div class="px-6 py-4 flex items-center justify-between bg-surface-container-low/40">
+                            <span class="font-headline-sm text-headline-sm text-on-surface">Today's Reservations</span>
+                        </div>
+                        
+                        <!-- VISTA MÓVIL: Tarjetas Adaptativas -->
+                        <div id="mobile-reservations-container" class="block md:hidden divide-y divide-outline-variant/20 bg-surface/30">
+                            <!-- Inyectado dinámicamente vía JS -->
+                        </div>
+
+                        <!-- VISTA ESCRITORIO: Tabla Clásica -->
+                        <div class="overflow-x-auto hidden md:block">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-surface-container-low text-outline font-label-caps text-label-caps uppercase tracking-wider">
+                                        <th class="py-3 px-4">Time</th>
+                                        <th class="py-3 px-4">Code &amp; Client</th>
+                                        <th class="py-3 px-4">Service &amp; Loc</th>
+                                        <th class="py-3 px-4">Current Status</th>
+                                        <th class="py-3 px-4 text-center">Status Stepper</th>
+                                        <th class="py-3 px-4 text-right">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-surface-container">
+                                    <!-- Dynamic rows injected via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="px-6 py-3 bg-surface-container-low flex items-center justify-between text-xs text-outline">
+                            <span>Active live feed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT DETAILS SIDE PANEL -->
+                <div class="xl:col-span-4 sticky top-20 bg-surface-container-lowest rounded-xl shadow-[0_1px_8px_rgba(27,48,34,0.04)] p-6 space-y-6">
+                    <div class="text-center py-10 text-outline text-xs">
+                        Select a reservation to view details.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/employee-execution.js"></script>
+</body>
+</html>

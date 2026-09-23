@@ -17,8 +17,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const startDateInput = document.getElementById('filterStartDate');
     const endDateInput = document.getElementById('filterEndDate');
 
-    if (startDateInput && !startDateInput.value) startDateInput.value = '2026-08-01';
-    if (endDateInput && !endDateInput.value) endDateInput.value = '2026-08-31';
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+
+    if (startDateInput && !startDateInput.value) {
+        startDateInput.value = `${year}-${month}-01`;
+    }
+    if (endDateInput && !endDateInput.value) {
+        endDateInput.value = `${year}-${month}-${lastDay}`;
+    }
 
     await loadData();
 
@@ -58,8 +67,13 @@ function updateDashboard() {
     const startVal = document.getElementById('filterStartDate')?.value;
     const endVal = document.getElementById('filterEndDate')?.value;
 
-    const startDate = startVal ? new Date(startVal + 'T00:00:00') : new Date('2026-08-01T00:00:00');
-    const endDate = endVal ? new Date(endVal + 'T23:59:59') : new Date('2026-08-31T23:59:59');
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+
+    const startDate = startVal ? new Date(startVal + 'T00:00:00') : new Date(`${year}-${month}-01T00:00:00`);
+    const endDate = endVal ? new Date(endVal + 'T23:59:59') : new Date(`${year}-${month}-${lastDay}T23:59:59`);
 
     const filteredReservations = allReservations.filter(res => {
         if (!res.service_date) return false;
@@ -67,7 +81,7 @@ function updateDashboard() {
         return resDate >= startDate && resDate <= endDate;
     });
 
-    calculateKPIs(filteredReservations);
+    calculateKPIs(filteredReservations, startDate, endDate);
     calculateInsights(filteredReservations);
     updateCharts(filteredReservations);
     updateServiceTable(filteredReservations);
@@ -83,25 +97,76 @@ function getReservationValue(reservation) {
     return Number(reservation.total_price || 0);
 }
 
-function calculateKPIs(reservations) {
-    let totalRevenue = 0;
+function calculateKPIs(reservations, startDate, endDate) {
+    let totalRevenue = 0;       
+    let pendingRevenue = 0;     
+    let lostRevenue = 0;
     let completedCount = 0;
     let cancelledCount = 0;
+    let totalBedrooms = 0;
+    let totalBathrooms = 0;
+
+    let clientRevenueMap = {};
+    let totalHoursEstimated = 0;
+    let premiumServiceRevenue = 0;
 
     reservations.forEach(res => {
-        const status = (res.status || '').toUpperCase();
+        const status = (res.status || '').trim().toUpperCase();
+        const val = getReservationValue(res);
+        const email = (res.email || '').trim().toLowerCase() || 'unknown';
+
+        const service = allServices.find(s => String(s.id) === String(res.service_id));
+        const duration = service ? Number(service.estimated_duration_hours || service.duration || 1) : 1;
+        const sName = (service ? service.name : '').toLowerCase();
+
         if (status === 'COMPLETED') { 
             completedCount++;
-            totalRevenue += getReservationValue(res);
-        } else if (status === 'CANCELLED' || status === 'REJECTED') {
-            cancelledCount++;
+            totalRevenue += val; 
+            totalHoursEstimated += duration;
+
+            clientRevenueMap[email] = (clientRevenueMap[email] || 0) + val;
+
+            if (sName.includes('deep') || sName.includes('post') || sName.includes('super')) {
+                premiumServiceRevenue += val;
+            }
+        } else if (status === 'PENDING' || status === 'CONFIRMED' || status === 'INITIATED' || status === 'ON_THE_WAY') {
+            pendingRevenue += val; 
         }
+
+        if (status === 'CANCELLED' || status === 'REJECTED') {
+            cancelledCount++;
+            lostRevenue += val;
+        }
+
+        const bedStr = String(res.bedrooms || '0').replace(/[^0-9.]/g, '');
+        const bathStr = String(res.bathrooms || '0').replace(/[^0-9.]/g, '');
+        totalBedrooms += Number(bedStr || 0);
+        totalBathrooms += Number(bathStr || 0);
     });
 
     const totalRes = reservations.length;
     const completedRate = totalRes > 0 ? ((completedCount / totalRes) * 100).toFixed(1) : 0;
     const cancelRate = totalRes > 0 ? ((cancelledCount / totalRes) * 100).toFixed(1) : 0;
     const avgRes = completedCount > 0 ? (totalRevenue / completedCount).toFixed(2) : 0;
+
+    const uniqueClientsCount = Object.keys(clientRevenueMap).length;
+    const arpu = uniqueClientsCount > 0 ? (totalRevenue / uniqueClientsCount).toFixed(2) : 0;
+    const ltvProxy = (Number(arpu) * 2.4).toFixed(2);
+    const staffHrProfit = totalHoursEstimated > 0 ? (totalRevenue / totalHoursEstimated).toFixed(2) : 0;
+
+    const totalRooms = totalBedrooms + totalBathrooms;
+    const revPerRoom = totalRooms > 0 ? (totalRevenue / totalRooms).toFixed(2) : 0;
+
+    const diffTime = Math.abs(endDate - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+    const dailyVelocity = (totalRevenue / diffDays).toFixed(2);
+
+    const premiumShare = totalRevenue > 0 ? ((premiumServiceRevenue / totalRevenue) * 100).toFixed(1) : 0;
+
+    const todayDate = new Date();
+    const daysPassed = Math.max(1, Math.ceil((todayDate - startDate) / (1000 * 60 * 60 * 24)));
+    const monthlyForecast = ((totalRevenue / daysPassed) * diffDays).toFixed(2);
+    const netRealizedRev = totalRevenue - lostRevenue;
 
     const setText = (id, val) => {
         const el = document.getElementById(id);
@@ -114,6 +179,17 @@ function calculateKPIs(reservations) {
     setText('kpiConfirmedRate', `${completedRate}% rate`);
     setText('kpiAvgRes', `$${avgRes}`);
     setText('kpiCancelRate', `${cancelRate}%`);
+
+    setText('finNetRealized', `$${netRealizedRev.toLocaleString('en-US', {minimumFractionDigits: 2})}`);
+    setText('finARPU', `$${arpu}`);
+    setText('finLTV', `$${ltvProxy}`);
+    setText('finStaffHr', `$${staffHrProfit} / hr`);
+    setText('finPendingPipeline', `$${pendingRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}`);
+    setText('finLostRevenue', `$${lostRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}`);
+    setText('finRevPerRoom', `$${revPerRoom}`);
+    setText('finDailyVelocity', `$${Number(dailyVelocity).toLocaleString('en-US', {minimumFractionDigits: 2})} / day`);
+    setText('finPremiumShare', `${premiumShare}%`);
+    setText('finForecast', `$${Number(monthlyForecast).toLocaleString('en-US', {minimumFractionDigits: 2})}`);
 }
 
 function calculateInsights(reservations) {
@@ -199,7 +275,7 @@ function updateCharts(reservations) {
         if (status === 'COMPLETED') {
             dates[d].completed++;
             dates[d].revenue += getReservationValue(res);
-        } else if (status === 'PENDING') {
+        } else if (status === 'PENDING' || status === 'CONFIRMED' || status === 'INITIATED' || status === 'ON_THE_WAY') {
             dates[d].pending++;
         } else if (status === 'CANCELLED' || status === 'REJECTED') {
             dates[d].cancelled++;
@@ -251,7 +327,7 @@ function updateCharts(reservations) {
                 labels: labels,
                 datasets: [
                     { label: 'Completed', data: completedData, backgroundColor: chartColors.primary },
-                    { label: 'Pending', data: pendingData, backgroundColor: chartColors.tertiary },
+                    { label: 'Pending/Active', data: pendingData, backgroundColor: chartColors.tertiary },
                     { label: 'Cancelled', data: cancelledData, backgroundColor: chartColors.cancelled }
                 ]
             },

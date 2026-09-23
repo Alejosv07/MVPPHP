@@ -3,6 +3,11 @@ tailwind.config = {
     theme: {
         extend: {
             "colors": {
+                // Colores personalizados de la marca LuxuriaPure
+                "navy": "#0f172a",
+                "gold": "#b89728",
+                "gold-light": "#d4af37",
+                
                 "on-tertiary-fixed-variant": "#6e3820",
                 "surface-bright": "#fbf9f8",
                 "on-secondary-container": "#626361",
@@ -15,7 +20,7 @@ tailwind.config = {
                 "on-surface-variant": "#434843",
                 "surface-variant": "#e4e2e2",
                 "surface-container-high": "#eae8e7",
-                "primary": "#061b0e",
+                "primary": "#0f172a", // Actualizado a Navy principal
                 "on-tertiary-fixed": "#360f00",
                 "tertiary-container": "#4c1e08",
                 "on-primary": "#ffffff",
@@ -44,7 +49,7 @@ tailwind.config = {
                 "on-error": "#ffffff",
                 "inverse-on-surface": "#f2f0f0",
                 "surface-tint": "#4d6453",
-                "primary-container": "#1b3022",
+                "primary-container": "#0f172a",
                 "tertiary": "#2f0c00",
                 "error": "#ba1a1a",
                 "on-primary-fixed-variant": "#364c3c",
@@ -66,6 +71,7 @@ tailwind.config = {
                 "margin-desktop": "64px"
             },
             "fontFamily": {
+                "serif": ["Georgia", "Cambria", "serif"], // Añadida fuente serif para la marca
                 "headline-md": ["Hanken Grotesk"],
                 "display-lg-mobile": ["Hanken Grotesk"],
                 "display-lg": ["Hanken Grotesk"],

@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html class="light scroll-smooth" lang="en">
 
 <head>
@@ -90,6 +89,14 @@
                                 <span class="text-on-surface-variant">Confirmed</span>
                             </div>
                             <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-blue-300"></span>
+                                <span class="text-on-surface-variant">Initiated/Way</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-purple-300"></span>
+                                <span class="text-on-surface-variant">Rescheduled</span>
+                            </div>
+                            <div class="flex items-center gap-2">
                                 <span class="w-3 h-3 rounded-full bg-emerald-300"></span>
                                 <span class="text-on-surface-variant">Completed</span>
                             </div>
@@ -139,7 +146,7 @@
                                     class="aspect-square p-1 md:p-2 rounded-lg border border-outline-variant/30 bg-surface-dim opacity-50 flex flex-col justify-between relative overflow-hidden">
                                     <span class="text-xs md:font-body-md text-on-surface-variant">3</span>
                                     <div
-                                        class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIj48L3JlY3Q+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjY2MiPjwvcmVjdD4KPC9zdmc+')] opacity-20">
+                                        class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9Ij4KPHJlY3Qgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0jZmZmIj48L3JlY3Q+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjY2MiPjwvcmVjdD4KPC9zdmc+')] opacity-20">
                                     </div>
                                 </div>
                                 <div
@@ -253,6 +260,12 @@
                             <button
                                 class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Confirmed</button>
                             <button
+                                class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Initiated</button>
+                            <button
+                                class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">On The Way</button>
+                            <button
+                                class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Rescheduled</button>
+                            <button
                                 class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Completed</button>
                             <button
                                 class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant/50 hover:bg-surface-variant font-label-caps text-[10px] whitespace-nowrap transition-colors">Cancelled</button>
@@ -310,6 +323,5 @@
     <script type="module" src="js/modules/layout-admin.js"></script>
     <script type="module" src="js/modules/admin-calendar.js"></script>
 </body>
-
 
 </html>

@@ -35,7 +35,7 @@ async function loadServices() {
             const price = service.price_per_hour || service.price || service.base_price || 0;
             const minHours = service.estimated_duration_hours || service.min_hours || service.duration || 1;
 
-            const imageUrl = service.image_url 
+            const imageUrl = service.image_url
                 ? (service.image_url.startsWith('http') ? service.image_url : `http://localhost/purenest/public${service.image_url}`)
                 : null;
 
@@ -111,7 +111,7 @@ function showServiceDetailsModal(service) {
     const isActive = Number(service.is_active) === 1 || service.status === 'ACTIVE';
     const price = service.price_per_hour || service.price || service.base_price || 0;
     const minHours = service.estimated_duration_hours || service.min_hours || service.duration || 1;
-    const imageUrl = service.image_url 
+    const imageUrl = service.image_url
         ? (service.image_url.startsWith('http') ? service.image_url : `http://localhost/purenest/public${service.image_url}`)
         : null;
 
@@ -182,9 +182,13 @@ async function toggleServiceStatus(service, currentIsActive) {
         cancelText: 'Cancel',
         onConfirm: async () => {
             try {
+                const storedUser = JSON.parse(localStorage.getItem('purenest_user') || '{}');
+                const currentUserId = storedUser.id || null;
+
                 await API.services.update(service.id, {
                     ...service,
-                    is_active: newStatus
+                    is_active: newStatus,
+                    user_id: currentUserId
                 });
 
                 Modal.show({

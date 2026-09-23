@@ -4,34 +4,33 @@ class GlobalModal {
     }
 
     init() {
-        if (document.getElementById('purenest-global-modal')) return;
-
-        const modalHTML = `
-            <div id="purenest-global-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
-                <div id="modal-card" class="w-full max-w-sm sm:max-w-md bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-2xl border border-outline-variant/30 transform scale-95 transition-all duration-200 flex flex-col gap-4">
-                    <div class="flex items-start gap-3">
-                        <div id="modal-icon-container" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0">
-                            <span id="modal-icon" class="material-symbols-outlined text-xl sm:text-2xl">info</span>
+        if (!document.getElementById('purenest-global-modal')) {
+            const modalHTML = `
+                <div id="purenest-global-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+                    <div id="modal-card" class="w-full max-w-sm sm:max-w-md bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-2xl border border-outline-variant/30 transform scale-95 transition-all duration-200 flex flex-col gap-4">
+                        <div class="flex items-start gap-3">
+                            <div id="modal-icon-container" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0">
+                                <span id="modal-icon" class="material-symbols-outlined text-xl sm:text-2xl">info</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 id="modal-title" class="text-base sm:text-lg font-bold text-on-surface truncate">Notification</h3>
+                                <p id="modal-message" class="text-xs sm:text-sm text-on-surface-variant mt-1 leading-relaxed break-words"></p>
+                            </div>
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 id="modal-title" class="text-base sm:text-lg font-bold text-on-surface truncate">Notification</h3>
-                            <p id="modal-message" class="text-xs sm:text-sm text-on-surface-variant mt-1 leading-relaxed break-words"></p>
+                        <div id="modal-extra-content" class="hidden w-full"></div>
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20">
+                            <button id="modal-btn-cancel" class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-outline-variant/50 text-xs sm:text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">
+                                Cancel
+                            </button>
+                            <button id="modal-btn-confirm" class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all shadow-sm">
+                                Confirm
+                            </button>
                         </div>
-                    </div>
-                    <div id="modal-extra-content" class="hidden w-full"></div>
-                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20">
-                        <button id="modal-btn-cancel" class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-outline-variant/50 text-xs sm:text-sm font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">
-                            Cancel
-                        </button>
-                        <button id="modal-btn-confirm" class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all shadow-sm">
-                            Confirm
-                        </button>
                     </div>
                 </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
 
         this.overlay = document.getElementById('purenest-global-modal');
         this.card = document.getElementById('modal-card');
@@ -43,7 +42,10 @@ class GlobalModal {
         this.btnCancel = document.getElementById('modal-btn-cancel');
         this.btnConfirm = document.getElementById('modal-btn-confirm');
 
-        this.btnCancel.addEventListener('click', () => this.close());
+        if (this.btnCancel && !this.btnCancel.dataset.listenerAttached) {
+            this.btnCancel.dataset.listenerAttached = "true";
+            this.btnCancel.addEventListener('click', () => this.close());
+        }
     }
 
     show({ type = 'info', title, message, confirmText = 'Confirm', showCancel = true, htmlContent = '', onConfirm }) {
@@ -97,7 +99,7 @@ class GlobalModal {
             if (onConfirm) {
                 this.btnConfirm.disabled = true;
                 this.btnConfirm.classList.add('opacity-50');
-                
+
                 try {
                     const shouldClose = await onConfirm();
                     if (shouldClose === false) {
@@ -125,8 +127,13 @@ class GlobalModal {
     }
 
     resetTheme() {
-        this.btnConfirm.disabled = false;
-        this.btnConfirm.classList.remove('opacity-50');
+        if (this.btnConfirm) {
+            this.btnConfirm.disabled = false;
+            this.btnConfirm.classList.remove('opacity-50');
+        }
+        if (this.btnCancel) {
+            this.btnCancel.disabled = false;
+        }
     }
 
     success(message, title = 'Success!') {

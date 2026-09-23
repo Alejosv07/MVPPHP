@@ -17,9 +17,25 @@ class CategoryModel {
         return $this->db->query("SELECT * FROM service_categories ORDER BY name ASC")->fetchAll();
     }
 
-    public function create(string $name): int {
-        $stmt = $this->db->prepare("INSERT INTO service_categories (name) VALUES (?)");
-        $stmt->execute([$name]);
+    public function getById(int $id): array|false {
+        $stmt = $this->db->prepare("SELECT * FROM service_categories WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+
+    public function create(string $name, ?string $description = null): int {
+        $stmt = $this->db->prepare("INSERT INTO service_categories (name, description) VALUES (?, ?)");
+        $stmt->execute([$name, $description]);
         return (int)$this->db->lastInsertId();
+    }
+
+    public function update(int $id, string $name, ?string $description = null): bool {
+        $stmt = $this->db->prepare("UPDATE service_categories SET name = ?, description = ? WHERE id = ?");
+        return $stmt->execute([$name, $description, $id]);
+    }
+
+    public function delete(int $id): bool {
+        $stmt = $this->db->prepare("DELETE FROM service_categories WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 }

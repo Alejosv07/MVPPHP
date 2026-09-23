@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+
+<body
+    class="bg-background text-on-background min-h-screen flex flex-col md:flex-row selection:bg-primary-fixed selection:text-primary-container">
+    <div id="sideAdminMenu" class="print:hidden"></div>
+
+    <div id="sidebar-backdrop"
+        onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')"
+        class="print:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <div
+        class="print:hidden md:hidden fixed top-0 left-0 w-full z-10 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30 flex-shrink-0">
+                <img alt="Admin User Profile" class="w-full h-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbBo2Ftpqk0meUql9w_WjDlyGnnsIj_3erLBPH-jIlcxFmJg2wZ-NJTPfALW0szHLgXffQI3TIvWNeAz3ALftLmt1kuJkDfZbj6lAN8qugxplf3bxm1h-6DTDFpF4PgB53LF5MVCNAigSaeVtB2apGiFVEpjR_VXuOb8gbUg5WrKi83JTWc59c0Qo1E9ysfRXEwNHj0jBYIl769v1z5zmHVLR66NO_SeYmRmjldFARfEpPB3dPgpyL">
+            </div>
+            <span class="font-headline-sm text-sm text-primary font-bold">PureNest Admin</span>
+        </div>
+        <button
+            onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')"
+            class="print:hidden p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+    <!-- Main Content Area -->
+    <main class="mb-20 lg:mb-0 flex-1 md:ml-64 overflow-y-auto w-full relative bg-background">
+        <!-- Header -->
+        <header
+            class="print:hidden flex-wrap gap-2 lg:gap-2 bg-background/80 backdrop-blur-md px-margin-mobile md:px-margin-desktop pb-6 pt-20 lg:pt-6 flex justify-between items-center border-b border-outline-variant/30">
+            <div>
+                <h2 class="font-headline-md text-headline-md text-primary">Audit & System Logs</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Cryptographically indexed record
+                    of operational mutations, state transitions, and administrative
+                    access points across PureNest properties.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="window.print()"
+                    class="border border-outline-variant/50 bg-surface-container-lowest text-primary py-2.5 px-4 rounded-DEFAULT font-label-caps text-label-caps hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    Print / Export
+                </button>
+            </div>
+        </header>
+        <div class="px-margin-mobile md:px-margin-desktop py-8 max-w-container-max mx-auto w-full">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <!-- Card 1: Total Events -->
+                <div
+                    class="p-6 rounded-xl bg-surface-container-lowest shadow-[0_4px_24px_rgba(27,48,34,0.04)] flex flex-col justify-between relative overflow-hidden group">
+                    <div
+                        class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-primary-fixed/20 pointer-events-none group-hover:scale-125 transition-transform duration-500">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Total
+                            Ledger Records</span>
+                        <span class="material-symbols-outlined text-on-surface-variant text-[20px]">database</span>
+                    </div>
+                    <div class="mt-4 flex items-baseline gap-3">
+                        <span id="stat-total-records"
+                            class="font-headline-lg text-headline-lg font-light text-on-surface">0</span>
+                        <span
+                            class="font-label-caps text-label-caps text-primary-container bg-primary-fixed px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                            <span class="material-symbols-outlined text-[12px]">trending_up</span> Live
+                        </span>
+                    </div>
+                    <span class="font-body-md text-on-surface-variant text-[13px] mt-2">Active database index</span>
+                </div>
+
+                <!-- Card 2: Critical Mutations -->
+                <div
+                    class="p-6 rounded-xl bg-surface-container-lowest shadow-[0_4px_24px_rgba(27,48,34,0.04)] flex flex-col justify-between relative overflow-hidden group">
+                    <div
+                        class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-error-container/40 pointer-events-none group-hover:scale-125 transition-transform duration-500">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Destructive
+                            Ops (DELETE)</span>
+                        <span class="material-symbols-outlined text-error text-[20px]">warning</span>
+                    </div>
+                    <div class="mt-4 flex items-baseline gap-3">
+                        <span id="stat-delete-ops"
+                            class="font-headline-lg text-headline-lg font-light text-error">0</span>
+                        <span
+                            class="font-label-caps text-label-caps text-error bg-error-container px-2 py-0.5 rounded-full">Signed
+                            via MFA</span>
+                    </div>
+                    <span class="font-body-md text-on-surface-variant text-[13px] mt-2">Zero unverified deletions
+                        logged</span>
+                </div>
+
+                <!-- Card 3: State Transitions -->
+                <div
+                    class="p-6 rounded-xl bg-surface-container-lowest shadow-[0_4px_24px_rgba(27,48,34,0.04)] flex flex-col justify-between relative overflow-hidden group">
+                    <div
+                        class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-tertiary-fixed/30 pointer-events-none group-hover:scale-125 transition-transform duration-500">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Reservation
+                            Status Shifts</span>
+                        <span class="material-symbols-outlined text-accent-rust text-[20px]">swap_horiz</span>
+                    </div>
+                    <div class="mt-4 flex items-baseline gap-3">
+                        <span id="stat-status-shifts"
+                            class="font-headline-lg text-headline-lg font-light text-on-surface">0</span>
+                        <span
+                            class="font-label-caps text-label-caps text-on-tertiary-container bg-tertiary-fixed px-2 py-0.5 rounded-full">Lifecycle
+                            Tracked</span>
+                    </div>
+                    <span class="font-body-md text-on-surface-variant text-[13px] mt-2">Transition stream sync</span>
+                </div>
+
+                <!-- Card 4: Dominant Operator -->
+                <div
+                    class="p-6 rounded-xl bg-surface-container-lowest shadow-[0_4px_24px_rgba(27,48,34,0.04)] flex flex-col justify-between relative overflow-hidden group">
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Top
+                            Duty Officer</span>
+                        <span class="material-symbols-outlined text-on-surface-variant text-[20px]">badge</span>
+                    </div>
+                    <div class="mt-4 flex items-center gap-3">
+                        <div id="stat-top-initials"
+                            class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-semibold text-sm">
+                            --</div>
+                        <div class="flex flex-col min-w-0">
+                            <span id="stat-top-name"
+                                class="font-body-md text-body-md font-semibold text-on-surface truncate">None
+                                Recorded</span>
+                            <span id="stat-top-count" class="font-label-caps text-[11px] text-accent-rust uppercase">0
+                                Executions</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-status-star"></span>
+                        <span class="font-body-md text-on-surface-variant text-[13px]">Lead Sanctuary Controller</span>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="flex flex-col md:flex-row flex-wrap items-start md:items-center justify-between border-b-0 pb-4 gap-4">
+                <div class="inline-flex flex-wrap p-1.5 rounded-2xl bg-surface-container-high shadow-inner">
+                    <button
+                        class="w-full flex items-center gap-2 px-6 py-2.5 rounded-xl font-label-caps text-label-caps tracking-wider uppercase transition-all bg-surface-container-lowest text-on-surface shadow-sm font-bold"
+                        id="tab-activity-btn">
+                        <span class="material-symbols-outlined text-[18px] text-primary-container">receipt_long</span>
+                        System Activity Logs
+                        <span
+                            class="ml-1 px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[11px] font-semibold"
+                            id="tab-total-count">0</span>
+                    </button>
+                    <button
+                        class="flex items-center gap-2 px-6 py-2.5 rounded-xl font-label-caps text-label-caps tracking-wider uppercase text-on-surface-variant hover:text-on-surface transition-all font-semibold"
+                        id="tab-history-btn">
+                        <span
+                            class="material-symbols-outlined text-[18px] text-accent-rust">published_with_changes</span>
+                        Reservation Status History
+                        <span
+                            class="ml-1 px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[11px] font-semibold"
+                            id="tab-history-count">0</span>
+                    </button>
+                </div>
+                <!-- Quick filter chips -->
+                <div class="flex items-center gap-2">
+                    <span class="font-label-caps text-[11px] uppercase text-outline mr-1 tracking-wider">Quick
+                        Scope:</span>
+                    <button
+                        class="quick-scope-btn px-3 py-1 rounded-full text-xs font-medium bg-primary-container text-on-primary"
+                        data-scope="today">Today</button>
+                    <button
+                        class="quick-scope-btn px-3 py-1 rounded-full text-xs font-medium bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                        data-scope="24h">Last 24h</button>
+                    <button
+                        class="quick-scope-btn px-3 py-1 rounded-full text-xs font-medium bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                        data-scope="7d">Last 7d</button>
+                    <button
+                        class="quick-scope-btn px-3 py-1 rounded-full text-xs font-medium bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                        data-scope="all">All</button>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-6 mt-4" id="section-activity-logs">
+                <!-- Filter Toolbar -->
+                <div
+                    class="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_24px_rgba(27,48,34,0.03)] flex flex-col gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-9 gap-4 items-center">
+                        <!-- Search -->
+                        <div class="md:col-span-5 relative">
+                            <span
+                                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+                            <input id="filter-search"
+                                class="w-full bg-surface-container-low pl-10 pr-4 py-2.5 rounded-xl font-body-md text-[14px] text-on-surface placeholder:text-outline outline-none focus:bg-surface-container transition-all"
+                                placeholder="Search by User, Entity ID (#RES-0092), IPv4/v6, or payload fragment..."
+                                type="text">
+                        </div>
+                        <!-- Action Filter -->
+                        <div class="md:col-span-2">
+                            <div class="relative">
+                                <select id="filter-action"
+                                    class="w-full appearance-none bg-surface-container-low px-4 py-2.5 pr-8 rounded-xl font-body-md text-[14px] text-on-surface outline-none cursor-pointer">
+                                    <option value="">All Actions</option>
+                                    <option value="CREATE">CREATE</option>
+                                    <option value="UPDATE">UPDATE</option>
+                                    <option value="DELETE">DELETE</option>
+                                    <option value="ISSUE_RESET_TOKEN">ISSUE_RESET_TOKEN</option>
+                                </select>
+                                <span
+                                    class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+                            </div>
+                        </div>
+                        <!-- Entity Type Filter -->
+                        <div class="md:col-span-2">
+                            <div class="relative">
+                                <select id="filter-entity"
+                                    class="w-full appearance-none bg-surface-container-low px-4 py-2.5 pr-8 rounded-xl font-body-md text-[14px] text-on-surface outline-none cursor-pointer">
+                                    <option value="">All Entities</option>
+                                    <option value="reservations">reservations</option>
+                                    <option value="services">services</option>
+                                    <option value="user">user</option>
+                                </select>
+                                <span
+                                    class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+                            </div>
+                        </div>
+                        <!-- Date Range Filter -->
+                        <div class="md:col-span-6 flex flex-wrap lg:flex-nowrap items-center gap-2">
+                            <div
+                                class="flex flex-wrap lg:flex-nowrap items-center gap-2 w-full bg-surface-container-low px-3 py-1.5 rounded-xl text-on-surface-variant text-[13px]">
+                                <span class="material-symbols-outlined text-[16px] text-outline">date_range</span>
+                                <div class="flex items-center flex-wrap lg:flex-nowrap gap-1 w-full truncate">
+                                    <input type="date" id="filter-date-start"
+                                        class="bg-transparent text-xs text-on-surface outline-none cursor-pointer w-full"
+                                        title="Start Date">
+                                    <span class="text-outline">–</span>
+                                    <input type="date" id="filter-date-end"
+                                        class="bg-transparent text-xs text-on-surface outline-none cursor-pointer w-full"
+                                        title="End Date">
+                                </div>
+                            </div>
+                            <button id="reset-filters-btn"
+                                class="p-2.5 rounded-xl bg-surface-container-high hover:bg-surface-dim text-on-surface-variant transition-colors"
+                                title="Reset Filters">
+                                <span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                <!-- Data Table Container (Logs) -->
+                <div
+                    class="rounded-2xl bg-surface-container-lowest shadow-[0_4px_28px_rgba(27,48,34,0.04)] overflow-hidden">
+                    
+                    <!-- VISTA MÓVIL: Tarjetas Adaptativas -->
+                    <div id="mobile-logs-container" class="block md:hidden divide-y divide-outline-variant/20 bg-surface/30">
+                        <!-- Inyectado dinámicamente por JS -->
+                    </div>
+
+                    <!-- VISTA ESCRITORIO: Tabla Clásica -->
+                    <div class="overflow-x-auto hidden md:block">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="bg-surface-container-low font-label-caps text-label-caps text-outline tracking-wider uppercase">
+                                    <th class="py-4 px-6">Event ID</th>
+                                    <th class="py-4 px-6">Operator / User</th>
+                                    <th class="py-4 px-4">Action</th>
+                                    <th class="py-4 px-6">Entity Target</th>
+                                    <th class="py-4 px-4">Origin IP</th>
+                                    <th class="py-4 px-6">Timestamp (UTC)</th>
+                                    <th class="py-4 px-6 text-right">Details Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y-0 text-on-surface font-body-md text-[14px]" id="activity-logs-tbody">
+                                <!-- Dinámicamente renderizado vía JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination Bar -->
+                    <div
+                        class="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-surface-container-low/60 gap-4">
+                        <span class="font-body-md text-xs text-on-surface-variant" id="pagination-info">
+                            Showing <span class="font-semibold text-on-surface" id="page-start">0</span> - <span
+                                class="font-semibold text-on-surface" id="page-end">0</span> of <span
+                                class="font-semibold text-on-surface" id="page-total">0</span> logged events
+                        </span>
+                        <div class="flex items-center gap-1" id="pagination-buttons">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="hidden flex-col gap-6 mt-4" id="section-reservation-history">
+                <!-- Header banner for History tab -->
+                <div
+                    class="p-6 rounded-2xl bg-surface-container-lowest shadow-[0_4px_24px_rgba(27,48,34,0.03)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-accent-rust/10 text-accent-rust flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[28px]">timeline</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-sm text-headline-sm text-on-surface">Lifecycle Audit: <span
+                                    class="font-mono text-accent-rust">reservation_history</span></h2>
+                            <p class="font-body-md text-body-md text-on-surface-variant text-xs mt-0.5">
+                                Structured state machine transitions, human interventions, and cancellation
+                                explanations.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-label-caps text-label-caps uppercase text-outline">Filter by Target:</span>
+                        <input id="filter-history-search"
+                            class="bg-surface-container-low px-4 py-1.5 rounded-xl font-mono text-xs text-on-surface outline-none focus:bg-surface-container"
+                            placeholder="Filter e.g. #RES-" type="text">
+                    </div>
+                </div>
+
+                <!-- Structured Audit Table for Reservation History -->
+                <div
+                    class="rounded-2xl bg-surface-container-lowest shadow-[0_4px_28px_rgba(27,48,34,0.04)] overflow-hidden mt-4">
+                    <div class="p-6 flex items-center justify-between bg-surface-container-low/40">
+                        <span
+                            class="font-label-caps text-label-caps uppercase text-on-surface tracking-wider font-semibold">Full
+                            Transition Stream</span>
+                        <span class="font-body-md text-xs text-outline">Table: `reservation_history` (Indexed on
+                            reservation_id)</span>
+                    </div>
+                    
+                    <!-- VISTA MÓVIL: Tarjetas Adaptativas para Historial -->
+                    <div id="mobile-history-container" class="block md:hidden divide-y divide-outline-variant/20 bg-surface/30">
+                        <!-- Inyectado dinámicamente por JS -->
+                    </div>
+
+                    <!-- VISTA ESCRITORIO: Tabla Clásica para Historial -->
+                    <div class="overflow-x-auto hidden md:block">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="bg-surface-container-low font-label-caps text-label-caps text-outline tracking-wider uppercase">
+                                    <th class="py-3 px-6">ID</th>
+                                    <th class="py-3 px-6">Reservation Ref</th>
+                                    <th class="py-3 px-6">Transition Vector</th>
+                                    <th class="py-3 px-6">Authorized Agent</th>
+                                    <th class="py-3 px-6">Audit Remark</th>
+                                    <th class="py-3 px-6 text-right">Recorded At</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-on-surface font-body-md text-[13px]" id="reservation-history-tbody">
+                                <!-- Dinámicamente renderizado vía JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div
+                        class="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-surface-container-low/60 gap-4">
+                        <span class="font-body-md text-xs text-on-surface-variant">
+                            Showing <span class="font-semibold text-on-surface" id="history-page-start">0</span> - <span
+                                class="font-semibold text-on-surface" id="history-page-end">0</span> of <span
+                                class="font-semibold text-on-surface" id="history-page-total">0</span> history records
+                        </span>
+                        <div class="flex items-center gap-1" id="history-pagination-buttons">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fixed inset-0 z-50 pointer-events-none transition-all duration-300 opacity-0"
+                id="inspector-drawer">
+                <!-- Backdrop -->
+                <div class="absolute inset-0 bg-inverse-surface/40 backdrop-blur-sm transition-opacity opacity-0 pointer-events-none"
+                    id="drawer-backdrop" onclick="closeDrawer()"></div>
+                <!-- Drawer Panel -->
+                <div class="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-surface-container-lowest shadow-2xl flex flex-col justify-between translate-x-full transition-transform duration-300 pointer-events-auto"
+                    id="drawer-panel">
+                    <!-- Drawer Header -->
+                    <div class="px-8 py-6 bg-surface-warm flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-accent-rust text-[24px]">terminal</span>
+                            <div>
+                                <h3 class="font-headline-sm text-lg text-on-surface font-semibold">Log Payload Inspector
+                                </h3>
+                                <span class="font-mono text-xs text-outline" id="drawer-log-id">#LOG-9821 • reservations
+                                    mutation</span>
+                            </div>
+                        </div>
+                        <button
+                            class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors"
+                            onclick="closeDrawer()">
+                            <span class="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                    </div>
+                    <!-- Drawer Content -->
+                    <div class="p-8 overflow-y-auto flex-1 flex flex-col gap-6">
+                        <!-- Metadata Pill Bar -->
+                        <div
+                            class="grid grid-cols-3 gap-3 p-4 rounded-xl bg-surface-container-low font-body-md text-xs">
+                            <div>
+                                <span class="block text-outline font-label-caps text-[10px] uppercase">Actor
+                                    Identity</span>
+                                <span class="font-semibold text-on-surface mt-0.5 block"
+                                    id="drawer-actor-identity">Eleanor Vance (#USR-01)</span>
+                            </div>
+                            <div>
+                                <span class="block text-outline font-label-caps text-[10px] uppercase">IP /
+                                    Location</span>
+                                <span class="font-mono text-on-surface mt-0.5 block"
+                                    id="drawer-ip-location">192.168.1.45 (VA, US)</span>
+                            </div>
+                            <div>
+                                <span class="block text-outline font-label-caps text-[10px] uppercase">Cryptographic
+                                    Stamp</span>
+                                <span class="font-mono text-[11px] text-accent-rust truncate mt-0.5 block"
+                                    title="SHA256: 8f4b23c91a0" id="drawer-crypto-stamp">SHA256: 8f4b2...</span>
+                            </div>
+                        </div>
+                        <!-- Before & After Diff Box -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <span
+                                    class="font-label-caps text-label-caps uppercase text-on-surface font-semibold tracking-wider">Delta
+                                    Inspection (Diff)</span>
+                                <span class="text-[11px] font-mono text-outline">RFC-6902 Patch Compatible</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 font-mono text-xs">
+                                <!-- Left: Previous -->
+                                <div class="p-4 rounded-xl bg-error-container/20 text-on-surface flex flex-col gap-2">
+                                    <span class="font-bold text-error text-[11px] uppercase tracking-wider">− PREVIOUS
+                                        STATE</span>
+                                    <pre class="whitespace-pre overflow-x-auto text-[11px] leading-relaxed text-error font-mono"
+                                        id="drawer-previous-state"><code>...</code></pre>
+                                </div>
+                                <!-- Right: New State -->
+                                <div class="p-4 rounded-xl bg-primary-fixed/25 text-on-surface flex flex-col gap-2">
+                                    <span
+                                        class="font-bold text-primary-container text-[11px] uppercase tracking-wider">+
+                                        COMMITTED MUTATION</span>
+                                    <pre class="whitespace-pre overflow-x-auto text-[11px] leading-relaxed text-primary-container font-mono"
+                                        id="drawer-new-state"><code>...</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Formatted JSON Viewer -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <span
+                                    class="font-label-caps text-label-caps uppercase text-on-surface font-semibold tracking-wider">Raw
+                                    Payload Tree</span>
+                                <button
+                                    class="text-accent-rust text-xs font-semibold hover:underline flex items-center gap-1"
+                                    onclick="copyJsonPayload('drawer-full-json')">
+                                    <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                                    Copy JSON
+                                </button>
+                            </div>
+                            <div
+                                class="rounded-xl bg-primary-container text-surface-bright p-4 font-mono text-xs overflow-x-auto shadow-inner">
+                                <pre id="drawer-full-json"><code>{ ... }</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Drawer Footer -->
+                    <div class="p-6 bg-surface-container-low flex items-center justify-between">
+                        <button
+                            class="px-5 py-2 rounded-xl bg-surface-container-highest hover:bg-surface-dim font-label-caps text-label-caps uppercase tracking-wider text-on-surface transition-colors"
+                            onclick="closeDrawer()">
+                            Dismiss
+                        </button>
+                        <button
+                            class="px-5 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary-container font-label-caps text-label-caps uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all">
+                            <span class="material-symbols-outlined text-[16px]">verified_user</span>
+                            Verify Ledger Block
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/audit-logs.js"></script>
+</body>
+
+</html>

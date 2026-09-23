@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#4f46e5">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PureNest - System Schedule & Global Restrictions</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+
+<body class="bg-background text-on-background min-h-screen flex selection:bg-primary-fixed selection:text-primary-container">
+    <div id="sideAdminMenu"></div>
+    <div id="sidebar-backdrop" onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <main class="mb-20 lg:mb-0 ml-64 mt-16 p-margin-desktop w-full max-w-container-max mx-auto pb-section-gap">
+        <form id="systemScheduleForm" novalidate>
+            <div class="mb-12">
+                <h2 class="font-headline-lg text-headline-lg text-primary mb-2">Global System Availability</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant">Configure general business days, specific holiday dates, and global time restrictions to automatically reject client bookings across the entire platform.</p>
+            </div>
+
+            <div class="space-y-8 max-w-3xl">
+                <!-- Sección 1: Días recurrentes y horas de bloqueo -->
+                <section class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30">
+                    <h3 class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
+                        Global Schedule & Weekly Restrictions
+                    </h3>
+                    <p class="text-sm text-on-surface-variant mb-6">
+                        Select the days of the week and standard hours when orders are globally disabled.
+                    </p>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant mb-3">Globally Blocked Days of the Week</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
+                                    <input type="checkbox" name="global_blocked_days" value="1" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium">Monday</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
+                                    <input type="checkbox" name="global_blocked_days" value="2" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium">Tuesday</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
+                                    <input type="checkbox" name="global_blocked_days" value="3" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium">Wednesday</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
+                                    <input type="checkbox" name="global_blocked_days" value="4" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium">Thursday</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
+                                    <input type="checkbox" name="global_blocked_days" value="5" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium">Friday</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
+                                    <input type="checkbox" name="global_blocked_days" value="6" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium">Saturday</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
+                                    <input type="checkbox" name="global_blocked_days" value="0" class="rounded text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium">Sunday</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-outline-variant/20">
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="globalBlockTimeStart">Global Block From Time</label>
+                                <input class="w-full form-input-line font-body-md text-body-md text-primary" id="globalBlockTimeStart" type="time" />
+                            </div>
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="globalBlockTimeEnd">Global Block To Time</label>
+                                <input class="w-full form-input-line font-body-md text-body-md text-primary" id="globalBlockTimeEnd" type="time" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Sección 2: CRUD con Tabla para Fechas Específicas / Feriados -->
+                <section class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30">
+                    <h3 class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
+                        Specific Blocked Dates (Holidays / Special Closures)
+                    </h3>
+                    <p class="text-sm text-on-surface-variant mb-6">
+                        Add specific calendar dates to the restriction list and manage them in the table below.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <!-- Formulario para agregar fecha rápida -->
+                        <div class="flex gap-4 items-end bg-surface-container-low/40 p-4 rounded-xl border border-outline-variant/20">
+                            <div class="flex-1">
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="specificDateInput">Select Date to Block</label>
+                                <input class="w-full form-input-line font-body-md text-body-md text-primary cursor-pointer bg-transparent" id="specificDateInput" type="date" />
+                            </div>
+                            <button type="button" id="btnAddSpecificDate" class="px-6 py-3 bg-primary text-on-primary rounded-xl font-medium text-sm hover:bg-primary-container transition-colors flex items-center gap-2 cursor-pointer shadow-sm">
+                                <span class="material-symbols-outlined text-sm">add</span> Add to Table
+                            </button>
+                        </div>
+
+                        <!-- Tabla CRUD para listar las fechas bloqueadas -->
+                        <div class="overflow-x-auto rounded-xl border border-outline-variant/20">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-surface-container-low text-on-surface-variant font-label-caps text-xs border-b border-outline-variant/20">
+                                        <th class="py-3 px-4">#</th>
+                                        <th class="py-3 px-4">Blocked Date</th>
+                                        <th class="py-3 px-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="blockedDatesTableBody" class="divide-y divide-outline-variant/10 text-sm">
+                                    <!-- Se inyectarán las filas dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Sticky Bottom Action Bar -->
+            <div class="lg:fixed lg:bottom-0 lg:right-0 lg:w-[calc(100%-256px)] bg-surface-container-lowest border-t border-outline-variant/30 p-6 flex justify-end gap-4 z-40">
+                <button type="submit" id="btnSaveSchedule" class="px-8 py-3 rounded-xl bg-primary text-on-primary font-label-caps text-label-caps hover:bg-primary-container transition-colors shadow-sm cursor-pointer">
+                    Save System Schedule
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/admin-system-schedule.js"></script>
+</body>
+
+</html>

@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-
 <html class="light scroll-smooth" lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="theme-color" content="#4f46e5">
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>PureNest Cleaning Services - Ballston, Arlington</title>
+    <title>LuxuriaPure Cleaning Services - Ballston, Arlington</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
@@ -23,10 +22,7 @@
 <body class="bg-background text-on-background font-body-md antialiased overflow-x-hidden">
     <div id="nav-container"></div>
 
-
-    <!-- Main Content: Split Screen Login -->
     <main class="flex-grow flex flex-col md:flex-row pt-24 md:pt-0">
-        <!-- Left Side: Editorial Image -->
         <div class="hidden md:block md:w-1/2 relative h-screen bg-surface-variant">
             <div class="absolute inset-0 bg-cover bg-center"
                 style="background-image: url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80')">
@@ -34,58 +30,237 @@
             <div class="absolute inset-0 bg-primary/5"></div>
         </div>
 
-        <!-- Right Side: Login Form -->
-        <div
-            class="w-full md:w-1/2 flex items-center justify-center p-8 md:p-margin-desktop min-h-[calc(100vh-80px)] md:min-h-screen bg-surface">
+        <div class="w-full md:w-1/2 flex items-center justify-center p-8 md:p-14 min-h-[calc(100vh-80px)] md:min-h-screen bg-surface">
             <div class="w-full max-w-md animate-fade-in-up">
-                <div class="mb-12">
-                    <h1 class="font-headline-lg text-headline-lg text-primary mb-4">Welcome back.</h1>
-                    <p class="font-body-lg text-body-lg text-on-surface-variant">Log in to manage your cleanings and
-                        preferences.</p>
+
+                <div id="login-view">
+                    <div class="mb-12">
+                        <h1 class="font-headline-lg text-headline-lg text-primary mb-4">Welcome back.</h1>
+                        <p class="font-body-lg text-body-lg text-on-surface-variant">Log in to manage your cleanings and preferences.</p>
+                    </div>
+
+                    <div id="alert-message" class="hidden mb-6 p-4 rounded text-sm font-medium"></div>
+
+                    <form id="loginForm" class="space-y-8">
+                        <div class="relative">
+                            <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="email">Email Address</label>
+                            <input class="input-editorial w-full font-body-md text-body-md text-primary pb-2 transition-colors" id="email" name="email" placeholder="name@example.com" required type="email">
+                        </div>
+
+                        <div class="relative">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="block font-label-caps text-label-caps text-on-surface-variant" for="password">Password</label>
+                                <button type="button" onclick="toggleView('recovery')" class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors">Forgot password?</button>
+                            </div>
+                            <input class="input-editorial w-full font-body-md text-body-md text-primary pb-2 transition-colors" id="password" name="password" placeholder="••••••••" required type="password">
+                        </div>
+
+                        <button id="submitBtn" class="w-full bg-primary-container text-on-primary font-body-md text-body-md py-4 rounded hover:bg-[#15251b] transition-colors duration-300 flex justify-center items-center gap-2 mt-4 shadow-[0px_4px_12px_rgba(27,48,34,0.08)]" type="submit">
+                            <span>Log In</span>
+                            <span class="material-symbols-outlined text-[20px]" data-icon="arrow_forward">arrow_forward</span>
+                        </button>
+                    </form>
                 </div>
 
-                <!-- Alert de Error/Éxito -->
-                <div id="alert-message" class="hidden mb-6 p-4 rounded text-sm font-medium"></div>
-
-                <!-- Form con ID asignado -->
-                <form id="loginForm" class="space-y-8">
-                    <!-- Email Input -->
-                    <div class="relative">
-                        <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
-                            for="email">Email Address</label>
-                        <input
-                            class="input-editorial w-full font-body-md text-body-md text-primary pb-2 transition-colors"
-                            id="email" name="email" placeholder="name@example.com" required type="email">
+                <div id="recovery-view" class="hidden">
+                    <div class="mb-6">
+                        <button type="button" onclick="toggleView('login')" class="inline-flex items-center gap-2 text-xs font-label-caps text-on-surface-variant hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">arrow_back</span> Back to Log In
+                        </button>
                     </div>
 
-                    <!-- Password Input -->
-                    <div class="relative">
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="block font-label-caps text-label-caps text-on-surface-variant"
-                                for="password">Password</label>
-                            <a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors"
-                                href="forgot-password.html">Forgot password?</a>
+                    <div class="flex p-1.5 rounded-lg bg-surface-container-low max-w-md mb-8">
+                        <button class="flex-1 py-2.5 px-4 rounded-lg font-label-caps text-label-caps uppercase tracking-wider text-center transition-all bg-surface-container-lowest text-on-surface shadow-sm font-semibold flex items-center justify-center gap-2" id="tab-request-btn" onclick="switchTab('request')" type="button">
+                            <span class="w-5 h-5 rounded-full bg-primary-container text-primary-fixed text-xs flex items-center justify-center">1</span>
+                            <span>1. Request Token</span>
+                        </button>
+                        <button class="flex-1 py-2.5 px-4 rounded-lg font-label-caps text-label-caps uppercase tracking-wider text-center transition-all text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-2" id="tab-reset-btn" onclick="switchTab('reset')" type="button">
+                            <span class="w-5 h-5 rounded-full bg-surface-container-high text-on-surface text-xs flex items-center justify-center">2</span>
+                            <span>2. Reset</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-6" id="section-request">
+                        <div>
+                            <span class="font-label-caps text-label-caps text-accent-rust uppercase tracking-wider">Initial Step</span>
+                            <h2 class="font-headline-md text-headline-md text-on-surface mt-1">Forgot your password?</h2>
+                            <p class="font-body-md text-body-md text-on-surface-variant mt-2">
+                                Enter the email address associated with your LuxuriaPure account. We will immediately send you a temporary six-digit authentication token.
+                            </p>
                         </div>
-                        <input
-                            class="input-editorial w-full font-body-md text-body-md text-primary pb-2 transition-colors"
-                            id="password" name="password" placeholder="••••••••" required type="password">
+                        <form class="space-y-6 pt-2" id="form-request">
+                            <div class="space-y-1">
+                                <label class="block font-label-caps text-label-caps text-on-surface uppercase tracking-wider" for="recovery-email">
+                                    Registered Email Address
+                                </label>
+                                <div class="relative flex items-center">
+                                    <span class="material-symbols-outlined absolute left-0 text-outline text-[22px]">mail</span>
+                                    <input class="w-full bg-transparent pl-8 pr-4 py-3 border-b border-outline-muted focus:border-primary outline-none font-body-md text-body-md text-on-surface placeholder:text-outline/70 transition-colors" id="recovery-email" placeholder="clara.danvers@luxuriapure.com" required type="email">
+                                </div>
+                            </div>
+                            <div class="p-4 rounded-lg bg-surface-container-low flex items-start gap-3">
+                                <span class="material-symbols-outlined text-accent-rust text-[20px] shrink-0 mt-0.5">lock_clock</span>
+                                <p class="font-body-md text-body-md text-xs text-on-surface-variant">
+                                    Due to strict privacy rules, the generated token will expire exactly <strong>15 minutes</strong> after being issued (<code class="text-on-surface bg-surface-container px-1 py-0.5 rounded">reset_expires_at</code>). If you do not have access to this email, please contact your central administrator.
+                                </p>
+                            </div>
+                            <div class="pt-2">
+                                <button class="w-full py-4 px-6 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-widest hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.12)]" type="submit">
+                                    <span>Send Security Token</span>
+                                    <span class="material-symbols-outlined text-[18px]">send</span>
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <!-- Submit Button -->
-                    <button id="submitBtn"
-                        class="w-full bg-primary-container text-on-primary font-body-md text-body-md py-4 rounded hover:bg-[#15251b] transition-colors duration-300 flex justify-center items-center gap-2 mt-4 shadow-[0px_4px_12px_rgba(27,48,34,0.08)]"
-                        type="submit">
-                        <span>Log In</span>
-                        <span class="material-symbols-outlined text-[20px]"
-                            data-icon="arrow_forward">arrow_forward</span>
-                    </button>
-                </form>
+                    <div class="space-y-6 hidden" id="section-reset">
+                        <div class="flex items-start justify-between flex-wrap gap-4">
+                            <div>
+                                <span class="font-label-caps text-label-caps text-accent-rust uppercase tracking-wider">Confirmation & Password</span>
+                                <h2 class="font-headline-md text-headline-md text-on-surface mt-1">Reset with Token</h2>
+                                <p class="font-body-md text-body-md text-on-surface-variant mt-2">
+                                    Enter the token received in your inbox and define your new login credentials.
+                                </p>
+                            </div>
+                            <div class="px-4 py-2.5 rounded-lg bg-surface-container flex items-center gap-2.5">
+                                <span class="material-symbols-outlined text-accent-rust text-[20px] animate-spin" style="animation-duration: 4s;">hourglass_top</span>
+                                <div class="flex flex-col">
+                                    <span class="font-label-caps text-label-caps text-xs uppercase text-on-surface-variant">Token Expiry</span>
+                                    <span class="font-label-caps text-label-caps font-semibold text-on-surface text-sm" id="token-timer">14:09</span>
+                                </div>
+                            </div>
+                        </div>
+                        <form class="space-y-6 pt-2" id="form-reset">
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="block font-label-caps text-label-caps text-on-surface uppercase tracking-wider">
+                                        Security Code (Token)
+                                    </label>
+                                    <button class="font-label-caps text-label-caps text-accent-rust hover:underline flex items-center gap-1" onclick="pasteToken()" type="button">
+                                        <span class="material-symbols-outlined text-[14px]">content_paste</span> Paste
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-6 gap-2 sm:gap-3">
+                                    <input autofocus class="pin-box text-center text-xl font-semibold w-full h-14 rounded-lg bg-surface-container-low text-on-surface outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all uppercase" data-index="0" maxlength="1" oninput="handlePinInput(this, 0)" onkeydown="handlePinBackspace(event, 0)" type="text">
+                                    <input class="pin-box text-center text-xl font-semibold w-full h-14 rounded-lg bg-surface-container-low text-on-surface outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all uppercase" data-index="1" maxlength="1" oninput="handlePinInput(this, 1)" onkeydown="handlePinBackspace(event, 1)" type="text">
+                                    <input class="pin-box text-center text-xl font-semibold w-full h-14 rounded-lg bg-surface-container-low text-on-surface outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all uppercase" data-index="2" maxlength="1" oninput="handlePinInput(this, 2)" onkeydown="handlePinBackspace(event, 2)" type="text">
+                                    <input class="pin-box text-center text-xl font-semibold w-full h-14 rounded-lg bg-surface-container-low text-on-surface outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all uppercase" data-index="3" maxlength="1" oninput="handlePinInput(this, 3)" onkeydown="handlePinBackspace(event, 3)" type="text">
+                                    <input class="pin-box text-center text-xl font-semibold w-full h-14 rounded-lg bg-surface-container-low text-on-surface outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all uppercase" data-index="4" maxlength="1" oninput="handlePinInput(this, 4)" onkeydown="handlePinBackspace(event, 4)" type="text">
+                                    <input class="pin-box text-center text-xl font-semibold w-full h-14 rounded-lg bg-surface-container-low text-on-surface outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all uppercase" data-index="5" maxlength="1" oninput="handlePinInput(this, 5)" onkeydown="handlePinBackspace(event, 5)" type="text">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                <div class="space-y-1">
+                                    <label class="block font-label-caps text-label-caps text-on-surface uppercase tracking-wider" for="new-pass">
+                                        New Password
+                                    </label>
+                                    <div class="relative flex items-center">
+                                        <span class="material-symbols-outlined absolute left-0 text-outline text-[22px]">key</span>
+                                        <input class="w-full bg-transparent pl-8 pr-8 py-2.5 border-b border-outline-muted focus:border-primary outline-none font-body-md text-body-md text-on-surface placeholder:text-outline/70 transition-colors" id="new-pass" oninput="validatePasswordStrength(this.value)" placeholder="••••••••••••" required type="password">
+                                        <button class="absolute right-0 text-outline hover:text-on-surface" onclick="togglePassVisibility('new-pass', this)" type="button">
+                                            <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="block font-label-caps text-label-caps text-on-surface uppercase tracking-wider" for="confirm-pass">
+                                        Confirm Password
+                                    </label>
+                                    <div class="relative flex items-center">
+                                        <span class="material-symbols-outlined absolute left-0 text-outline text-[22px]">check_circle</span>
+                                        <input class="w-full bg-transparent pl-8 pr-8 py-2.5 border-b border-outline-muted focus:border-primary outline-none font-body-md text-body-md text-on-surface placeholder:text-outline/70 transition-colors" id="confirm-pass" oninput="validateMatch()" placeholder="••••••••••••" required type="password">
+                                        <button class="absolute right-0 text-outline hover:text-on-surface" onclick="togglePassVisibility('confirm-pass', this)" type="button">
+                                            <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 rounded-lg bg-surface-container-low space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Password Strength</span>
+                                    <span class="font-label-caps text-label-caps text-outline font-semibold" id="strength-label">Moderate</span>
+                                </div>
+                                <div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+                                    <div class="h-full bg-status-star transition-all duration-300 w-1/3" id="strength-bar"></div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-body-md text-xs">
+                                    <div class="flex items-center gap-1.5 text-on-surface-variant" id="rule-len">
+                                        <span class="material-symbols-outlined text-[16px]">radio_button_unchecked</span>
+                                        <span>8+ characters</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-on-surface-variant" id="rule-caps">
+                                        <span class="material-symbols-outlined text-[16px]">radio_button_unchecked</span>
+                                        <span>1 uppercase</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-on-surface-variant" id="rule-match">
+                                        <span class="material-symbols-outlined text-[16px]">radio_button_unchecked</span>
+                                        <span>Match</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-3 pt-2">
+                                <button class="w-full py-4 px-6 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-widest hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.12)]" type="submit">
+                                    <span>Reset Password & Sign In</span>
+                                    <span class="material-symbols-outlined text-[18px]">verified_user</span>
+                                </button>
+                                <div class="flex items-center justify-between text-xs font-body-md text-on-surface-variant pt-2">
+                                    <span>Didn't receive the code in your inbox?</span>
+                                    <button class="font-semibold text-accent-rust hover:underline" id="resend-btn" onclick="resendToken()" type="button">
+                                        Resend code (wait 45s)
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="hidden text-center py-10 space-y-6" id="section-success">
+                        <div class="w-16 h-16 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center mx-auto shadow-md">
+                            <span class="material-symbols-outlined text-[32px]">check</span>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="font-label-caps text-label-caps text-accent-rust uppercase">Complete Update</span>
+                            <h3 class="font-headline-md text-headline-md text-on-surface">Password Reset</h3>
+                            <p class="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto">
+                                Your password has been successfully updated and all previous sessions have been closed for security. You can now sign in with your new credential.
+                            </p>
+                        </div>
+                        <div class="pt-4">
+                            <button type="button" onclick="toggleView('login')" class="inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-widest hover:opacity-90 transition-all">
+                                <span>Continue to Sign In</span>
+                                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-10 flex items-center justify-between text-xs text-on-surface-variant mt-8 border-t border-outline-variant/20">
+                    <span class="font-label-caps text-label-caps text-outline">LuxuriaPure Architecture Suite v4.8</span>
+                    <a class="hover:text-on-surface transition-colors flex items-center gap-1" href="#">
+                        <span class="material-symbols-outlined text-[14px]">contact_support</span>
+                        <span>Support Center</span>
+                    </a>
+                </div>
+
             </div>
         </div>
     </main>
 
     <div id="footer-container"></div>
-    <!-- Script de Login -->
+
+    <script>
+        function toggleView(viewName) {
+            const loginView = document.getElementById('login-view');
+            const recoveryView = document.getElementById('recovery-view');
+
+            if (viewName === 'recovery') {
+                loginView.classList.add('hidden');
+                recoveryView.classList.remove('hidden');
+            } else {
+                recoveryView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+            }
+        }
+    </script>
     <script type="module" src="js/modules/login.js"></script>
 </body>
 

@@ -50,42 +50,223 @@ async function apiFetch(endpoint, options = {}) {
 
 export const API = {
     auth: {
-        login: async (email, password) => apiFetch('/auth/login', { // o la ruta exacta de tu endpoint de login en PHP
+        login: async (email, password) => apiFetch('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ email, password })
+        }),
+        requestPasswordReset: async (email) => apiFetch('/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        }),
+        resetPassword: async (payload) => apiFetch('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify(payload)
         })
+    },
+    admins: {
+        getAll: async () => apiFetch('/admins'),
+        getById: async (id) => apiFetch(`/admins?id=${id}`),
+        create: async (payload) => {
+            const rawUser = localStorage.getItem('purenest_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            if (!payload.logged_user_id && user.id) {
+                payload.logged_user_id = user.id;
+            }
+            return apiFetch('/admins', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+        },
+        update: async (id, payload) => {
+            const rawUser = localStorage.getItem('purenest_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            if (!payload.logged_user_id && user.id) {
+                payload.logged_user_id = user.id;
+            }
+            return apiFetch(`/admins?id=${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+        },
+        delete: async (id) => {
+            const rawUser = localStorage.getItem('purenest_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            const payload = { logged_user_id: user.id || null };
+
+            return apiFetch(`/admins?id=${id}`, {
+                method: 'DELETE',
+                body: JSON.stringify(payload)
+            });
+        },
+        issueResetToken: async (id) => {
+            const rawUser = localStorage.getItem('purenest_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            const payload = { logged_user_id: user.id || null };
+
+            return await apiFetch(`/admins/${id}/reset-token`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+        }
     },
     services: {
         getAll: async () => apiFetch('/services'),
         getById: async (id) => apiFetch(`/services?id=${id}`),
-        create: async (payload, isFormData = false) => apiFetch('/services', {
-            method: 'POST',
-            body: isFormData ? payload : JSON.stringify(payload)
-        }),
-        update: async (id, payload, isFormData = false) => apiFetch(`/services?id=${id}`, {
-            method: isFormData ? 'POST' : 'PUT',
-            body: isFormData ? payload : JSON.stringify(payload)
-        }),
-        delete: async (id) => apiFetch(`/services?id=${id}`, {
-            method: 'DELETE'
-        })
+        create: async (payload, isFormData = false) => {
+            const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+
+            if (isFormData) {
+                if (!payload.has('user_id') && user.id) {
+                    payload.append('user_id', user.id);
+                }
+            } else {
+                if (!payload.user_id && user.id) {
+                    payload.user_id = user.id;
+                }
+                payload = JSON.stringify(payload);
+            }
+
+            return apiFetch('/services', {
+                method: 'POST',
+                body: payload
+            });
+        },
+        update: async (id, payload, isFormData = false) => {
+            const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+
+            if (isFormData) {
+                if (!payload.has('user_id') && user.id) {
+                    payload.append('user_id', user.id);
+                }
+            } else {
+                if (!payload.user_id && user.id) {
+                    payload.user_id = user.id;
+                }
+                payload = JSON.stringify(payload);
+            }
+
+            return apiFetch(`/services?id=${id}`, {
+                method: isFormData ? 'POST' : 'PUT',
+                body: payload
+            });
+        },
+        delete: async (id) => {
+            const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            const payload = { user_id: user.id || null };
+
+            return apiFetch(`/services?id=${id}`, {
+                method: 'DELETE',
+                body: JSON.stringify(payload)
+            });
+        }
     },
     reservations: {
-        getAll: async () => apiFetch('/reservations'),
+        getAll: async (month = null, year = null) => {
+            let endpoint = '/reservations';
+            const params = [];
+
+            if (month && year) {
+                params.push(`month=${month}&year=${year}`);
+            }
+
+            const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+            if (rawUser && rawUser !== 'undefined') {
+                try {
+                    const user = JSON.parse(rawUser);
+                    const role = (user.role || '').toUpperCase();
+                    if (role !== 'ADMIN' && user.id) {
+                        params.push(`staff_id=${user.id}`);
+                    }
+                } catch (e) {
+                    console.error('Error parsing user for reservation filter', e);
+                }
+            }
+
+            if (params.length > 0) {
+                endpoint += `?${params.join('&')}`;
+            }
+
+            return apiFetch(endpoint);
+        },
         getById: async (id) => apiFetch(`/reservations?id=${id}`),
-        create: async (payload) => apiFetch('/reservations', {
+        create: async (payload) => {
+            const rawUser = localStorage.getItem('purenest_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            if (!payload.user_id && user.id) {
+                payload.user_id = user.id;
+            }
+            return apiFetch('/reservations', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+        },
+        update: async (id, payload) => {
+            const rawUser = localStorage.getItem('purenest_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+
+            if (!payload.user_id && user.id) {
+                payload.user_id = user.id;
+            }
+
+            return apiFetch(`/reservations?id=${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+        },
+        delete: async (id) => apiFetch(`/reservations?id=${id}`, {
+            method: 'DELETE'
+        }),
+    },
+    categories: {
+        getAll: async () => apiFetch('/categories'),
+        getById: async (id) => apiFetch(`/categories?id=${id}`),
+        create: async (payload) => apiFetch('/categories', {
             method: 'POST',
             body: JSON.stringify(payload)
         }),
-        update: async (id, payload) => apiFetch(`/reservations?id=${id}`, {
+        update: async (id, payload) => apiFetch(`/categories?id=${id}`, {
             method: 'PUT',
             body: JSON.stringify(payload)
         }),
-        delete: async (id) => apiFetch(`/reservations?id=${id}`, {
+        delete: async (id) => apiFetch(`/categories?id=${id}`, {
             method: 'DELETE'
         })
     },
-    categories: {
-        getAll: async () => apiFetch('/categories')
-    }
+    audit: {
+        getLogs: async () => apiFetch('/audit-logs'),
+        getHistory: async () => apiFetch('/audit-logs/history')
+    },
+    systemSchedule: {
+        get: async () => apiFetch('/system-schedule'),
+        save: async (payload) => {
+            const rawUser = localStorage.getItem('purenest_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            if (!payload.user_id && user.id) {
+                payload.user_id = user.id;
+            }
+            return apiFetch('/system-schedule', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+        }
+    },
+    features: {
+        getAll: async () => apiFetch('/features'),
+        getById: async (id) => apiFetch(`/features?id=${id}`),
+        getByService: async (serviceId) => apiFetch(`/services/${serviceId}/features`),
+        create: async (payload) => apiFetch('/features', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+        update: async (id, payload) => apiFetch(`/features?id=${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        }),
+        delete: async (id) => apiFetch(`/features?id=${id}`, {
+            method: 'DELETE'
+        })
+    },
 };

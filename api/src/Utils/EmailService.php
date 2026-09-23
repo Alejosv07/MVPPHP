@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Utils;
@@ -10,9 +11,11 @@ require_once __DIR__ . '/../Libs/PHPMailer/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-class EmailService {
+class EmailService
+{
 
-    public static function sendStatusUpdateEmail(array $reservation, string $newStatus): bool {
+    public static function sendStatusUpdateEmail(array $reservation, string $newStatus): bool
+    {
         $mail = new PHPMailer(true);
 
         try {
@@ -25,7 +28,7 @@ class EmailService {
             $mail->Port       = 587;
             $mail->CharSet    = 'UTF-8';
 
-            $mail->setFrom('balrking072@gmail.com', 'PureNest Cleaning Services');
+            $mail->setFrom('balrking072@gmail.com', 'LuxuriaPure Cleaning Services');
 
             $customerName = trim(($reservation['first_name'] ?? '') . ' ' . ($reservation['last_name'] ?? ''));
             if (empty($customerName)) {
@@ -38,7 +41,7 @@ class EmailService {
             $resId = '#RES-' . str_pad((string)$reservation['id'], 4, '0', STR_PAD_LEFT);
 
             $mail->isHTML(true);
-            $mail->Subject = "Reservation Update {$resId} - PureNest";
+            $mail->Subject = "Reservation Update {$resId} - LuxuriaPure";
             $mail->Body    = self::buildHtmlTemplate($reservation, $newStatus, $customerName, $resId, $recipientEmail);
 
             return $mail->send();
@@ -48,36 +51,133 @@ class EmailService {
         }
     }
 
-    private static function buildHtmlTemplate(array $res, string $status, string $customerName, string $resId, string $recipientEmail): string {
+    public static function sendPasswordResetEmail(array $user, string $code): bool
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'balrking072@gmail.com';
+            $mail->Password   = 'tzxyzvbbewjctwjy';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom('balrking072@gmail.com', 'LuxuriaPure Cleaning Services');
+
+            $userName = $user['name'] ?? 'Usuario';
+            $recipientEmail = $user['email'];
+
+            $mail->addAddress($recipientEmail, $userName);
+
+            $mail->isHTML(true);
+            $mail->Subject = "Código de Recuperación de Contraseña - LuxuriaPure";
+            $mail->Body    = self::buildPasswordResetTemplate($userName, $code);
+
+            return $mail->send();
+        } catch (Exception $e) {
+            error_log("Error sending password reset email: {$mail->ErrorInfo}");
+            return false;
+        }
+    }
+
+private static function buildPasswordResetTemplate(string $userName, string $code): string
+    {
+        return "
+        <!DOCTYPE html>
+        <html lang='en'>
+        <head>
+            <meta charset='UTF-8'>
+            <title>Password Reset</title>
+            <style>
+                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfbf9; margin: 0; padding: 40px 15px; color: #0f172a; }
+                .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d9d2c9; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
+                .brand-header { background-color: #0f172a; padding: 32px 20px; text-align: center; }
+                .brand-header h1 { font-family: Georgia, serif; color: #d4af37; margin: 0; font-size: 28px; font-weight: normal; letter-spacing: -0.025em; text-transform: uppercase; }
+                .content { padding: 40px 32px; }
+                .greeting { font-family: Georgia, serif; font-size: 22px; font-weight: normal; margin: 0 0 12px 0; color: #0f172a; letter-spacing: -0.025em; }
+                .message { font-size: 15px; line-height: 1.6; color: #475569; margin: 0 0 28px 0; }
+                .code-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 28px; }
+                .code-text { font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #d4af37; font-family: monospace; }
+                .footer { background-color: #f1f5f9; padding: 24px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
+            </style>
+        </head>
+        <body>
+            <div class='wrapper'>
+                <div class='brand-header'>
+                    <h1>LuxuriaPure</h1>
+                </div>
+                <div class='content'>
+                    <h2 class='greeting'>Hello, {$userName}</h2>
+                    <p class='message'>
+                        You have requested to reset your password for LuxuriaPure. Below is your temporary verification code, which is valid for 15 minutes:
+                    </p>
+                    <div class='code-box'>
+                        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; font-weight: 600;'>Your recovery code is</div>
+                        <div class='code-text'>{$code}</div>
+                    </div>
+                    <p style='font-size: 13px; color: #475569; line-height: 1.5; text-align: center;'>
+                        If you did not request this change, you can safely ignore this message.
+                    </p>
+                </div>
+                <div class='footer'>
+                    &copy; " . date('Y') . " LuxuriaPure Cleaning Services. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+    private static function buildHtmlTemplate(array $res, string $status, string $customerName, string $resId, string $recipientEmail): string
+    {
         $statusColors = [
-            'CONFIRMED' => '#1b3022',
-            'PENDING'   => '#b45309',
-            'CANCELLED' => '#b91c1c',
-            'REJECTED'  => '#4b5563',
-            'COMPLETED' => '#059669'
+            'PENDING'     => '#b45309',
+            'INITIATED'   => '#1d4ed8',
+            'ON_THE_WAY'  => '#d97706',
+            'RESCHEDULED' => '#9333ea',
+            'COMPLETED'   => '#059669',
+            'CANCELLED'   => '#b91c1c',
+            'REJECTED'    => '#b91c1c'
         ];
 
-        $badgeColor = $statusColors[$status] ?? '#1b3022';
+        $badgeColor = $statusColors[$status] ?? '#0f172a';
 
         $formattedDate = !empty($res['service_date']) ? date('F j, Y', strtotime($res['service_date'])) : 'N/A';
         $formattedTime = !empty($res['preferred_time']) ? date('g:i A', strtotime($res['preferred_time'])) : '09:00 AM';
         $serviceName   = $res['service_name'] ?? 'Standard Cleaning Service';
         $address       = $res['service_address'] ?? 'Address registered in system';
 
+        $bedrooms      = isset($res['bedrooms']) ? $res['bedrooms'] . ' Bedroom(s)' : 'N/A';
+        $bathrooms     = isset($res['bathrooms']) ? $res['bathrooms'] . ' Bathroom(s)' : 'N/A';
+        $frequency     = $res['frequency'] ?? 'One-time';
+
+        $rawPrice = isset($res['total_price']) ? (float)$res['total_price'] : 0.00;
+        $totalPrice = $rawPrice > 0 ? '$' . number_format($rawPrice, 2) : 'Pending Review / Awaiting Quote';
+
+        $instructions  = !empty($res['special_instructions']) ? htmlspecialchars($res['special_instructions']) : 'None specified';
+
         $secret = 'purenest_secret';
         $token = hash('sha256', $res['id'] . 'balrking07@gmail.com' . $secret);
-        
-       $baseUrl = "http://localhost/purenest/api/public/reservations?id={$res['id']}&token={$token}";
+
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $protocol = 'https';
+        }
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        $baseUrl = "{$protocol}://{$host}/purenest/api/public/reservations?id={$res['id']}&token={$token}";
 
         $confirmUrl = "{$baseUrl}&action=confirm";
         $cancelUrl  = "{$baseUrl}&action=cancel";
 
         $actionButtonsHtml = "";
 
-        if ($status === 'PENDING') {
+        if (in_array($status, ['PENDING', 'RESCHEDULED'], true)) {
             $actionButtonsHtml = "
             <div style='text-align: center; margin: 32px 0 16px 0;'>
-                <a href='{$confirmUrl}' style='background-color: #1b3022; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 10px; display: inline-block;'>
+                <a href='{$confirmUrl}' style='background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 10px; display: inline-block;'>
                     Confirm Service
                 </a>
                 <a href='{$cancelUrl}' style='background-color: #b91c1c; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
@@ -99,73 +199,87 @@ class EmailService {
         <head>
             <meta charset='UTF-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <title>Reservation Update</title>
+            <title>Reservation Update - LuxuriaPure</title>
             <style>
-                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 40px 15px; color: #1b3022; }
-                .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
-                .brand-header { background-color: #1b3022; padding: 32px 20px; text-align: center; }
-                .brand-header h1 { color: #ffffff; margin: 0; font-size: 22px; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; }
+                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 40px 15px; color: #0f172a; }
+                .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
+                .brand-header { background-color: #0f172a; padding: 36px 20px; text-align: center; }
+                .brand-header h1 { font-family: Georgia, serif; color: #d4af37; margin: 0; font-size: 36px; font-weight: normal; letter-spacing: -0.025em; text-transform: uppercase; }
                 .content { padding: 40px 32px; }
                 .status-badge { display: inline-block; padding: 6px 16px; border-radius: 50px; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background-color: {$badgeColor}; margin-bottom: 24px; }
-                .greeting { font-size: 20px; font-weight: 600; margin: 0 0 12px 0; color: #111827; }
-                .message { font-size: 15px; line-height: 1.6; color: #4b5563; margin: 0 0 28px 0; }
-                .details-card { background-color: #fcfbf9; border: 1px solid #f3f0e6; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+                .greeting { font-family: Georgia, serif; font-size: 24px; font-weight: normal; margin: 0 0 12px 0; color: #0f172a; letter-spacing: -0.025em; }
+                .message { font-size: 15px; line-height: 1.6; color: #475569; margin: 0 0 28px 0; }
+                .details-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
                 .details-table { width: 100%; border-collapse: collapse; }
-                .details-table td { padding: 10px 0; border-bottom: 1px solid #f3f0e6; font-size: 14px; }
+                .details-table td { padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
                 .details-table tr:last-child td { border-bottom: none; }
-                .label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-                .value { color: #111827; font-weight: 600; text-align: right; }
-                .footer { background-color: #f9fafb; padding: 24px 32px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }
+                .label { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+                .value { color: #0f172a; font-weight: 600; text-align: right; }
+                .footer { background-color: #f1f5f9; padding: 24px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
+                .text-navy { color: #0f172a; }
+                .text-gold { color: #d4af37; }
             </style>
         </head>
         <body>
             <div class='wrapper'>
                 <div class='brand-header'>
-                    <h1>PureNest</h1>
+                    <h1 class='font-serif text-4xl tracking-tight text-gold'>LuxuriaPure</h1>
                 </div>
 
                 <div class='content'>
                     <span class='status-badge'>{$status}</span>
                     
-                    <h2 class='greeting'>Hello {$customerName},</h2>
+                    <h2 class='greeting font-serif text-4xl tracking-tight text-navy'>Hello {$customerName},</h2>
                     <p class='message'>
-                        The status of your cleaning reservation has been updated. Below are the current details of your scheduled service:
+                        The status of your cleaning reservation has been updated. Below are the comprehensive details of your scheduled service:
                     </p>
 
                     <div class='details-card'>
                         <table class='details-table'>
                             <tr>
                                 <td class='label'>Reservation ID</td>
-                                <td class='value'>{$resId}</td>
+                                <td class='value text-navy'>{$resId}</td>
                             </tr>
                             <tr>
                                 <td class='label'>Service</td>
-                                <td class='value'>{$serviceName}</td>
+                                <td class='value text-navy'>{$serviceName}</td>
                             </tr>
                             <tr>
-                                <td class='label'>Date</td>
-                                <td class='value'>{$formattedDate}</td>
+                                <td class='label'>Date & Time</td>
+                                <td class='value text-navy'>{$formattedDate} at {$formattedTime}</td>
                             </tr>
                             <tr>
-                                <td class='label'>Time</td>
-                                <td class='value'>{$formattedTime}</td>
+                                <td class='label'>Bedrooms / Bathrooms</td>
+                                <td class='value text-navy'>{$bedrooms} / {$bathrooms}</td>
+                            </tr>
+                            <tr>
+                                <td class='label'>Frequency</td>
+                                <td class='value text-navy'>{$frequency}</td>
                             </tr>
                             <tr>
                                 <td class='label'>Address</td>
-                                <td class='value'>{$address}</td>
+                                <td class='value text-navy'>{$address}</td>
+                            </tr>
+                            <tr>
+                                <td class='label'>Special Instructions</td>
+                                <td class='value text-navy'>{$instructions}</td>
+                            </tr>
+                            <tr>
+                                <td class='label' style='font-size: 13px;'>Total Price</td>
+                                <td class='value text-gold' style='font-size: 15px; font-weight: bold;'>{$totalPrice}</td>
                             </tr>
                         </table>
                     </div>
 
                     {$actionButtonsHtml}
 
-                    <p style='font-size: 13px; color: #6b7280; margin-top: 20px; line-height: 1.5; text-align: center;'>
+                    <p style='font-size: 13px; color: #64748b; margin-top: 20px; line-height: 1.5; text-align: center;'>
                         If you need to make further adjustments, please contact our support team.
                     </p>
                 </div>
 
                 <div class='footer'>
-                    &copy; " . date('Y') . " PureNest Cleaning Services. All rights reserved.
+                    &copy; " . date('Y') . " LuxuriaPure Cleaning Services. All rights reserved.
                 </div>
             </div>
         </body>

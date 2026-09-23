@@ -110,15 +110,46 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2"
-                                    for="serviceCategory">Category *</label>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block font-label-caps text-label-caps text-on-surface-variant"
+                                        for="serviceCategory">Category *</label>
+                                    <button type="button" id="btnManageCategories"
+                                        class="text-xs text-primary font-medium hover:underline flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined text-[16px]">settings</span> Manage
+                                        Categories
+                                    </button>
+                                </div>
                                 <select
                                     class="w-full form-input-line font-body-md text-body-md text-primary cursor-pointer"
                                     id="serviceCategory">
                                     <option value="">Loading categories...</option>
                                 </select>
                             </div>
-                            <div class="md:col-span-2 pt-4 flex items-center justify-between">
+
+                            <!-- Features / Includes Selection Section -->
+                            <div class="md:col-span-2 pt-4 border-t border-outline-variant/20">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block font-label-caps text-label-caps text-on-surface-variant">Service Includes (Features)</label>
+                                    <button type="button" id="btnManageFeatures"
+                                        class="text-xs text-primary font-medium hover:underline flex items-center gap-1 cursor-pointer">
+                                        <span class="material-symbols-outlined text-[16px]">settings</span> Manage Features Master
+                                    </button>
+                                </div>
+                                <div class="flex gap-2 mb-3">
+                                    <select id="serviceFeatureSelect" class="flex-1 form-input-line font-body-md text-body-md text-primary cursor-pointer">
+                                        <option value="">Select a feature to add...</option>
+                                    </select>
+                                    <button type="button" id="btnAddServiceFeature"
+                                        class="px-4 py-2 bg-surface-container-high text-primary rounded-lg font-medium text-xs hover:bg-surface-container transition-colors">
+                                        Add
+                                    </button>
+                                </div>
+                                <div id="selectedFeaturesContainer" class="flex flex-wrap gap-2">
+                                    <!-- Las características agregadas se renderizan aquí -->
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2 pt-4 flex items-center justify-between border-t border-outline-variant/20">
                                 <div>
                                     <p class="font-headline-sm text-headline-sm text-primary">Service Status</p>
                                     <p class="font-body-md text-body-md text-on-surface-variant text-sm">Visible to
@@ -187,6 +218,70 @@
         </form>
     </main>
 
+    <!-- Modal Categorías -->
+    <div id="categoryModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div
+            class="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl border border-outline-variant/30 relative">
+            <div class="flex justify-between items-center pb-4 border-b border-outline-variant/20 mb-4">
+                <h3 class="font-headline-sm text-primary font-bold">Manage Categories</h3>
+                <button type="button" id="closeCategoryModal" class="text-on-surface-variant hover:text-primary">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form id="categoryForm" class="mb-6 bg-surface-container-low p-4 rounded-xl space-y-4">
+                <input type="hidden" id="categoryId">
+                <div>
+                    <label class="block text-xs font-label-caps text-on-surface-variant mb-1">Category Name *</label>
+                    <input type="text" id="categoryNameInput" class="w-full form-input-line text-sm"
+                        placeholder="e.g., Deep Cleaning" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="btnCancelCategoryEdit"
+                        class="px-4 py-2 text-xs rounded-lg border border-outline-variant hidden">Cancel</button>
+                    <button type="submit" id="btnSaveCategory"
+                        class="px-4 py-2 text-xs bg-primary text-on-primary rounded-lg font-medium">Add Category</button>
+                </div>
+            </form>
+
+            <div class="max-h-60 overflow-y-auto space-y-2 pr-1" id="categoriesListContainer">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Features Maestras -->
+    <div id="featureModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div
+            class="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl border border-outline-variant/30 relative">
+            <div class="flex justify-between items-center pb-4 border-b border-outline-variant/20 mb-4">
+                <h3 class="font-headline-sm text-primary font-bold">Manage Features Master Catalog</h3>
+                <button type="button" id="closeFeatureModal" class="text-on-surface-variant hover:text-primary">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form id="featureForm" class="mb-6 bg-surface-container-low p-4 rounded-xl space-y-4">
+                <input type="hidden" id="featureId">
+                <div>
+                    <label class="block text-xs font-label-caps text-on-surface-variant mb-1">Feature Text *</label>
+                    <input type="text" id="featureNameInput" class="w-full form-input-line text-sm"
+                        placeholder="e.g., Kitchen & Cabinets (Exterior)" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="btnCancelFeatureEdit"
+                        class="px-4 py-2 text-xs rounded-lg border border-outline-variant hidden">Cancel</button>
+                    <button type="submit" id="btnSaveFeature"
+                        class="px-4 py-2 text-xs bg-primary text-on-primary rounded-lg font-medium">Add Feature</button>
+                </div>
+            </form>
+
+            <div class="max-h-60 overflow-y-auto space-y-2 pr-1" id="featuresListContainer">
+            </div>
+        </div>
+    </div>
+    
     <script type="module" src="js/modules/layout-admin.js"></script>
     <script type="module" src="js/modules/admin-service-form.js"></script>
 </body>

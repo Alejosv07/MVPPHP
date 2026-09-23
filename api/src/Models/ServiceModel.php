@@ -73,4 +73,15 @@ class ServiceModel {
         $stmt = $this->db->prepare("DELETE FROM services WHERE id = ?");
         return $stmt->execute([$id]);
     }
+
+    public function getFeaturesByService(int $serviceId): array {
+    $stmt = $this->db->prepare("
+        SELECT f.id, f.name 
+        FROM features f 
+        JOIN service_feature_relations sfr ON f.id = sfr.feature_id 
+        WHERE sfr.service_id = ?
+    ");
+    $stmt->execute([$serviceId]);
+    return $stmt->fetchAll();
+}
 }
