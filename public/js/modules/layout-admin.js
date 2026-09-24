@@ -98,7 +98,7 @@ function initLogout() {
             localStorage.removeItem('purenest_user');
             localStorage.removeItem('luxuriapure_user');
 
-            window.location.href = `${window.location.origin}/login.html`;
+            window.location.href = `${window.location.origin}/public/login.html`;
         });
     }
 }
