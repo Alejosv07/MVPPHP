@@ -13,15 +13,9 @@ class CategoryModel {
         $this->db = (new Database())->getConnection();
     }
 
-public function getAll(): array {
-    return [
-        [
-            'id' => 999,
-            'name' => 'TEST CATEGORY',
-            'description' => 'TEST'
-        ]
-    ];
-}
+    public function getAll(): array {
+        return $this->db->query("SELECT * FROM service_categories ORDER BY name ASC")->fetchAll();
+    }
 
     public function getById(int $id): array|false {
         $stmt = $this->db->prepare("SELECT * FROM service_categories WHERE id = ?");
