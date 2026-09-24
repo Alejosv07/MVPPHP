@@ -13,7 +13,6 @@ use PHPMailer\PHPMailer\Exception;
 
 class EmailService
 {
-
     public static function sendStatusUpdateEmail(array $reservation, string $newStatus): bool
     {
         $mail = new PHPMailer(true);
@@ -67,13 +66,13 @@ class EmailService
 
             $mail->setFrom('balrking072@gmail.com', 'Luxuria Pure Cleaning Services');
 
-            $userName = $user['name'] ?? 'Usuario';
+            $userName = $user['name'] ?? 'User';
             $recipientEmail = $user['email'];
 
             $mail->addAddress($recipientEmail, $userName);
 
             $mail->isHTML(true);
-            $mail->Subject = "Código de Recuperación de Contraseña - Luxuria Pure";
+            $mail->Subject = "Password Reset Code - Luxuria Pure";
             $mail->Body    = self::buildPasswordResetTemplate($userName, $code);
 
             return $mail->send();
@@ -159,7 +158,6 @@ class EmailService
 
         $instructions  = !empty($res['special_instructions']) ? htmlspecialchars($res['special_instructions']) : 'None specified';
 
-        // Mostrar personal asignado si existe en el arreglo
         $assignedStaff = $res['staff_name'] ?? null;
         $staffNoticeHtml = "";
         
@@ -167,7 +165,7 @@ class EmailService
             $staffNoticeHtml = "
             <div style='background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 24px;'>
                 <p style='margin: 0; font-size: 14px; color: #166534;'>
-                    <strong>✨ Personal Asignado:</strong> Se ha asignado a <strong>" . htmlspecialchars($assignedStaff) . "</strong> para llevar a cabo este servicio de limpieza en tu domicilio.
+                    <strong>✨ Assigned Staff:</strong> <strong>" . htmlspecialchars($assignedStaff) . "</strong> has been assigned to perform this cleaning service at your location.
                 </p>
             </div>";
         }
@@ -193,13 +191,13 @@ class EmailService
             $actionButtonsHtml = "
             <div style='text-align: center; margin: 32px 0 16px 0;'>
                 <a href='{$confirmUrl}' style='background-color: #0f172a; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block;'>
-                    Confirmar
+                    Confirm
                 </a>
                 <a href='{$rescheduleUrl}' style='background-color: #9333ea; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block;'>
-                    Reasignar Fecha
+                    Reschedule
                 </a>
                 <a href='{$cancelUrl}' style='background-color: #b91c1c; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
-                    Cancelar
+                    Cancel
                 </a>
             </div>";
         }
