@@ -39,7 +39,7 @@
         href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
         rel="stylesheet" />
     <script src="tailwind.js" id="tailwind-config"></script>
-    
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -179,7 +179,8 @@
                                 </div>
                             </div>
                             <p id="addressError" class="text-xs text-red-600 mt-1 hidden">
-                                We are sorry, but we do not provide service in this area at the moment.', 'Area Not Available'.
+                                We are sorry, but we do not provide service in this area at the moment.', 'Area Not
+                                Available'.
                             </p>
                         </div>
 
@@ -233,16 +234,21 @@
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col">
             <div class="flex justify-between items-center p-4 border-b">
                 <h3 class="font-bold text-lg text-primary">Selecciona tu dirección en el mapa</h3>
-                <button type="button" id="closeMapModal" class="text-gray-500 hover:text-black text-xl font-bold">&times;</button>
+                <button type="button" id="closeMapModal"
+                    class="text-gray-500 hover:text-black text-xl font-bold">&times;</button>
             </div>
             <div class="p-4 bg-gray-50 border-b flex gap-2">
-                <input type="text" id="mapSearchInput" placeholder="Busca tu dirección o lugar..." class="w-full p-2 border rounded text-sm">
-                <button type="button" id="mapSearchBtn" class="px-4 py-2 bg-primary text-white rounded text-sm shrink-0">Buscar</button>
+                <input type="text" id="mapSearchInput" placeholder="Busca tu dirección o lugar..."
+                    class="w-full p-2 border rounded text-sm">
+                <button type="button" id="mapSearchBtn"
+                    class="px-4 py-2 bg-primary text-white rounded text-sm shrink-0">Buscar</button>
             </div>
             <div id="googleMapContainer" class="w-full h-[400px]"></div>
             <div class="flex justify-end gap-2 p-4 border-t bg-gray-50">
-                <button type="button" id="cancelMapModal" class="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm">Cancelar</button>
-                <button type="button" id="confirmMapModal" class="px-4 py-2 bg-primary text-white rounded text-sm">Usar esta dirección</button>
+                <button type="button" id="cancelMapModal"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm">Cancelar</button>
+                <button type="button" id="confirmMapModal" class="px-4 py-2 bg-primary text-white rounded text-sm">Usar
+                    esta dirección</button>
             </div>
         </div>
     </div>
@@ -578,24 +584,10 @@
                         src="assets/img/MapServices2.webp" />
                 </div>
                 <div>
-                    <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Serving Ballston and beyond.</h3>
-                    <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+                    <h3 class="font-headline-sm text-headline-sm text-primary mb-4">Serving Zones & Areas.</h3>
+                    <div id="dynamic-service-zones" class="grid grid-cols-2 gap-y-2 gap-x-4">
                         <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Ballston</div>
-                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Clarendon</div>
-                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Virginia Square</div>
-                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Rosslyn</div>
-                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Lyon Village</div>
-                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Bluemont</div>
-                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Crystal City</div>
-                        <div class="flex items-center gap-2 text-body-md text-on-surface-variant"><span
-                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Pentagon City</div>
+                                class="w-1.5 h-1.5 rounded-full bg-primary"></span> Loading zones...</div>
                     </div>
                 </div>
             </div>

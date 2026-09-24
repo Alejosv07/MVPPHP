@@ -13,6 +13,7 @@ let allowedZones = [];
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllowedZonesFromDatabase();
     await loadPublicServices();
+    await loadPublicServiceZonesUI();
     setupEstimateForm();
     setMinDateForService();
     setupSupportWidget();
@@ -30,7 +31,7 @@ async function loadAllowedZonesFromDatabase() {
         }
 
         allowedZones = [];
-        
+
         rawData.forEach(zone => {
             if (Number(zone.is_active) === 1) {
                 allowedZones.push(zone.city_name.toLowerCase());
@@ -100,7 +101,7 @@ function setupAddressValidation() {
                 navigator.geolocation.getCurrentPosition(async (position) => {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    
+
                     try {
                         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
                         const data = await response.json();
@@ -137,7 +138,7 @@ function setupMapModal() {
 
     openBtn.addEventListener('click', () => {
         modal.classList.remove('hidden');
-        
+
         setTimeout(async () => {
             if (!googleMapInstance) {
                 googleMapInstance = L.map('googleMapContainer').setView([defaultLat, defaultLng], 13);
@@ -575,7 +576,58 @@ window.submitClientRating = async function (reservationId) {
         Modal.error('Could not submit rating. Please try again.', 'Rating Error');
     }
 };
+async function loadPublicServiceZonesUI() {
+    const container = document.getElementById('dynamic-service-zones');
+    if (!container) return;
 
+    try {
+        const response = await API.serviceZones.getAll();
+        let rawData = response;
+
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+            rawData = response.data || response.service_zones || response.zones || [];
+        }
+
+        const zones = Array.isArray(rawData) ? rawData : [];
+        container.innerHTML = '';
+
+        if (zones.length === 0) {
+            container.innerHTML = `<div class="text-body-md text-on-surface-variant">No active service zones found.</div>`;
+            return;
+        }
+
+        let htmlContent = '';
+        zones.forEach(zone => {
+            if (Number(zone.is_active) === 1) {
+                htmlContent += `
+                    <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 
+                        ${escapeHTML(zone.city_name)} (${escapeHTML(zone.state_code)})
+                    </div>
+                `;
+            }
+
+            if (zone.areas && Array.isArray(zone.areas)) {
+                zone.areas.forEach(area => {
+                    if (Number(area.is_active) === 1) {
+                        htmlContent += `
+                            <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 
+                                ${escapeHTML(area.area_name)}
+                            </div>
+                        `;
+                    }
+                });
+            }
+        });
+
+        container.innerHTML = htmlContent || `<div class="text-body-md text-on-surface-variant">No available areas at the moment.</div>`;
+
+    } catch (err) {
+        console.error('Error loading service zones UI:', err);
+        container.innerHTML = `<div class="text-body-md text-on-surface-variant">Could not load service zones.</div>`;
+    }
+}
 function setupSupportWidget() {
     document.addEventListener('click', async e => {
         const target = e.target.closest('button, a, div, span');
