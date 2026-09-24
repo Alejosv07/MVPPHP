@@ -4,6 +4,13 @@ import { Modal } from './modal.js';
 document.addEventListener('DOMContentLoaded', () => {
     loadZones();
     setupForm();
+
+    const btnNewZone = document.getElementById('btnNewZone');
+    if (btnNewZone) {
+        btnNewZone.addEventListener('click', () => {
+            openZoneModal();
+        });
+    }
 });
 
 async function loadZones() {
