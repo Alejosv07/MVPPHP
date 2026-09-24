@@ -15,7 +15,7 @@ class PublicReservationController {
         $token = $_GET['token'] ?? null;
         $action = $_GET['action'] ?? null;
 
-        if (!$id || !$token || !in_array($action, ['confirm', 'cancel'], true)) {
+        if (!$id || !$token || !in_array($action, ['confirm', 'cancel', 'reschedule'], true)) {
             Response::json(['message' => 'Invalid parameters'], 400);
             return;
         }
@@ -31,6 +31,73 @@ class PublicReservationController {
             return;
         }
 
+        if ($action === 'reschedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $newDate = $_POST['service_date'] ?? '';
+            $today = date('Y-m-d');
+
+            // Validación estricta: la fecha no puede ser anterior a hoy
+            if (empty($newDate) || $newDate < $today) {
+                echo "<script>alert('Error: No puedes seleccionar una fecha pasada.'); window.history.back();</script>";
+                return;
+            }
+
+            $updateStmt = $db->prepare("UPDATE reservations SET service_date = :service_date, status = 'RESCHEDULED' WHERE id = :id");
+            $updateStmt->execute([':service_date' => $newDate, ':id' => $id]);
+
+            $historyStmt = $db->prepare("INSERT INTO reservation_history (reservation_id, user_id, previous_status, new_status, comment) VALUES (:id, NULL, :prev, 'RESCHEDULED', :comment)");
+            $historyStmt->execute([
+                ':id' => $id,
+                ':prev' => $reservation['status'],
+                ':comment' => "Service date rescheduled to {$newDate} by customer via email link."
+            ]);
+
+            $stmtUpdated = $db->prepare("SELECT r.*, c.email, c.first_name, c.last_name, s.name as service_name FROM reservations r JOIN customers c ON r.customer_id = c.id JOIN services s ON r.service_id = s.id WHERE r.id = :id LIMIT 1");
+            $stmtUpdated->execute([':id' => $id]);
+            $updatedReservation = $stmtUpdated->fetch(PDO::FETCH_ASSOC);
+
+            if ($updatedReservation) {
+                EmailService::sendStatusUpdateEmail($updatedReservation, 'RESCHEDULED');
+            }
+
+            echo "
+            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                    <h2 style='color: #9333ea;'>¡Fecha Reasignada con Éxito!</h2>
+                    <p style='color: #4b5563;'>Tu reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> ha sido actualizada para el día <strong>{$newDate}</strong>.</p>
+                </div>
+            </div>";
+            return;
+        }
+
+        if ($action === 'reschedule') {
+            $currentDate = $reservation['service_date'] ?? date('Y-m-d');
+            $minDate = date('Y-m-d');
+
+            header("Content-Type: text/html; charset=UTF-8");
+            echo "
+            <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
+                <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
+                    <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
+                    <h3 style='color: #475569; margin-bottom: 25px;'>Reasignar Fecha de Servicio</h3>
+                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservación: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
+                    
+                    <form method='POST' action=''>
+                        <div style='margin-bottom: 20px; text-align: left;'>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Selecciona la Nueva Fecha:</label>
+                            <input type='date' name='service_date' value='{$currentDate}' min='{$minDate}' required 
+                                style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'>
+                        </div>
+                        <button type='submit' style='width: 100%; background-color: #0f172a; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
+                            Guardar Nueva Fecha
+                        </button>
+                    </form>
+                </div>
+            </div>";
+            return;
+        }
+
+        // Procesamiento normal para Confirmar o Cancelar
         $newStatus = ($action === 'confirm') ? 'CONFIRMED' : 'CANCELLED';
 
         $updateStmt = $db->prepare("UPDATE reservations SET status = :status WHERE id = :id");

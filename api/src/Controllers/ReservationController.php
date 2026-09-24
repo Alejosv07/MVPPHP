@@ -269,12 +269,93 @@ class ReservationController
         $secret = 'purenest_secret';
         $expectedToken = hash('sha256', $id . 'balrking07@gmail.com' . $secret);
 
-        if ($token !== $expectedToken || !in_array($action, ['confirm', 'cancel'], true)) {
-            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Invalid or expired action link.</h2>");
+        if ($token !== $expectedToken || !in_array($action, ['confirm', 'cancel', 'reschedule'], true)) {
+            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Enlace inválido o expirado.</h2>");
+        }
+
+        $reservation = $this->model->getById($id);
+        if (!$reservation) {
+            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Reservación no encontrada.</h2>");
+        }
+
+        if ($action === 'reschedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $newDate = $_POST['service_date'] ?? '';
+            $today = date('Y-m-d');
+
+            if (empty($newDate) || $newDate < $today) {
+                echo "<script>alert('Error: No puedes seleccionar una fecha pasada.'); window.history.back();</script>";
+                return;
+            }
+
+            $success = $this->model->updateStatusWithDetails(
+                $id,
+                'RESCHEDULED',
+                null,
+                "Fecha reprogramada a {$newDate} vía enlace de correo",
+                null,
+                $newDate,
+                null,
+                null
+            );
+
+            if ($success) {
+                $this->logActivity(
+                    userId: null,
+                    action: 'UPDATE',
+                    entityType: 'reservations',
+                    entityId: $id,
+                    details: ['method' => 'EMAIL_RESCHEDULE', 'new_date' => $newDate]
+                );
+
+                $updatedReservation = $this->model->getById($id);
+                if ($updatedReservation) {
+                    EmailService::sendStatusUpdateEmail($updatedReservation, 'RESCHEDULED');
+                }
+
+                echo "
+            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                    <h2 style='color: #9333ea;'>¡Fecha Reasignada con Éxito!</h2>
+                    <p style='color: #4b5563;'>Tu reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> ha sido actualizada para el día <strong>{$newDate}</strong>.</p>
+                </div>
+            </div>";
+                return;
+            } else {
+                echo "<h2 style='color:red; text-align:center; margin-top:50px;'>No se pudo actualizar la fecha.</h2>";
+                return;
+            }
+        }
+
+        if ($action === 'reschedule') {
+            $currentDate = $reservation['service_date'] ?? date('Y-m-d');
+            $minDate = date('Y-m-d');
+
+            header("Content-Type: text/html; charset=UTF-8");
+            echo "
+        <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
+            <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
+                <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
+                <h3 style='color: #475569; margin-bottom: 25px;'>Reasignar Fecha de Servicio</h3>
+                <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservación: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
+                
+                <form method='POST' action=''>
+                    <div style='margin-bottom: 20px; text-align: left;'>
+                        <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Selecciona la Nueva Fecha:</label>
+                        <input type='date' name='service_date' value='{$currentDate}' min='{$minDate}' required 
+                            style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'>
+                    </div>
+                    <button type='submit' style='width: 100%; background-color: #0f172a; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
+                        Guardar Nueva Fecha
+                    </button>
+                </form>
+            </div>
+        </div>";
+            return;
         }
 
         $newStatus = ($action === 'confirm') ? 'CONFIRMED' : 'CANCELLED';
-        $success = $this->model->updateStatus($id, $newStatus, null, "Updated to {$newStatus} via email click");
+        $success = $this->model->updateStatus($id, $newStatus, null, "Actualizado a {$newStatus} vía enlace de correo");
 
         if ($success) {
             $this->logActivity(
@@ -285,24 +366,24 @@ class ReservationController
                 details: ['method' => 'EMAIL_ACTION_LINK', 'new_status' => $newStatus]
             );
 
-            $reservation = $this->model->getById($id);
-            if ($reservation) {
-                EmailService::sendStatusUpdateEmail($reservation, $newStatus);
+            $updatedReservation = $this->model->getById($id);
+            if ($updatedReservation) {
+                EmailService::sendStatusUpdateEmail($updatedReservation, $newStatus);
             }
 
             header("Content-Type: text/html; charset=UTF-8");
             echo "
-            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
-                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
-                    <h1 style='color: #1b3022;'>Luxuria Pure</h1>
-                    <h2 style='color: " . ($newStatus === 'CONFIRMED' ? '#15803d' : '#b91c1c') . ";'>
-                        Reservation " . ($newStatus === 'CONFIRMED' ? 'Confirmed' : 'Cancelled') . "!
-                    </h2>
-                    <p style='color: #4b5563;'>Your reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> status is now <strong>{$newStatus}</strong>.</p>
-                </div>
-            </div>";
+        <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+            <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                <h2 style='color: " . ($newStatus === 'CONFIRMED' ? '#15803d' : '#b91c1c') . ";'>
+                    Reservación " . ($newStatus === 'CONFIRMED' ? 'Confirmada' : 'Cancelada') . "!
+                </h2>
+                <p style='color: #4b5563;'>El estado de tu reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> ahora es <strong>{$newStatus}</strong>.</p>
+            </div>
+        </div>";
         } else {
-            echo "<h2 style='color:red; text-align:center; margin-top:50px;'>Failed to update reservation.</h2>";
+            echo "<h2 style='color:red; text-align:center; margin-top:50px;'>Error al actualizar la reservación.</h2>";
         }
     }
 
