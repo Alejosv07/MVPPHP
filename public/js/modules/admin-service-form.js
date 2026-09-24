@@ -216,10 +216,14 @@ async function setupEditMode(id) {
         const previewImg = document.getElementById('imagePreview');
         const previewContainer = previewImg ? previewImg.closest('.aspect-video') : null;
         if (previewImg && previewContainer && service.image_url) {
-            previewImg.src = service.image_url.startsWith('http')
-                ? service.image_url
-                : `${window.location.origin}${service.image_url}`;
+            let imgUrl = service.image_url;
 
+            if (!imgUrl.startsWith('http://') && !imgUrl.startsWith('https://')) {
+                const fixedPath = imgUrl.startsWith('/uploads/') ? `/public${imgUrl}` : imgUrl;
+                imgUrl = `${window.location.origin}${fixedPath}`;
+            }
+
+            previewImg.src = imgUrl;
             previewContainer.style.display = 'flex';
         }
     } catch (error) {

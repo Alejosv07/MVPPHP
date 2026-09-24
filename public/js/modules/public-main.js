@@ -32,7 +32,9 @@ function getImageUrl(imageUrl) {
         return imageUrl;
     }
 
-    return `${window.location.origin}${imageUrl}`;
+    const fixedPath = imageUrl.startsWith('/uploads/') ? `/public${imageUrl}` : imageUrl;
+
+    return `${window.location.origin}${fixedPath}`;
 }
 
 async function loadPublicServices() {
