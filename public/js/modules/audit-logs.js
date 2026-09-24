@@ -40,7 +40,9 @@ function populateEntityFilter() {
     const entitySelect = document.getElementById('filter-entity');
     if (!entitySelect) return;
 
-    const uniqueEntities = [...new Set(allLogs.map(log => log.entity_type).filter(Boolean))].sort();
+    const uniqueEntities = [...new Set(allLogs.map(log => log.entity_type).filter(Boolean))]
+        .map(entity => String(entity).toUpperCase())
+        .sort();
 
     entitySelect.innerHTML = '<option value="">ALL ENTITIES</option>';
     
@@ -144,8 +146,8 @@ function applyFilters() {
     }
 
     if (entitySelect && entitySelect.value !== '') {
-        const selectedEntity = entitySelect.value.toLowerCase();
-        filteredLogs = filteredLogs.filter(l => (l.entity_type || '').toLowerCase() === selectedEntity);
+        const selectedEntity = entitySelect.value.toUpperCase();
+        filteredLogs = filteredLogs.filter(l => (l.entity_type || '').toUpperCase() === selectedEntity);
     }
 
     const startDateInput = document.getElementById('filter-date-start');
@@ -280,6 +282,8 @@ function renderLogsTable(logs) {
         if (log.action === 'CREATE') actionBg = 'bg-primary-fixed text-on-primary-fixed';
         if (log.action === 'LOGIN') actionBg = 'bg-secondary-container text-on-secondary-container';
 
+        const entityTypeText = log.entity_type ? String(log.entity_type).toUpperCase() : 'N/A';
+
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-surface-container-high/40 transition-colors';
         tr.innerHTML = `
@@ -302,7 +306,7 @@ function renderLogsTable(logs) {
             </td>
             <td class="py-4 px-6">
                 <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded bg-surface-container-high font-mono text-[12px] text-on-surface-variant">${escapeHTML(log.entity_type || 'N/A')}</span>
+                    <span class="px-2 py-0.5 rounded bg-surface-container-high font-mono text-[12px] text-on-surface-variant">${escapeHTML(entityTypeText.toUpperCase())}</span>
                     <span class="text-outline">→</span>
                     <span class="font-mono font-semibold text-accent-rust text-[12px]">#${escapeHTML(String(log.entity_id || '0'))}</span>
                 </div>
@@ -347,7 +351,7 @@ function renderLogsTable(logs) {
                 <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-outline-variant/10 font-mono">
                     <div>
                         <span class="block text-[10px] font-label-caps text-outline uppercase">Entity Target</span>
-                        <span class="text-on-surface">${escapeHTML(log.entity_type || 'N/A')} <span class="text-accent-rust">#${escapeHTML(String(log.entity_id || '0'))}</span></span>
+                        <span class="text-on-surface">${escapeHTML(entityTypeText)} <span class="text-accent-rust">#${escapeHTML(String(log.entity_id || '0'))}</span></span>
                     </div>
                     <div>
                         <span class="block text-[10px] font-label-caps text-outline uppercase">Origin IP</span>
