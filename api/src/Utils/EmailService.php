@@ -179,15 +179,23 @@ class EmailService
         }
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-        $baseUrl = "{$protocol}://{$host}/api/public/reservations?id={$res['id']}&token={$token}";
+        $baseUrl = "{$protocol}://{$host}/purenest/api/public/reservations?id={$res['id']}&token={$token}";
 
         $confirmUrl    = "{$baseUrl}&action=confirm";
         $rescheduleUrl = "{$baseUrl}&action=reschedule";
         $cancelUrl     = "{$baseUrl}&action=cancel";
+        $feedbackUrl   = "{$protocol}://{$host}/purenest/feedback.php?id={$res['id']}&token={$token}";
 
         $actionButtonsHtml = "";
 
-        if (!in_array($status, ['CANCELLED', 'REJECTED'], true)) {
+        if ($status === 'COMPLETED') {
+            $actionButtonsHtml = "
+            <div style='text-align: center; margin: 32px 0 16px 0;'>
+                <a href='{$feedbackUrl}' style='background-color: #059669; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
+                    Rate Service & Leave Feedback
+                </a>
+            </div>";
+        } elseif (!in_array($status, ['INITIATED', 'ON_THE_WAY', 'CANCELLED', 'REJECTED'], true)) {
             $actionButtonsHtml = "
             <div style='text-align: center; margin: 32px 0 16px 0;'>
                 <a href='{$confirmUrl}' style='background-color: #0f172a; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block;'>
