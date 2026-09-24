@@ -205,7 +205,6 @@ async function setupEditMode(id) {
         document.getElementById('serviceStatus').checked = isActive;
         document.getElementById('statusLabel').textContent = isActive ? 'Active' : 'Inactive';
 
-        // Cargar las características asociadas a este servicio
         try {
             const featRes = await API.features.getByService(editingServiceId);
             selectedServiceFeatures = featRes.data || featRes || [];
@@ -217,7 +216,10 @@ async function setupEditMode(id) {
         const previewImg = document.getElementById('imagePreview');
         const previewContainer = previewImg ? previewImg.closest('.aspect-video') : null;
         if (previewImg && previewContainer && service.image_url) {
-            previewImg.src = service.image_url.startsWith('http') ? service.image_url : `http://localhost/purenest/public${service.image_url}`;
+            previewImg.src = service.image_url.startsWith('http')
+                ? service.image_url
+                : `${window.location.origin}${service.image_url}`;
+
             previewContainer.style.display = 'flex';
         }
     } catch (error) {
@@ -226,7 +228,6 @@ async function setupEditMode(id) {
     }
 }
 
-// --- GESTIÓN DE MODAL Y CRUD DE CATEGORÍAS ---
 function setupCategoryModal() {
     const modal = document.getElementById('categoryModal');
     const btnOpen = document.getElementById('btnManageCategories');
@@ -475,7 +476,7 @@ function setupFormEvents() {
             formData.append('estimated_duration_hours', duration);
             formData.append('category_id', categoryId);
             formData.append('is_active', isActive);
-            
+
             console.log('FEATURES SELECCIONADAS:', selectedServiceFeatures);
             formData.append('feature_ids', JSON.stringify(selectedServiceFeatures.map(f => f.id)));
 

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLogout.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('purenest_user');
-            window.location.href = 'http://localhost/purenest/public/index.html'; // o tu vista de login
+            window.location.href = `${window.location.origin}/index.html`;
         });
     }
 });

@@ -13,10 +13,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function setMinDateForService() {
     const dateInput = document.getElementById('estimateDate');
+
     if (dateInput) {
         const today = new Date().toISOString().split('T')[0];
         dateInput.setAttribute('min', today);
     }
+}
+
+function getImageUrl(imageUrl) {
+    if (!imageUrl || !imageUrl.trim()) {
+        return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800';
+    }
+
+    if (
+        imageUrl.startsWith('http://') ||
+        imageUrl.startsWith('https://')
+    ) {
+        return imageUrl;
+    }
+
+    return `${window.location.origin}${imageUrl}`;
 }
 
 async function loadPublicServices() {
@@ -27,14 +43,20 @@ async function loadPublicServices() {
         const response = await API.services.getAll();
 
         let rawData = response;
-        if (response && typeof response === 'object' && !Array.isArray(response)) {
+
+        if (
+            response &&
+            typeof response === 'object' &&
+            !Array.isArray(response)
+        ) {
             rawData = response.data || response.services || [];
         }
 
         loadedServices = Array.isArray(rawData) ? rawData : [];
 
         if (serviceSelect) {
-            serviceSelect.innerHTML = '<option value="">Select a cleaning service...</option>';
+            serviceSelect.innerHTML =
+                '<option value="">Select a cleaning service...</option>';
         }
 
         if (servicesContainer) {
@@ -42,101 +64,202 @@ async function loadPublicServices() {
         }
 
         loadedServices.forEach(service => {
-            if (Number(service.is_active) === 1) {
-                if (serviceSelect) {
-                    const opt = document.createElement('option');
-                    opt.value = service.id;
-                    const price = service.price_per_hour !== undefined ? Number(service.price_per_hour).toFixed(2) : '0.00';
-                    opt.textContent = `${service.name} (From $${price}/hr)`;
-                    serviceSelect.appendChild(opt);
+            if (Number(service.is_active) !== 1) {
+                return;
+            }
+
+            if (serviceSelect) {
+                const opt = document.createElement('option');
+
+                opt.value = service.id;
+
+                const price =
+                    service.price_per_hour !== undefined
+                        ? Number(service.price_per_hour).toFixed(2)
+                        : '0.00';
+
+                opt.textContent =
+                    `${service.name} (From $${price}/hr)`;
+
+                serviceSelect.appendChild(opt);
+            }
+
+            if (servicesContainer) {
+                const imageUrl = getImageUrl(service.image_url);
+
+                let detailsList = [];
+
+                try {
+                    const rawDetails =
+                        service.details ||
+                        service.features ||
+                        service.service_features;
+
+                    if (rawDetails) {
+                        const parsed =
+                            typeof rawDetails === 'string'
+                                ? JSON.parse(rawDetails)
+                                : rawDetails;
+
+                        if (Array.isArray(parsed)) {
+                            detailsList = parsed
+                                .map(item => {
+                                    if (
+                                        typeof item === 'object' &&
+                                        item !== null
+                                    ) {
+                                        return (
+                                            item.name ||
+                                            item.feature_name ||
+                                            ''
+                                        );
+                                    }
+
+                                    return String(item);
+                                })
+                                .filter(Boolean);
+                        }
+                    }
+                } catch (e) {
+                    const rawDetails =
+                        service.details ||
+                        service.features ||
+                        '';
+
+                    detailsList =
+                        typeof rawDetails === 'string'
+                            ? rawDetails
+                                .split(',')
+                                .map(s => s.trim())
+                                .filter(Boolean)
+                            : [];
                 }
 
-                if (servicesContainer) {
-                    const imageUrl = service.image_url && service.image_url.trim() !== ''
-                        ? (service.image_url.startsWith('http') ? service.image_url : `http://localhost/purenest/public${service.image_url}`)
-                        : 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800';
+                let detailsHTML = '';
 
-                    let detailsList = [];
-                    try {
-                        const rawDetails = service.details || service.features || service.service_features;
-                        if (rawDetails) {
-                            const parsed = typeof rawDetails === 'string' ? JSON.parse(rawDetails) : rawDetails;
-                            if (Array.isArray(parsed)) {
-                                detailsList = parsed.map(item => {
-                                    if (typeof item === 'object' && item !== null) {
-                                        return item.name || item.feature_name || '';
-                                    }
-                                    return String(item);
-                                }).filter(Boolean);
-                            }
-                        }
-                    } catch (e) {
-                        const rawDetails = service.details || service.features || '';
-                        detailsList = typeof rawDetails === 'string' ? rawDetails.split(',').map(s => s.trim()).filter(Boolean) : [];
-                    }
+                if (
+                    Array.isArray(detailsList) &&
+                    detailsList.length > 0
+                ) {
+                    detailsHTML = `
+                        <div class="mt-4 mb-4 space-y-1.5">
+                            <span class="font-label-caps text-xs text-outline uppercase tracking-wider block mb-2">
+                                INCLUDES:
+                            </span>
 
-                    let detailsHTML = '';
-                    if (Array.isArray(detailsList) && detailsList.length > 0) {
-                        detailsHTML = `
-                            <div class="mt-4 mb-4 space-y-1.5">
-                                <span class="font-label-caps text-xs text-outline uppercase tracking-wider block mb-2">INCLUDES:</span>
-                                <ul class="space-y-1 text-sm text-on-surface-variant">
-                                    ${detailsList.map(item => `
-                                        <li class="flex items-start gap-2">
-                                            <span class="material-symbols-outlined text-[16px] text-primary">check</span>
-                                            <span>${escapeHTML(String(item).trim())}</span>
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                            </div>
-                        `;
-                    }
+                            <ul class="space-y-1 text-sm text-on-surface-variant">
+                                ${detailsList.map(item => `
+                                    <li class="flex items-start gap-2">
+                                        <span class="material-symbols-outlined text-[16px] text-primary">
+                                            check
+                                        </span>
 
-                    const priceLabel = service.price_per_hour !== undefined ? `Starting at $${Number(service.price_per_hour).toFixed(0)}` : '';
-
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow flex flex-col justify-between';
-                    cardDiv.innerHTML = `
-                        <div>
-                            <div class="relative h-[220px] rounded-xl overflow-hidden mb-6 bg-surface-container-high">
-                                <img alt="${escapeHTML(service.name)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105" src="${imageUrl}">
-                            </div>
-                            <h3 class="font-headline-sm text-headline-sm text-primary mb-1">${escapeHTML(service.name)}</h3>
-                            <p class="font-label-caps text-accent-rust font-bold mb-3">${priceLabel}</p>
-                            <p class="font-body-md text-body-md text-on-surface-variant mb-4">${escapeHTML(service.description || 'Professional cleaning service tailored to your needs.')}</p>
-                            ${detailsHTML}
-                        </div>
-                        <div class="pt-4 border-t border-outline-variant/10">
-                            <button type="button" onclick="selectServiceCard('${service.id}')" class="w-full border border-primary text-primary py-2.5 rounded font-label-caps text-label-caps hover:bg-primary hover:text-on-primary transition-colors text-center">
-                                SELECT ${escapeHTML(service.name).toUpperCase()}
-                            </button>
+                                        <span>
+                                            ${escapeHTML(String(item).trim())}
+                                        </span>
+                                    </li>
+                                `).join('')}
+                            </ul>
                         </div>
                     `;
-                    servicesContainer.appendChild(cardDiv);
                 }
+
+                const priceLabel =
+                    service.price_per_hour !== undefined
+                        ? `Starting at $${Number(service.price_per_hour).toFixed(0)}`
+                        : '';
+
+                const cardDiv = document.createElement('div');
+
+                cardDiv.className =
+                    'bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow flex flex-col justify-between';
+
+                cardDiv.innerHTML = `
+                    <div>
+                        <div class="relative h-[220px] rounded-xl overflow-hidden mb-6 bg-surface-container-high">
+                            <img
+                                alt="${escapeHTML(service.name)}"
+                                class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                                src="${imageUrl}"
+                            >
+                        </div>
+
+                        <h3 class="font-headline-sm text-headline-sm text-primary mb-1">
+                            ${escapeHTML(service.name)}
+                        </h3>
+
+                        <p class="font-label-caps text-accent-rust font-bold mb-3">
+                            ${priceLabel}
+                        </p>
+
+                        <p class="font-body-md text-body-md text-on-surface-variant mb-4">
+                            ${escapeHTML(
+                                service.description ||
+                                'Professional cleaning service tailored to your needs.'
+                            )}
+                        </p>
+
+                        ${detailsHTML}
+                    </div>
+
+                    <div class="pt-4 border-t border-outline-variant/10">
+                        <button
+                            type="button"
+                            onclick="selectServiceCard('${service.id}')"
+                            class="w-full border border-primary text-primary py-2.5 rounded font-label-caps text-label-caps hover:bg-primary hover:text-on-primary transition-colors text-center"
+                        >
+                            SELECT ${escapeHTML(service.name).toUpperCase()}
+                        </button>
+                    </div>
+                `;
+
+                servicesContainer.appendChild(cardDiv);
             }
         });
+
     } catch (error) {
         console.error('Error loading services:', error);
-        Modal.error('Failed to load available services. Please try again later.', 'Connection Error');
+
+        Modal.error(
+            'Failed to load available services. Please try again later.',
+            'Connection Error'
+        );
     }
 }
 
 window.selectServiceCard = function (serviceId) {
     const serviceSelect = document.getElementById('estimateService');
+
     if (serviceSelect) {
         serviceSelect.value = serviceId;
         serviceSelect.dispatchEvent(new Event('change'));
     }
 
-    const formSection = document.getElementById('estimateForm') || document.getElementById('hero');
+    const formSection =
+        document.getElementById('estimateForm') ||
+        document.getElementById('hero');
+
     if (formSection) {
-        formSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        formSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
     }
 };
 
 function escapeHTML(str) {
-    return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
+    return str
+        ? str.replace(
+            /[&<>'"]/g,
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        )
+        : '';
 }
 
 function setupEstimateForm() {
@@ -145,7 +268,7 @@ function setupEstimateForm() {
     const phoneInput = document.getElementById('clientPhone');
 
     if (phoneInput) {
-        phoneInput.addEventListener('input', (e) => {
+        phoneInput.addEventListener('input', e => {
             e.target.value = e.target.value.replace(/\D/g, '');
         });
     }
@@ -153,163 +276,392 @@ function setupEstimateForm() {
     freqButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             freqButtons.forEach(b => {
-                b.classList.remove('border-primary', 'bg-surface-container-low', 'font-medium');
+                b.classList.remove(
+                    'border-primary',
+                    'bg-surface-container-low',
+                    'font-medium'
+                );
+
                 b.classList.add('border-outline-variant');
             });
-            btn.classList.add('border-primary', 'bg-surface-container-low', 'font-medium');
+
+            btn.classList.add(
+                'border-primary',
+                'bg-surface-container-low',
+                'font-medium'
+            );
+
             btn.classList.remove('border-outline-variant');
+
             selectedFrequency = btn.getAttribute('data-freq');
         });
     });
 
-    if (!form) return;
+    if (!form) {
+        return;
+    }
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async e => {
         e.preventDefault();
 
         const triggerError = (elementId, message) => {
             const el = document.getElementById(elementId);
+
             if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.focus({ preventScroll: true });
+                el.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                el.focus({
+                    preventScroll: true
+                });
             }
+
             Modal.error(message, 'Validation Error');
         };
 
-        const firstName = document.getElementById('clientFirstName').value.trim();
-        const lastName = document.getElementById('clientLastName').value.trim();
-        const email = document.getElementById('clientEmail').value.trim();
-        const phone = document.getElementById('clientPhone').value.trim();
+        const firstName =
+            document.getElementById('clientFirstName').value.trim();
 
-        const serviceId = document.getElementById('estimateService').value;
-        const bedrooms = Number(document.getElementById('estimateBedrooms').value);
-        const bathrooms = Number(document.getElementById('estimateBathrooms').value);
-        const serviceDate = document.getElementById('estimateDate').value;
-        const preferredTime = document.getElementById('estimateTime').value;
-        const serviceAddress = document.getElementById('estimateAddress').value.trim();
+        const lastName =
+            document.getElementById('clientLastName').value.trim();
 
-        const notesInput = document.getElementById('clientNotes');
-        const userNotes = notesInput ? notesInput.value.trim() : '';
+        const email =
+            document.getElementById('clientEmail').value.trim();
 
-        if (!firstName) { triggerError('clientFirstName', 'Please enter your first name.'); return; }
-        if (!lastName) { triggerError('clientLastName', 'Please enter your last name.'); return; }
-        if (!email) { triggerError('clientEmail', 'Please enter your email address.'); return; }
+        const phone =
+            document.getElementById('clientPhone').value.trim();
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) { triggerError('clientEmail', 'Please enter a valid email address.'); return; }
+        const serviceId =
+            document.getElementById('estimateService').value;
 
-        if (!phone) { triggerError('clientPhone', 'Please enter your phone number.'); return; }
+        const bedrooms =
+            Number(document.getElementById('estimateBedrooms').value);
+
+        const bathrooms =
+            Number(document.getElementById('estimateBathrooms').value);
+
+        const serviceDate =
+            document.getElementById('estimateDate').value;
+
+        const preferredTime =
+            document.getElementById('estimateTime').value;
+
+        const serviceAddress =
+            document.getElementById('estimateAddress').value.trim();
+
+        const notesInput =
+            document.getElementById('clientNotes');
+
+        const userNotes =
+            notesInput
+                ? notesInput.value.trim()
+                : '';
+
+        if (!firstName) {
+            triggerError(
+                'clientFirstName',
+                'Please enter your first name.'
+            );
+            return;
+        }
+
+        if (!lastName) {
+            triggerError(
+                'clientLastName',
+                'Please enter your last name.'
+            );
+            return;
+        }
+
+        if (!email) {
+            triggerError(
+                'clientEmail',
+                'Please enter your email address.'
+            );
+            return;
+        }
+
+        const emailRegex =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            triggerError(
+                'clientEmail',
+                'Please enter a valid email address.'
+            );
+            return;
+        }
+
+        if (!phone) {
+            triggerError(
+                'clientPhone',
+                'Please enter your phone number.'
+            );
+            return;
+        }
 
         const phoneRegex = /^\d+$/;
-        if (!phoneRegex.test(phone)) { triggerError('clientPhone', 'Phone number must contain only numbers without spaces or symbols.'); return; }
 
-        if (!serviceId) { triggerError('estimateService', 'Please select a cleaning service.'); return; }
-        if (!serviceDate) { triggerError('estimateDate', 'Please select a service date.'); return; }
+        if (!phoneRegex.test(phone)) {
+            triggerError(
+                'clientPhone',
+                'Phone number must contain only numbers without spaces or symbols.'
+            );
+            return;
+        }
 
-        const selectedDate = new Date(serviceDate + 'T00:00:00');
+        if (!serviceId) {
+            triggerError(
+                'estimateService',
+                'Please select a cleaning service.'
+            );
+            return;
+        }
+
+        if (!serviceDate) {
+            triggerError(
+                'estimateDate',
+                'Please select a service date.'
+            );
+            return;
+        }
+
+        const selectedDate =
+            new Date(serviceDate + 'T00:00:00');
+
         const today = new Date();
+
         today.setHours(0, 0, 0, 0);
 
-        if (selectedDate < today) { triggerError('estimateDate', 'The service date cannot be set in the past.'); return; }
-        if (!preferredTime) { triggerError('estimateTime', 'Please select a preferred time.'); return; }
+        if (selectedDate < today) {
+            triggerError(
+                'estimateDate',
+                'The service date cannot be set in the past.'
+            );
+            return;
+        }
+
+        if (!preferredTime) {
+            triggerError(
+                'estimateTime',
+                'Please select a preferred time.'
+            );
+            return;
+        }
 
         if (selectedDate.getTime() === today.getTime()) {
-            const [hours, minutes] = preferredTime.split(':').map(Number);
+            const [hours, minutes] =
+                preferredTime.split(':').map(Number);
+
             const now = new Date();
-            if (hours < now.getHours() || (hours === now.getHours() && minutes <= now.getMinutes())) {
-                triggerError('estimateTime', 'You cannot select a time in the past for today.');
+
+            if (
+                hours < now.getHours() ||
+                (
+                    hours === now.getHours() &&
+                    minutes <= now.getMinutes()
+                )
+            ) {
+                triggerError(
+                    'estimateTime',
+                    'You cannot select a time in the past for today.'
+                );
                 return;
             }
         }
 
-        if (!serviceAddress) { triggerError('estimateAddress', 'Please enter your service address.'); return; }
+        if (!serviceAddress) {
+            triggerError(
+                'estimateAddress',
+                'Please enter your service address.'
+            );
+            return;
+        }
 
         let systemSchedule = {};
+
         try {
-            const scheduleResponse = await API.systemSchedule.get();
-            systemSchedule = scheduleResponse.data || scheduleResponse || {};
+            const scheduleResponse =
+                await API.systemSchedule.get();
+
+            systemSchedule =
+                scheduleResponse.data ||
+                scheduleResponse ||
+                {};
+
         } catch (err) {
-            console.warn('Could not fetch system schedule restrictions:', err);
+            console.warn(
+                'Could not fetch system schedule restrictions:',
+                err
+            );
         }
 
-        let rawSpecificDates = systemSchedule.blocked_specific_dates || [];
+        let rawSpecificDates =
+            systemSchedule.blocked_specific_dates || [];
+
         if (typeof rawSpecificDates === 'string') {
-            try { rawSpecificDates = JSON.parse(rawSpecificDates); } catch (e) { rawSpecificDates = []; }
+            try {
+                rawSpecificDates =
+                    JSON.parse(rawSpecificDates);
+            } catch (e) {
+                rawSpecificDates = [];
+            }
         }
-        const blockedSpecificDates = Array.isArray(rawSpecificDates) ? rawSpecificDates : [];
+
+        const blockedSpecificDates =
+            Array.isArray(rawSpecificDates)
+                ? rawSpecificDates
+                : [];
 
         if (blockedSpecificDates.includes(serviceDate)) {
-            triggerError('estimateDate', 'The business is closed on this specific date due to administrator restrictions. Please choose another date.');
+            triggerError(
+                'estimateDate',
+                'The business is closed on this specific date due to administrator restrictions. Please choose another date.'
+            );
             return;
         }
 
-        let rawGlobalDays = systemSchedule.global_blocked_days || [];
+        let rawGlobalDays =
+            systemSchedule.global_blocked_days || [];
+
         if (typeof rawGlobalDays === 'string') {
-            try { rawGlobalDays = JSON.parse(rawGlobalDays); } catch (e) { rawGlobalDays = []; }
+            try {
+                rawGlobalDays =
+                    JSON.parse(rawGlobalDays);
+            } catch (e) {
+                rawGlobalDays = [];
+            }
         }
 
-        const dayOfWeek = selectedDate.getDay();
-        const normalizedGlobalDays = Array.isArray(rawGlobalDays) ? rawGlobalDays.map(Number) : [];
+        const dayOfWeek =
+            selectedDate.getDay();
+
+        const normalizedGlobalDays =
+            Array.isArray(rawGlobalDays)
+                ? rawGlobalDays.map(Number)
+                : [];
 
         if (normalizedGlobalDays.includes(dayOfWeek)) {
-            triggerError('estimateDate', 'Bookings are globally disabled for this day of the week. Please select another date.');
+            triggerError(
+                'estimateDate',
+                'Bookings are globally disabled for this day of the week. Please select another date.'
+            );
             return;
         }
 
-        const globalStart = systemSchedule.global_block_time_start;
-        const globalEnd = systemSchedule.global_block_time_end;
+        const globalStart =
+            systemSchedule.global_block_time_start;
+
+        const globalEnd =
+            systemSchedule.global_block_time_end;
+
         if (globalStart && globalEnd) {
-            const timeToMinutes = (t) => {
-                const [h, m] = t.split(':').map(Number);
+            const timeToMinutes = t => {
+                const [h, m] =
+                    t.split(':').map(Number);
+
                 return h * 60 + m;
             };
 
-            const selectedMinutes = timeToMinutes(preferredTime);
-            const startMinutes = timeToMinutes(globalStart);
-            const endMinutes = timeToMinutes(globalEnd);
+            const selectedMinutes =
+                timeToMinutes(preferredTime);
 
-            if (selectedMinutes >= startMinutes && selectedMinutes <= endMinutes) {
-                triggerError('estimateTime', `Bookings are globally blocked between ${globalStart} and ${globalEnd}. Please select a different time.`);
+            const startMinutes =
+                timeToMinutes(globalStart);
+
+            const endMinutes =
+                timeToMinutes(globalEnd);
+
+            if (
+                selectedMinutes >= startMinutes &&
+                selectedMinutes <= endMinutes
+            ) {
+                triggerError(
+                    'estimateTime',
+                    `Bookings are globally blocked between ${globalStart} and ${globalEnd}. Please select a different time.`
+                );
                 return;
             }
         }
 
-        const service = loadedServices.find(s => String(s.id) === String(serviceId));
-        if (!service) return;
+        const service =
+            loadedServices.find(
+                s => String(s.id) === String(serviceId)
+            );
+
+        if (!service) {
+            return;
+        }
 
         let blockedDays = [];
+
         try {
-            blockedDays = service.blocked_days ? (Array.isArray(service.blocked_days) ? service.blocked_days : JSON.parse(service.blocked_days)) : [];
+            blockedDays = service.blocked_days
+                ? (
+                    Array.isArray(service.blocked_days)
+                        ? service.blocked_days
+                        : JSON.parse(service.blocked_days)
+                )
+                : [];
         } catch (err) {
             blockedDays = [];
         }
 
-        const normalizedBlockedDays = blockedDays.map(Number);
+        const normalizedBlockedDays =
+            blockedDays.map(Number);
+
         if (normalizedBlockedDays.includes(dayOfWeek)) {
-            triggerError('estimateDate', 'Selected day is blocked for this specific service. Please choose another date.');
+            triggerError(
+                'estimateDate',
+                'Selected day is blocked for this specific service. Please choose another date.'
+            );
             return;
         }
 
-        if (service.block_time_start && service.block_time_end) {
-            const timeToMinutes = (t) => {
-                const [h, m] = t.split(':').map(Number);
+        if (
+            service.block_time_start &&
+            service.block_time_end
+        ) {
+            const timeToMinutes = t => {
+                const [h, m] =
+                    t.split(':').map(Number);
+
                 return h * 60 + m;
             };
 
-            const selectedMinutes = timeToMinutes(preferredTime);
-            const startMinutes = timeToMinutes(service.block_time_start);
-            const endMinutes = timeToMinutes(service.block_time_end);
+            const selectedMinutes =
+                timeToMinutes(preferredTime);
 
-            if (selectedMinutes >= startMinutes && selectedMinutes <= endMinutes) {
-                triggerError('estimateTime', `This service cannot be scheduled between ${service.block_time_start} and ${service.block_time_end}.`);
+            const startMinutes =
+                timeToMinutes(service.block_time_start);
+
+            const endMinutes =
+                timeToMinutes(service.block_time_end);
+
+            if (
+                selectedMinutes >= startMinutes &&
+                selectedMinutes <= endMinutes
+            ) {
+                triggerError(
+                    'estimateTime',
+                    `This service cannot be scheduled between ${service.block_time_start} and ${service.block_time_end}.`
+                );
                 return;
             }
         }
 
-        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtn =
+            form.querySelector('button[type="submit"]');
+
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            submitBtn.classList.add(
+                'opacity-50',
+                'cursor-not-allowed'
+            );
         }
 
         try {
@@ -342,6 +694,7 @@ function setupEstimateForm() {
                 message: `Thank you ${firstName}! Your service request has been successfully submitted. Our team will review your details and send you a price estimate shortly.`,
                 confirmText: 'Done',
                 showCancel: false,
+
                 onConfirm: () => {
                     form.reset();
                     setMinDateForService();
@@ -350,26 +703,46 @@ function setupEstimateForm() {
 
         } catch (error) {
             console.error(error);
-            Modal.error(error.message || 'An error occurred while saving your reservation.', 'Booking Error');
+
+            Modal.error(
+                error.message ||
+                'An error occurred while saving your reservation.',
+                'Booking Error'
+            );
+
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                submitBtn.classList.remove(
+                    'opacity-50',
+                    'cursor-not-allowed'
+                );
             }
         }
     });
 }
 
-window.submitClientRating = async function(reservationId) {
-    const rating = document.getElementById(`clientRating-${reservationId}`).value;
-    const notes = document.getElementById(`clientNotes-${reservationId}`).value.trim();
+window.submitClientRating = async function (reservationId) {
+    const rating =
+        document.getElementById(
+            `clientRating-${reservationId}`
+        ).value;
+
+    const notes =
+        document.getElementById(
+            `clientNotes-${reservationId}`
+        ).value.trim();
 
     try {
-        await API.ratings.submitCustomerRating(reservationId, {
-            customer_rating: Number(rating),
-            customer_notes: notes
-        });
-        
+        await API.ratings.submitCustomerRating(
+            reservationId,
+            {
+                customer_rating: Number(rating),
+                customer_notes: notes
+            }
+        );
+
         Modal.show({
             type: 'success',
             title: 'Thank You!',
@@ -377,35 +750,74 @@ window.submitClientRating = async function(reservationId) {
             confirmText: 'Done',
             showCancel: false
         });
+
     } catch (err) {
         console.error(err);
-        Modal.error('Could not submit rating. Please try again.', 'Rating Error');
+
+        Modal.error(
+            'Could not submit rating. Please try again.',
+            'Rating Error'
+        );
     }
 };
 
 function setupSupportWidget() {
-    document.addEventListener('click', async (e) => {
-        const target = e.target.closest('button, a, div, span');
-        if (!target) return;
+    document.addEventListener('click', async e => {
+        const target =
+            e.target.closest('button, a, div, span');
 
-        const text = target.textContent ? target.textContent.trim() : '';
+        if (!target) {
+            return;
+        }
 
-        if (text.includes('Request an Estimate') || text.includes('Request Service')) {
+        const text =
+            target.textContent
+                ? target.textContent.trim()
+                : '';
+
+        if (
+            text.includes('Request an Estimate') ||
+            text.includes('Request Service')
+        ) {
             e.preventDefault();
-            const formSection = document.getElementById('estimateForm') || document.getElementById('hero');
+
+            const formSection =
+                document.getElementById('estimateForm') ||
+                document.getElementById('hero');
+
             if (formSection) {
-                formSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                const firstInput = document.getElementById('clientFirstName');
-                if (firstInput) firstInput.focus();
+                formSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                const firstInput =
+                    document.getElementById(
+                        'clientFirstName'
+                    );
+
+                if (firstInput) {
+                    firstInput.focus();
+                }
             }
+
             return;
         }
 
         if (text.includes('Talk to Support')) {
             e.preventDefault();
+
             const phoneNumber = '15713761694';
-            const message = encodeURIComponent('Hello PureNest Support, I need help with a cleaning service.');
-            window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+
+            const message = encodeURIComponent(
+                'Hello PureNest Support, I need help with a cleaning service.'
+            );
+
+            window.open(
+                `https://wa.me/${phoneNumber}?text=${message}`,
+                '_blank'
+            );
+
             return;
         }
 
@@ -414,8 +826,18 @@ function setupSupportWidget() {
 
             const step1HTML = `
                 <div class="flex flex-col gap-3 pt-2" id="otpStep1">
-                    <label class="text-xs sm:text-sm text-on-surface-variant font-medium">Enter your email address to receive a security PIN:</label>
-                    <input type="email" id="trackingEmailInput" placeholder="jane@example.com" class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none">
+
+                    <label class="text-xs sm:text-sm text-on-surface-variant font-medium">
+                        Enter your email address to receive a security PIN:
+                    </label>
+
+                    <input
+                        type="email"
+                        id="trackingEmailInput"
+                        placeholder="jane@example.com"
+                        class="w-full input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none"
+                    >
+
                 </div>
             `;
 
@@ -426,12 +848,27 @@ function setupSupportWidget() {
                 htmlContent: step1HTML,
                 confirmText: 'Send Security PIN',
                 showCancel: true,
-                onConfirm: async () => {
-                    const emailInput = document.getElementById('trackingEmailInput');
-                    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
 
-                    if (!email || !email.includes('@')) {
-                        Modal.error('Please enter a valid email address.', 'Validation Error');
+                onConfirm: async () => {
+                    const emailInput =
+                        document.getElementById(
+                            'trackingEmailInput'
+                        );
+
+                    const email =
+                        emailInput
+                            ? emailInput.value.trim().toLowerCase()
+                            : '';
+
+                    if (
+                        !email ||
+                        !email.includes('@')
+                    ) {
+                        Modal.error(
+                            'Please enter a valid email address.',
+                            'Validation Error'
+                        );
+
                         return false;
                     }
 
@@ -440,9 +877,24 @@ function setupSupportWidget() {
 
                         const step2HTML = `
                             <div class="flex flex-col gap-3 pt-2" id="otpStep2">
-                                <p class="text-xs text-emerald-600 font-medium">A 4-digit PIN has been sent to <b>${email}</b>.</p>
-                                <label class="text-xs sm:text-sm text-on-surface-variant font-medium">Enter the 4-digit PIN:</label>
-                                <input type="text" maxlength="4" id="trackingPinInput" placeholder="1234" class="w-full text-center tracking-widest text-xl input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none">
+
+                                <p class="text-xs text-emerald-600 font-medium">
+                                    A 4-digit PIN has been sent to
+                                    <b>${escapeHTML(email)}</b>.
+                                </p>
+
+                                <label class="text-xs sm:text-sm text-on-surface-variant font-medium">
+                                    Enter the 4-digit PIN:
+                                </label>
+
+                                <input
+                                    type="text"
+                                    maxlength="4"
+                                    id="trackingPinInput"
+                                    placeholder="1234"
+                                    class="w-full text-center tracking-widest text-xl input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none"
+                                >
+
                             </div>
                         `;
 
@@ -453,92 +905,238 @@ function setupSupportWidget() {
                             htmlContent: step2HTML,
                             confirmText: 'Verify & View Bookings',
                             showCancel: true,
-                            onConfirm: async () => {
-                                const pinInput = document.getElementById('trackingPinInput');
-                                const pinCode = pinInput ? pinInput.value.trim() : '';
 
-                                if (!pinCode || pinCode.length !== 4) {
-                                    Modal.error('Please enter a valid 4-digit PIN.', 'Verification Error');
+                            onConfirm: async () => {
+                                const pinInput =
+                                    document.getElementById(
+                                        'trackingPinInput'
+                                    );
+
+                                const pinCode =
+                                    pinInput
+                                        ? pinInput.value.trim()
+                                        : '';
+
+                                if (
+                                    !pinCode ||
+                                    pinCode.length !== 4
+                                ) {
+                                    Modal.error(
+                                        'Please enter a valid 4-digit PIN.',
+                                        'Verification Error'
+                                    );
+
                                     return false;
                                 }
 
                                 try {
-                                    const response = await API.authCustomer.verifyOtp(email, pinCode);
-                                    let reservations = response.reservations || (response.data && response.data.reservations) || [];
+                                    const response =
+                                        await API.authCustomer.verifyOtp(
+                                            email,
+                                            pinCode
+                                        );
+
+                                    let reservations =
+                                        response.reservations ||
+                                        (
+                                            response.data &&
+                                            response.data.reservations
+                                        ) ||
+                                        [];
 
                                     if (reservations.length > 0) {
-                                        reservations.sort((a, b) => new Date(b.service_date) - new Date(a.service_date));
+                                        reservations.sort(
+                                            (a, b) =>
+                                                new Date(
+                                                    b.service_date
+                                                ) -
+                                                new Date(
+                                                    a.service_date
+                                                )
+                                        );
 
-                                        let listHTML = `<div class="space-y-3 max-h-[350px] overflow-y-auto pr-1 mt-2 text-left">`;
+                                        let listHTML = `
+                                            <div class="space-y-3 max-h-[350px] overflow-y-auto pr-1 mt-2 text-left">
+                                        `;
 
                                         reservations.forEach(found => {
-                                            const statusColor = found.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                                                found.status === 'CONFIRMED' ? 'bg-primary-fixed text-primary-container' :
-                                                    'bg-tertiary-fixed text-tertiary-container';
+                                            const statusColor =
+                                                found.status === 'COMPLETED'
+                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                    : found.status === 'CONFIRMED'
+                                                        ? 'bg-primary-fixed text-primary-container'
+                                                        : 'bg-tertiary-fixed text-tertiary-container';
 
-                                            const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
+                                            const displayPrice =
+                                                Number(
+                                                    found.total_price || 0
+                                                ) > 0
+                                                    ? `$${Number(
+                                                        found.total_price
+                                                    ).toFixed(2)}`
+                                                    : 'Pending Quote';
 
-                                            const isCompleted = found.status === 'COMPLETED';
-                                            const ratingSection = isCompleted ? `
-                                                <div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-1.5">
-                                                    <span class="text-[11px] font-bold text-primary">Rate your Cleaner / Staff:</span>
-                                                    <div class="flex items-center gap-2">
-                                                        <select id="clientRating-${found.id}" class="text-xs bg-surface-container-low p-1 rounded border border-outline-variant">
-                                                            <option value="5">⭐⭐⭐⭐⭐ (5)</option>
-                                                            <option value="4">⭐⭐⭐⭐ (4)</option>
-                                                            <option value="3">⭐⭐⭐ (3)</option>
-                                                            <option value="2">⭐⭐ (2)</option>
-                                                            <option value="1">⭐ (1)</option>
-                                                        </select>
-                                                        <input type="text" id="clientNotes-${found.id}" placeholder="Leave a note..." class="text-xs p-1 bg-surface-container-low rounded border border-outline-variant flex-1">
-                                                        <button onclick="submitClientRating(${found.id})" class="px-2.5 py-1 bg-primary text-on-primary rounded text-xs font-semibold">Send</button>
-                                                    </div>
-                                                </div>
-                                            ` : '';
+                                            const isCompleted =
+                                                found.status ===
+                                                'COMPLETED';
+
+                                            const ratingSection =
+                                                isCompleted
+                                                    ? `
+                                                        <div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-1.5">
+
+                                                            <span class="text-[11px] font-bold text-primary">
+                                                                Rate your Cleaner / Staff:
+                                                            </span>
+
+                                                            <div class="flex items-center gap-2">
+
+                                                                <select
+                                                                    id="clientRating-${found.id}"
+                                                                    class="text-xs bg-surface-container-low p-1 rounded border border-outline-variant"
+                                                                >
+                                                                    <option value="5">
+                                                                        ⭐⭐⭐⭐⭐ (5)
+                                                                    </option>
+
+                                                                    <option value="4">
+                                                                        ⭐⭐⭐⭐ (4)
+                                                                    </option>
+
+                                                                    <option value="3">
+                                                                        ⭐⭐⭐ (3)
+                                                                    </option>
+
+                                                                    <option value="2">
+                                                                        ⭐⭐ (2)
+                                                                    </option>
+
+                                                                    <option value="1">
+                                                                        ⭐ (1)
+                                                                    </option>
+                                                                </select>
+
+                                                                <input
+                                                                    type="text"
+                                                                    id="clientNotes-${found.id}"
+                                                                    placeholder="Leave a note..."
+                                                                    class="text-xs p-1 bg-surface-container-low rounded border border-outline-variant flex-1"
+                                                                >
+
+                                                                <button
+                                                                    onclick="submitClientRating(${found.id})"
+                                                                    class="px-2.5 py-1 bg-primary text-on-primary rounded text-xs font-semibold"
+                                                                >
+                                                                    Send
+                                                                </button>
+
+                                                            </div>
+                                                        </div>
+                                                    `
+                                                    : '';
 
                                             listHTML += `
                                                 <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1.5 shadow-sm">
+
                                                     <div class="flex justify-between items-center">
-                                                        <span class="text-xs font-bold text-primary">#RES-${String(found.id).padStart(4, '0')} - ${escapeHTML(found.service_name || 'Cleaning Service')}</span>
-                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${found.status || 'PENDING'}</span>
+
+                                                        <span class="text-xs font-bold text-primary">
+                                                            #RES-${String(found.id).padStart(4, '0')}
+                                                            -
+                                                            ${escapeHTML(
+                                                                found.service_name ||
+                                                                'Cleaning Service'
+                                                            )}
+                                                        </span>
+
+                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">
+                                                            ${found.status || 'PENDING'}
+                                                        </span>
+
                                                     </div>
+
                                                     <div class="text-xs text-on-surface-variant flex flex-col gap-0.5">
-                                                        <span><b>Date:</b> ${found.service_date} at ${found.preferred_time || 'N/A'}</span>
-                                                        <span><b>Address:</b> ${escapeHTML(found.service_address || 'N/A')}</span>
-                                                        <span><b>Total:</b> ${displayPrice}</span>
+
+                                                        <span>
+                                                            <b>Date:</b>
+                                                            ${found.service_date}
+                                                            at
+                                                            ${found.preferred_time || 'N/A'}
+                                                        </span>
+
+                                                        <span>
+                                                            <b>Address:</b>
+                                                            ${escapeHTML(
+                                                                found.service_address ||
+                                                                'N/A'
+                                                            )}
+                                                        </span>
+
+                                                        <span>
+                                                            <b>Total:</b>
+                                                            ${displayPrice}
+                                                        </span>
+
                                                     </div>
+
                                                     ${ratingSection}
+
                                                 </div>
                                             `;
                                         });
-                                        listHTML += `</div>`;
+
+                                        listHTML += `
+                                            </div>
+                                        `;
 
                                         Modal.show({
                                             type: 'info',
                                             title: `Verified Booking History (${reservations.length})`,
-                                            message: `Authenticated successfully for: ${email}`,
+                                            message: `Authenticated successfully for: ${escapeHTML(email)}`,
                                             confirmText: 'Close',
                                             showCancel: false,
                                             htmlContent: listHTML
                                         });
+
                                     } else {
-                                        Modal.error('No reservations were found for this email address.', 'Result');
+                                        Modal.error(
+                                            'No reservations were found for this email address.',
+                                            'Result'
+                                        );
                                     }
+
                                 } catch (error) {
-                                    console.error('Error verifying PIN:', error);
-                                    Modal.error('Invalid or expired PIN code. Please try again.', 'Verification Error');
+                                    console.error(
+                                        'Error verifying PIN:',
+                                        error
+                                    );
+
+                                    Modal.error(
+                                        'Invalid or expired PIN code. Please try again.',
+                                        'Verification Error'
+                                    );
                                 }
+
                                 return false;
                             }
                         });
 
                     } catch (error) {
-                        console.error('Error sending OTP:', error);
-                        Modal.error('Could not send verification code. Please check the email address.', 'Error');
+                        console.error(
+                            'Error sending OTP:',
+                            error
+                        );
+
+                        Modal.error(
+                            'Could not send verification code. Please check the email address.',
+                            'Error'
+                        );
                     }
+
                     return false;
                 }
             });
+
             return;
         }
     });
