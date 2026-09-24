@@ -130,6 +130,7 @@ class EmailService
         </html>
         ";
     }
+
     private static function buildHtmlTemplate(array $res, string $status, string $customerName, string $resId, string $recipientEmail): string
     {
         $statusColors = [
@@ -158,6 +159,19 @@ class EmailService
 
         $instructions  = !empty($res['special_instructions']) ? htmlspecialchars($res['special_instructions']) : 'None specified';
 
+        // Mostrar personal asignado si existe en el arreglo
+        $assignedStaff = $res['staff_name'] ?? null;
+        $staffNoticeHtml = "";
+        
+        if (!empty($assignedStaff)) {
+            $staffNoticeHtml = "
+            <div style='background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 24px;'>
+                <p style='margin: 0; font-size: 14px; color: #166534;'>
+                    <strong>✨ Personal Asignado:</strong> Se ha asignado a <strong>" . htmlspecialchars($assignedStaff) . "</strong> para llevar a cabo este servicio de limpieza en tu domicilio.
+                </p>
+            </div>";
+        }
+
         $secret = 'purenest_secret';
         $token = hash('sha256', $res['id'] . 'balrking07@gmail.com' . $secret);
 
@@ -167,28 +181,25 @@ class EmailService
         }
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-        $baseUrl = "{$protocol}://{$host}/purenest/api/public/reservations?id={$res['id']}&token={$token}";
+        $baseUrl = "{$protocol}://{$host}/api/public/reservations?id={$res['id']}&token={$token}";
 
-        $confirmUrl = "{$baseUrl}&action=confirm";
-        $cancelUrl  = "{$baseUrl}&action=cancel";
+        $confirmUrl    = "{$baseUrl}&action=confirm";
+        $rescheduleUrl = "{$baseUrl}&action=reschedule";
+        $cancelUrl     = "{$baseUrl}&action=cancel";
 
         $actionButtonsHtml = "";
 
-        if (in_array($status, ['PENDING', 'RESCHEDULED'], true)) {
+        if (!in_array($status, ['CANCELLED', 'REJECTED'], true)) {
             $actionButtonsHtml = "
             <div style='text-align: center; margin: 32px 0 16px 0;'>
-                <a href='{$confirmUrl}' style='background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 10px; display: inline-block;'>
-                    Confirm Service
+                <a href='{$confirmUrl}' style='background-color: #0f172a; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block;'>
+                    Confirmar
                 </a>
-                <a href='{$cancelUrl}' style='background-color: #b91c1c; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
-                    Cancel Service
+                <a href='{$rescheduleUrl}' style='background-color: #9333ea; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block;'>
+                    Reasignar Fecha
                 </a>
-            </div>";
-        } elseif ($status === 'CONFIRMED') {
-            $actionButtonsHtml = "
-            <div style='text-align: center; margin: 32px 0 16px 0;'>
-                <a href='{$cancelUrl}' style='background-color: #b91c1c; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
-                    Cancel Service
+                <a href='{$cancelUrl}' style='background-color: #b91c1c; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
+                    Cancelar
                 </a>
             </div>";
         }
@@ -231,8 +242,10 @@ class EmailService
                     
                     <h2 class='greeting font-serif text-4xl tracking-tight text-navy'>Hello {$customerName},</h2>
                     <p class='message'>
-                        The status of your cleaning reservation has been updated. Below are the comprehensive details of your scheduled service:
+                        The status of your cleaning reservation has been updated. Please review the comprehensive details of your scheduled service below:
                     </p>
+
+                    {$staffNoticeHtml}
 
                     <div class='details-card'>
                         <table class='details-table'>
