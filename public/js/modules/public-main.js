@@ -138,6 +138,11 @@ function setupMapModal() {
                 googleMapInstance.on('click', async (e) => {
                     const { lat, lng } = e.latlng;
                     mapMarker.setLatLng([lat, lng]);
+                    
+                    googleMapInstance.flyTo([lat, lng], 15, {
+                        duration: 1.5
+                    });
+
                     await updateAddressFromCoords(lat, lng);
                 });
 
@@ -156,7 +161,11 @@ function setupMapModal() {
                             if (results && results.length > 0) {
                                 const lat = parseFloat(results[0].lat);
                                 const lon = parseFloat(results[0].lon);
-                                googleMapInstance.setView([lat, lon], 15);
+                                
+                                googleMapInstance.flyTo([lat, lon], 16, {
+                                    duration: 1.8
+                                });
+
                                 mapMarker.setLatLng([lat, lon]);
                                 selectedMapAddress = results[0].display_name;
                                 mapSearchInput.value = selectedMapAddress;
@@ -186,6 +195,7 @@ function setupMapModal() {
         closeModal();
     });
 }
+
 
 function setMinDateForService() {
     const dateInput = document.getElementById('estimateDate');
