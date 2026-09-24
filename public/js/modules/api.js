@@ -62,6 +62,41 @@ export const API = {
             body: JSON.stringify(payload)
         })
     },
+    serviceZones: {
+        getAll: async () => apiFetch('/service-zones'),
+        getActive: async () => apiFetch('/service-zones/active'),
+        getById: async (id) => apiFetch(`/service-zones?id=${id}`),
+        create: async (payload) => {
+            const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            if (!payload.user_id && user.id) {
+                payload.user_id = user.id;
+            }
+            return apiFetch('/service-zones', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+        },
+        update: async (id, payload) => {
+            const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            if (!payload.user_id && user.id) {
+                payload.user_id = user.id;
+            }
+            return apiFetch(`/service-zones?id=${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+        },
+        delete: async (id) => {
+            const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
+            const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
+            return apiFetch(`/service-zones?id=${id}`, {
+                method: 'DELETE',
+                body: JSON.stringify({ user_id: user.id || null })
+            });
+        }
+    },
     authCustomer: {
         sendOtp: async (email) => apiFetch('/auth/send-otp', {
             method: 'POST',

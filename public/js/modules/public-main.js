@@ -8,14 +8,10 @@ let mapMarker = null;
 let mapAutocomplete = null;
 let selectedMapAddress = '';
 
-const allowedZones = [
-    "alexandria", "old town", "del ray", "rosemont", "potomac yard", "eisenhower valley",
-    "arlington", "clarendon", "ballston", "rosslyn", "crystal city", "pentagon city", "virginia square", "lyon village", "bluemont",
-    "washington", "georgetown", "dupont circle", "kalorama", "cleveland park", "tenleytown", "friendship heights",
-    "bethesda", "chevy chase"
-];
+let allowedZones = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await loadAllowedZonesFromDatabase();
     await loadPublicServices();
     setupEstimateForm();
     setMinDateForService();
@@ -23,6 +19,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupAddressValidation();
     setupMapModal();
 });
+
+async function loadAllowedZonesFromDatabase() {
+    try {
+        const response = await API.serviceZones.getAll();
+        let rawData = response;
+
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+            rawData = response.data || response.zones || [];
+        }
+
+        allowedZones = [];
+        
+        rawData.forEach(zone => {
+            if (Number(zone.is_active) === 1) {
+                allowedZones.push(zone.city_name.toLowerCase());
+                if (zone.areas && Array.isArray(zone.areas)) {
+                    zone.areas.forEach(area => {
+                        if (Number(area.is_active) === 1) {
+                            allowedZones.push(area.area_name.toLowerCase());
+                        }
+                    });
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading zones from database, using fallback:', error);
+        allowedZones = ["alexandria", "old town", "del ray", "rosemont", "arlington", "clarendon", "ballston"];
+    }
+}
 
 function validateAddressArea(addressText) {
     const textLower = addressText.toLowerCase();
@@ -37,6 +62,8 @@ function validateAddressArea(addressText) {
         }
         return true;
     }
+
+    if (allowedZones.length === 0) return true;
 
     const isAllowed = allowedZones.some(zone => textLower.includes(zone));
 
@@ -81,13 +108,13 @@ function setupAddressValidation() {
                         addressInput.value = fullAddress;
                         validateAddressArea(fullAddress);
                     } catch (error) {
-                        alert("No pudimos obtener tu dirección exacta automáticamente. Por favor ingrésala de forma manual.");
+                        alert("We couldn't retrieve your exact address automatically. Please enter it manually.");
                     }
                 }, () => {
-                    alert("Por favor permite el acceso a tu ubicación en el navegador para usar esta función.");
+                    alert("Please allow location access in your browser to use this feature.");
                 });
             } else {
-                alert("Tu navegador no soporta geolocalización.");
+                alert("Your browser doesn't support geolocation.");
             }
         });
     }
@@ -138,11 +165,7 @@ function setupMapModal() {
                 googleMapInstance.on('click', async (e) => {
                     const { lat, lng } = e.latlng;
                     mapMarker.setLatLng([lat, lng]);
-                    
-                    googleMapInstance.flyTo([lat, lng], 15, {
-                        duration: 1.5
-                    });
-
+                    googleMapInstance.flyTo([lat, lng], 15, { duration: 1.5 });
                     await updateAddressFromCoords(lat, lng);
                 });
 
@@ -161,16 +184,12 @@ function setupMapModal() {
                             if (results && results.length > 0) {
                                 const lat = parseFloat(results[0].lat);
                                 const lon = parseFloat(results[0].lon);
-                                
-                                googleMapInstance.flyTo([lat, lon], 16, {
-                                    duration: 1.8
-                                });
-
+                                googleMapInstance.flyTo([lat, lon], 16, { duration: 1.8 });
                                 mapMarker.setLatLng([lat, lon]);
                                 selectedMapAddress = results[0].display_name;
                                 mapSearchInput.value = selectedMapAddress;
                             } else {
-                                alert("No se encontró la ubicación.");
+                                alert("Location not found.");
                             }
                         } catch (err) {
                             console.error(err);
@@ -195,7 +214,6 @@ function setupMapModal() {
         closeModal();
     });
 }
-
 
 function setMinDateForService() {
     const dateInput = document.getElementById('estimateDate');
@@ -361,7 +379,7 @@ function setupEstimateForm() {
 
         const serviceAddress = document.getElementById('estimateAddress').value.trim();
         if (!validateAddressArea(serviceAddress)) {
-            Modal.error('Lo sentimos, por el momento no tenemos servicio en esta zona.', 'Área no disponible');
+            Modal.error('We are sorry, but we do not provide service in this area at the moment.', 'Area Not Available');
             return;
         }
 
