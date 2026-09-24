@@ -1,0 +1,28 @@
+[23-Sep-2026 23:55:18 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/customer/www/cleaning.mutechlabs.com/public_html/api/public/../config/Database.php' (include_path='.:/usr/local/php82/pear') in /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php on line 32
+[24-Sep-2026 00:03:16 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/customer/www/cleaning.mutechlabs.com/public_html/api/public/../config/Database.php' (include_path='.:/usr/local/php82/pear') in /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php on line 32
+[24-Sep-2026 00:12:29 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/customer/www/cleaning.mutechlabs.com/public_html/api/public/../config/Database.php' (include_path='.:/usr/local/php82/pear') in /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php on line 32
+[24-Sep-2026 00:18:35 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'Basic' for key 'service_categories.name' in /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Models/CategoryModel.php:28
+Stack trace:
+#0 /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Models/CategoryModel.php(28): PDOStatement->execute(Array)
+#1 /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Controllers/CategoryController.php(57): App\Models\CategoryModel->create('Basic', NULL)
+#2 /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Controllers/CategoryController.php(36): App\Controllers\CategoryController->create()
+#3 /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php(112): App\Controllers\CategoryController->handle('POST', NULL)
+#4 {main}
+  thrown in /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Models/CategoryModel.php on line 28
+[24-Sep-2026 00:18:42 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'Basic' for key 'service_categories.name' in /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Models/CategoryModel.php:28
+Stack trace:
+#0 /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Models/CategoryModel.php(28): PDOStatement->execute(Array)
+#1 /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Controllers/CategoryController.php(57): App\Models\CategoryModel->create('Basic', NULL)
+#2 /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Controllers/CategoryController.php(36): App\Controllers\CategoryController->create()
+#3 /home/customer/www/cleaning.mutechlabs.com/public_html/api/public/index.php(112): App\Controllers\CategoryController->handle('POST', NULL)
+#4 {main}
+  thrown in /home/customer/www/cleaning.mutechlabs.com/public_html/api/src/Models/CategoryModel.php on line 28
