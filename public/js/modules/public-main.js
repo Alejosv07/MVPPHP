@@ -812,7 +812,7 @@ function setupSupportWidget() {
             const phoneNumber = '15713761694';
 
             const message = encodeURIComponent(
-                'Hello PureNest Support, I need help with a cleaning service.'
+                'Hello LuxuriaPure Support, I need help with a cleaning service.'
             );
 
             window.open(
