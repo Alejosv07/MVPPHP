@@ -101,74 +101,75 @@ function setupMapModal() {
     const confirmBtn = document.getElementById('confirmMapModal');
     const addressInput = document.getElementById('estimateAddress');
     const mapSearchInput = document.getElementById('mapSearchInput');
+    const searchBtn = document.getElementById('mapSearchBtn');
 
     if (!modal || !openBtn) return;
 
-    const dmvCenter = { lat: 38.8951, lng: -77.0364 };
-    const restrictionBounds = { north: 39.02, south: 38.78, west: -77.20, east: -76.90 };
+    const defaultLat = 38.8951;
+    const defaultLng = -77.0364;
 
     openBtn.addEventListener('click', () => {
         modal.classList.remove('hidden');
-        setTimeout(() => {
+        
+        setTimeout(async () => {
             if (!googleMapInstance) {
-                googleMapInstance = new google.maps.Map(document.getElementById('googleMapContainer'), {
-                    center: dmvCenter,
-                    zoom: 12,
-                    restriction: { latLngBounds: restrictionBounds, strictBounds: false },
-                });
+                googleMapInstance = L.map('googleMapContainer').setView([defaultLat, defaultLng], 13);
 
-                mapMarker = new google.maps.Marker({
-                    map: googleMapInstance,
-                    position: dmvCenter,
-                    draggable: true,
-                });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(googleMapInstance);
 
-                const geocoder = new google.maps.Geocoder();
+                mapMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(googleMapInstance);
 
-                googleMapInstance.addListener('click', (mapsMouseEvent) => {
-                    const clickedPos = mapsMouseEvent.latLng;
-                    mapMarker.setPosition(clickedPos);
-                    geocoder.geocode({ location: clickedPos }, (results, status) => {
-                        if (status === 'OK' && results[0]) {
-                            selectedMapAddress = results[0].formatted_address;
+                const updateAddressFromCoords = async (lat, lng) => {
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                        const data = await response.json();
+                        if (data && data.display_name) {
+                            selectedMapAddress = data.display_name;
                             mapSearchInput.value = selectedMapAddress;
                         }
-                    });
+                    } catch (e) {
+                        console.error(e);
+                    }
+                };
+
+                googleMapInstance.on('click', async (e) => {
+                    const { lat, lng } = e.latlng;
+                    mapMarker.setLatLng([lat, lng]);
+                    await updateAddressFromCoords(lat, lng);
                 });
 
-                mapMarker.addListener('dragend', () => {
-                    const pos = mapMarker.getPosition();
-                    geocoder.geocode({ location: pos }, (results, status) => {
-                        if (status === 'OK' && results[0]) {
-                            selectedMapAddress = results[0].formatted_address;
-                            mapSearchInput.value = selectedMapAddress;
-                        }
-                    });
+                mapMarker.on('dragend', async (e) => {
+                    const { lat, lng } = e.target.getLatLng();
+                    await updateAddressFromCoords(lat, lng);
                 });
 
-                if (window.google && window.google.maps && window.google.maps.places) {
-                    mapAutocomplete = new google.maps.places.Autocomplete(mapSearchInput, {
-                        bounds: new google.maps.LatLngBounds(
-                            { lat: restrictionBounds.south, lng: restrictionBounds.west },
-                            { lat: restrictionBounds.north, lng: restrictionBounds.east }
-                        ),
-                        componentRestrictions: { country: 'us' }
-                    });
-
-                    mapAutocomplete.addListener('place_changed', () => {
-                        const place = mapAutocomplete.getPlace();
-                        if (place.geometry && place.geometry.location) {
-                            googleMapInstance.setCenter(place.geometry.location);
-                            googleMapInstance.setZoom(15);
-                            mapMarker.setPosition(place.geometry.location);
-                            selectedMapAddress = place.formatted_address || place.name;
-                            mapSearchInput.value = selectedMapAddress;
+                if (searchBtn && mapSearchInput) {
+                    searchBtn.addEventListener('click', async () => {
+                        const query = mapSearchInput.value.trim();
+                        if (!query) return;
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                            const results = await res.json();
+                            if (results && results.length > 0) {
+                                const lat = parseFloat(results[0].lat);
+                                const lon = parseFloat(results[0].lon);
+                                googleMapInstance.setView([lat, lon], 15);
+                                mapMarker.setLatLng([lat, lon]);
+                                selectedMapAddress = results[0].display_name;
+                                mapSearchInput.value = selectedMapAddress;
+                            } else {
+                                alert("No se encontró la ubicación.");
+                            }
+                        } catch (err) {
+                            console.error(err);
                         }
                     });
                 }
             } else {
-                google.maps.event.trigger(googleMapInstance, 'resize');
-                googleMapInstance.setCenter(dmvCenter);
+                googleMapInstance.invalidateSize();
             }
         }, 100);
     });
