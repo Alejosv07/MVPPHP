@@ -7,58 +7,93 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Luxuria Pure Cleaning Services | Professional Home & Commercial Cleaning</title>
     <meta name="title" content="Luxuria Pure Cleaning Services | Professional Home & Commercial Cleaning">
-    <meta name="description" content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
-    <meta name="keywords" content="cleaning services, residential cleaning, commercial cleaning, deep cleaning, professional cleaners, home cleaning">
+    <meta name="description"
+        content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
+    <meta name="keywords"
+        content="cleaning services, residential cleaning, commercial cleaning, deep cleaning, professional cleaners, home cleaning">
     <meta name="author" content="ARFLOW">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://cleaning.mutechlabs.com/">
     <meta property="og:title" content="Luxuria Pure Cleaning Services | Professional Home & Commercial Cleaning">
-    <meta property="og:description" content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
+    <meta property="og:description"
+        content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
     <meta property="og:image" content="https://cleaning.mutechlabs.com/public/assets/img/LuxuriaPureCover.png">
 
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://cleaning.mutechlabs.com/">
     <meta property="twitter:title" content="Luxuria Pure Cleaning Services | Professional Home & Commercial Cleaning">
-    <meta property="twitter:description" content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
+    <meta property="twitter:description"
+        content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
     <meta property="twitter:image" content="https://cleaning.mutechlabs.com/public/assets/img/LuxuriaPureCover.png">
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"
+        rel="stylesheet" />
     <script src="tailwind.js" id="tailwind-config"></script>
     <script src="js/modules/auth-guard.js"></script>
 </head>
 
-<body class="bg-background text-on-background min-h-screen flex selection:bg-primary-fixed selection:text-primary-container">
+<body
+    class="bg-background text-on-background min-h-screen flex selection:bg-primary-fixed selection:text-primary-container">
     <div id="sideAdminMenu"></div>
-    <div id="sidebar-backdrop" onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+    <div id="sidebar-backdrop"
+        onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
 
+<div class="md:hidden fixed top-0 left-0 w-full z-30 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            
+            <span class="font-serif text-4xl tracking-tight text-navy">Luxuria<span class="text-gold">
+                                Pure</span></span>
+        </div>
+        <button onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')" class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
     <main class="mb-20 lg:mb-0 flex-1 md:ml-64 overflow-y-auto w-full relative bg-background">
-        <header class="flex-wrap gap-2 lg:gap-2 pb-6 pt-20 lg:pt-6 bg-background/80 backdrop-blur-md px-margin-mobile md:px-margin-desktop py-6 flex justify-between items-center border-b border-outline-variant/30">
+        <header
+            class="flex-wrap gap-2 lg:gap-2 pb-6 pt-20 lg:pt-6 bg-background/80 backdrop-blur-md px-margin-mobile md:px-margin-desktop py-6 flex justify-between items-center border-b border-outline-variant/30">
             <div>
                 <h2 class="font-headline-md text-headline-md text-primary">Service Zones & Areas</h2>
-                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage allowed service cities, regions, and neighborhoods.</p>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage allowed service cities,
+                    regions, and neighborhoods.</p>
             </div>
             <div>
-                <button id="btnNewZone" class="bg-primary text-on-primary font-label-caps text-label-caps px-6 py-3 rounded flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer">
+                <button id="btnNewZone"
+                    class="bg-primary text-on-primary font-label-caps text-label-caps px-6 py-3 rounded flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer">
                     <span class="material-symbols-outlined text-sm">add</span> NEW ZONE
                 </button>
             </div>
         </header>
 
         <div class="px-margin-mobile md:px-margin-desktop py-8 max-w-container-max mx-auto w-full">
-            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden">
+            <div
+                class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-outline-variant/30 bg-surface-warm/10">
-                                <th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">ID</th>
-                                <th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">City / Region</th>
-                                <th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">State</th>
-                                <th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Allowed Areas / Neighborhoods</th>
-                                <th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+                                <th
+                                    class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    ID</th>
+                                <th
+                                    class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    City / Region</th>
+                                <th
+                                    class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    State</th>
+                                <th
+                                    class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                                    Allowed Areas / Neighborhoods</th>
+                                <th
+                                    class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider text-right">
+                                    Actions</th>
                             </tr>
                         </thead>
                         <tbody id="zonesTableBody" class="divide-y divide-outline-variant/20">
@@ -69,10 +104,13 @@
         </div>
     </main>
 
-    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 hidden pointer-events-none" id="zoneModal">
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 hidden pointer-events-none"
+        id="zoneModal">
         <div class="absolute inset-0 bg-on-surface/40 backdrop-blur-sm" id="modalBackdrop"></div>
-        <div class="relative bg-surface-container-lowest w-full max-w-xl rounded-xl soft-shadow overflow-hidden flex flex-col pointer-events-auto">
-            <header class="px-8 py-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface-warm">
+        <div
+            class="relative bg-surface-container-lowest w-full max-w-xl rounded-xl soft-shadow overflow-hidden flex flex-col pointer-events-auto">
+            <header
+                class="px-8 py-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface-warm">
                 <h2 class="font-headline-sm text-headline-sm text-primary" id="modalTitle">Add New Service Zone</h2>
                 <button id="btnCloseModal" class="text-outline hover:text-primary transition-colors cursor-pointer">
                     <span class="material-symbols-outlined">close</span>
@@ -83,20 +121,27 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="md:col-span-2 flex flex-col gap-2">
                         <label class="text-xs font-label-caps text-outline uppercase">City Name</label>
-                        <input type="text" id="cityName" required placeholder="e.g. Alexandria" class="w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary font-body-md outline-none">
+                        <input type="text" id="cityName" required placeholder="e.g. Alexandria"
+                            class="w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary font-body-md outline-none">
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="text-xs font-label-caps text-outline uppercase">State</label>
-                        <input type="text" id="stateCode" placeholder="VA" required class="w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary font-body-md outline-none text-center font-bold">
+                        <input type="text" id="stateCode" placeholder="VA" required
+                            class="w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary font-body-md outline-none text-center font-bold">
                     </div>
                 </div>
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-label-caps text-outline uppercase">Areas / Neighborhoods (One per line or comma separated)</label>
-                    <textarea id="zoneAreas" rows="5" placeholder="Old Town&#10;Del Ray&#10;Rosemont" class="w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary font-body-md outline-none"></textarea>
+                    <label class="text-xs font-label-caps text-outline uppercase">Areas / Neighborhoods (One per line or
+                        comma separated)</label>
+                    <textarea id="zoneAreas" rows="5" placeholder="Old Town&#10;Del Ray&#10;Rosemont"
+                        class="w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary font-body-md outline-none"></textarea>
                 </div>
                 <div class="flex justify-end gap-3 pt-4 border-t border-outline-variant/30">
-                    <button type="button" id="btnCancelModal" class="px-5 py-2.5 rounded-lg border border-outline-variant/50 bg-surface text-on-surface font-label-caps text-label-caps">Cancel</button>
-                    <button type="submit" class="px-6 py-2.5 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps hover:opacity-90">Save Zone</button>
+                    <button type="button" id="btnCancelModal"
+                        class="px-5 py-2.5 rounded-lg border border-outline-variant/50 bg-surface text-on-surface font-label-caps text-label-caps">Cancel</button>
+                    <button type="submit"
+                        class="px-6 py-2.5 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps hover:opacity-90">Save
+                        Zone</button>
                 </div>
             </form>
         </div>
@@ -106,4 +151,5 @@
     <script type="module" src="js/modules/admin-service-zones.js"></script>
 
 </body>
+
 </html>

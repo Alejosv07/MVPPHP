@@ -34,7 +34,16 @@
 <body class="bg-background text-on-background min-h-screen flex selection:bg-primary-fixed selection:text-primary-container">
     <div id="sideAdminMenu"></div>
     <div id="sidebar-backdrop" onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
-
+<div class="md:hidden fixed top-0 left-0 w-full z-30 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            
+            <span class="font-serif text-4xl tracking-tight text-navy">Luxuria<span class="text-gold">
+                                Pure</span></span>
+        </div>
+        <button onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')" class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
     <main class="mb-20 lg:mb-0 ml-64 mt-16 p-margin-desktop w-full max-w-container-max mx-auto pb-section-gap">
         <form id="systemScheduleForm" novalidate>
             <div class="mb-12">
