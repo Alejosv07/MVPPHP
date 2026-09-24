@@ -69,7 +69,7 @@ $validResources = [
     'admins',
     'audit-logs',
     'system-schedule',
-    'service-zones'
+    'service_zones'
 ];
 
 $resourceIndex = false;
@@ -118,6 +118,6 @@ match ($resource) {
     'admins'          => (new AdminController())->handle($method, $id, $subResource),
     'audit-logs'      => (new AuditController())->handle($param1),
     'system-schedule' => (new SystemScheduleController())->handle($method),
-    'service-zones'   => (new ServiceZoneController())->handle($method, $id, $subResource),
+    'service_zones'   => (new ServiceZoneController())->handle($method, $id, $subResource),
     default           => Response::json(['message' => 'Endpoint not found'], 404)
 };

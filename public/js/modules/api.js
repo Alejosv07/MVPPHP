@@ -63,16 +63,16 @@ export const API = {
         })
     },
     serviceZones: {
-        getAll: async () => apiFetch('/service-zones'),
-        getActive: async () => apiFetch('/service-zones/active'),
-        getById: async (id) => apiFetch(`/service-zones?id=${id}`),
+        getAll: async () => apiFetch('/service_zones'),
+        getActive: async () => apiFetch('/service_zones/active'),
+        getById: async (id) => apiFetch(`/service_zones?id=${id}`),
         create: async (payload) => {
             const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
             const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
             if (!payload.user_id && user.id) {
                 payload.user_id = user.id;
             }
-            return apiFetch('/service-zones', {
+            return apiFetch('/service_zones', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
@@ -83,7 +83,7 @@ export const API = {
             if (!payload.user_id && user.id) {
                 payload.user_id = user.id;
             }
-            return apiFetch(`/service-zones?id=${id}`, {
+            return apiFetch(`/service_zones?id=${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
@@ -91,7 +91,7 @@ export const API = {
         delete: async (id) => {
             const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');
             const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
-            return apiFetch(`/service-zones?id=${id}`, {
+            return apiFetch(`/service_zones?id=${id}`, {
                 method: 'DELETE',
                 body: JSON.stringify({ user_id: user.id || null })
             });
