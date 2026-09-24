@@ -9,14 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadZones() {
     const tbody = document.getElementById('zonesTableBody');
     try {
-        const zones = await API.serviceZones.getAll();
+        const response = await API.serviceZones.getAll();
+        let rawData = response;
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+            rawData = response.data || response.service_zones || [];
+        }
+        const zones = Array.isArray(rawData) ? rawData : [];
         tbody.innerHTML = '';
-
-        if (!zones || zones.length === 0) {
+        if (zones.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-on-surface-variant">No service zones registered.</td></tr>`;
             return;
         }
-
         zones.forEach(z => {
             const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${a.area_name}</span>`).join(' ') : 'No areas';
 
