@@ -20,7 +20,7 @@ class ServiceZoneController
         $this->auditModel = new AuditModel();
     }
 
-public function handle(string $method, ?int $id, ?string $subResource = null): void
+    public function handle(string $method, ?int $id, ?string $subResource = null): void
     {
         if ($subResource === 'active' && $method === 'GET') {
             Response::json($this->model->getActiveZonesAndAreas());
@@ -68,11 +68,11 @@ public function handle(string $method, ?int $id, ?string $subResource = null): v
             $id = $this->model->create($data);
 
             $this->logActivity(
-                userId: $data['user_id'] ?? null,
-                action: 'CREATE',
-                entityType: 'service_zones',
-                entityId: $id,
-                details: ['city_name' => $data['city_name'], 'areas' => $data['areas'] ?? []]
+                $data['user_id'] ?? null,
+                'CREATE',
+                'service_zones',
+                $id,
+                ['city_name' => $data['city_name'], 'areas' => $data['areas'] ?? []]
             );
 
             Response::json(['message' => 'Service zone created successfully', 'id' => $id], 201);
@@ -95,11 +95,11 @@ public function handle(string $method, ?int $id, ?string $subResource = null): v
 
             if ($success) {
                 $this->logActivity(
-                    userId: $data['user_id'] ?? null,
-                    action: 'UPDATE',
-                    entityType: 'service_zones',
-                    entityId: $id,
-                    details: ['city_name' => $data['city_name'], 'areas' => $data['areas'] ?? []]
+                    $data['user_id'] ?? null,
+                    'UPDATE',
+                    'service_zones',
+                    $id,
+                    ['city_name' => $data['city_name'], 'areas' => $data['areas'] ?? []]
                 );
 
                 Response::json(['message' => 'Service zone updated successfully']);
@@ -121,11 +121,11 @@ public function handle(string $method, ?int $id, ?string $subResource = null): v
 
             if ($success) {
                 $this->logActivity(
-                    userId: $userId,
-                    action: 'DELETE',
-                    entityType: 'service_zones',
-                    entityId: $id,
-                    details: ['deleted_zone_id' => $id]
+                    $userId,
+                    'DELETE',
+                    'service_zones',
+                    $id,
+                    ['deleted_zone_id' => $id]
                 );
 
                 Response::json(['message' => 'Service zone deleted successfully']);
