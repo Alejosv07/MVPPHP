@@ -27,23 +27,25 @@ async function loadAllowedZonesFromDatabase() {
         let rawData = response;
 
         if (response && typeof response === 'object' && !Array.isArray(response)) {
-            rawData = response.data || response.zones || [];
+            rawData = response.data || response.service_zones || response.zones || [];
         }
 
         allowedZones = [];
 
-        rawData.forEach(zone => {
-            if (Number(zone.is_active) === 1) {
-                allowedZones.push(zone.city_name.toLowerCase());
-                if (zone.areas && Array.isArray(zone.areas)) {
-                    zone.areas.forEach(area => {
-                        if (Number(area.is_active) === 1) {
-                            allowedZones.push(area.area_name.toLowerCase());
-                        }
-                    });
+        if (Array.isArray(rawData)) {
+            rawData.forEach(zone => {
+                if (Number(zone.is_active) === 1) {
+                    if (zone.city_name) allowedZones.push(zone.city_name.toLowerCase());
+                    if (zone.areas && Array.isArray(zone.areas)) {
+                        zone.areas.forEach(area => {
+                            if (Number(area.is_active) === 1 && area.area_name) {
+                                allowedZones.push(area.area_name.toLowerCase());
+                            }
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
     } catch (error) {
         console.error('Error loading zones from database, using fallback:', error);
         allowedZones = ["alexandria", "old town", "del ray", "rosemont", "arlington", "clarendon", "ballston"];
@@ -576,6 +578,7 @@ window.submitClientRating = async function (reservationId) {
         Modal.error('Could not submit rating. Please try again.', 'Rating Error');
     }
 };
+
 async function loadPublicServiceZonesUI() {
     const container = document.getElementById('dynamic-service-zones');
     if (!container) return;
@@ -598,18 +601,18 @@ async function loadPublicServiceZonesUI() {
 
         let htmlContent = '';
         zones.forEach(zone => {
-            if (Number(zone.is_active) === 1) {
+            if (Number(zone.is_active) === 1 && zone.city_name) {
                 htmlContent += `
                     <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
                         <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 
-                        ${escapeHTML(zone.city_name)} (${escapeHTML(zone.state_code)})
+                        ${escapeHTML(zone.city_name)} ${zone.state_code ? `(${escapeHTML(zone.state_code)})` : ''}
                     </div>
                 `;
             }
 
             if (zone.areas && Array.isArray(zone.areas)) {
                 zone.areas.forEach(area => {
-                    if (Number(area.is_active) === 1) {
+                    if (Number(area.is_active) === 1 && area.area_name) {
                         htmlContent += `
                             <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
                                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 
@@ -628,6 +631,7 @@ async function loadPublicServiceZonesUI() {
         container.innerHTML = `<div class="text-body-md text-on-surface-variant">Could not load service zones.</div>`;
     }
 }
+
 function setupSupportWidget() {
     document.addEventListener('click', async e => {
         const target = e.target.closest('button, a, div, span');
