@@ -515,7 +515,11 @@ window.updateStatus = async function (id, newStatus) {
     }
 
     try {
-        await API.reservations.update(id, { status: newStatus });
+        const loggedUser = getLoggedUser();
+        await API.reservations.update(id, { 
+            status: newStatus,
+            user_id: loggedUser ? loggedUser.id : null 
+        });
         await loadReservations();
     } catch (error) {
         console.error('Error updating status:', error);
@@ -553,17 +557,22 @@ function showCompletionRatingModal(reservationId) {
         onConfirm: async () => {
             const rating = document.getElementById('modalStaffRating').value;
             const notes = document.getElementById('modalStaffNotes').value.trim();
+            const loggedUser = getLoggedUser();
 
             try {
-                await API.reservations.update(reservationId, { status: 'COMPLETED' });
+                await API.reservations.update(reservationId, { 
+                    status: 'COMPLETED',
+                    user_id: loggedUser ? loggedUser.id : null 
+                });
 
                 try {
                     await API.ratings.submitStaffRating(reservationId, {
                         staff_rating: Number(rating),
-                        staff_notes: notes
+                        staff_notes: notes,
+                        staff_id: loggedUser ? loggedUser.id : null
                     });
                 } catch (ratingErr) {
-                    console.warn('Could not save rating via endpoint (check backend implementation):', ratingErr);
+                    console.warn('Could not save rating via endpoint:', ratingErr);
                 }
 
                 Modal.close();
