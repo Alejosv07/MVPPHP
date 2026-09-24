@@ -3,13 +3,204 @@ import { Modal } from './modal.js';
 
 let selectedFrequency = 'One-time';
 let loadedServices = [];
+let googleMapInstance = null;
+let mapMarker = null;
+let mapAutocomplete = null;
+let selectedMapAddress = '';
+
+const allowedZones = [
+    "alexandria", "old town", "del ray", "rosemont", "potomac yard", "eisenhower valley",
+    "arlington", "clarendon", "ballston", "rosslyn", "crystal city", "pentagon city", "virginia square", "lyon village", "bluemont",
+    "washington", "georgetown", "dupont circle", "kalorama", "cleveland park", "tenleytown", "friendship heights",
+    "bethesda", "chevy chase"
+];
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadPublicServices();
     setupEstimateForm();
     setMinDateForService();
     setupSupportWidget();
+    setupAddressValidation();
+    setupMapModal();
 });
+
+function validateAddressArea(addressText) {
+    const textLower = addressText.toLowerCase();
+    const errorEl = document.getElementById('addressError');
+    const submitBtn = document.querySelector('#estimateForm button[type="submit"]');
+
+    if (!addressText.trim()) {
+        if (errorEl) errorEl.classList.add('hidden');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        return true;
+    }
+
+    const isAllowed = allowedZones.some(zone => textLower.includes(zone));
+
+    if (!isAllowed) {
+        if (errorEl) errorEl.classList.remove('hidden');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        return false;
+    } else {
+        if (errorEl) errorEl.classList.add('hidden');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        return true;
+    }
+}
+
+function setupAddressValidation() {
+    const addressInput = document.getElementById('estimateAddress');
+    const geoBtn = document.getElementById('geoBtn');
+
+    if (addressInput) {
+        addressInput.addEventListener('input', (e) => {
+            validateAddressArea(e.target.value);
+        });
+    }
+
+    if (geoBtn && addressInput) {
+        geoBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                        const data = await response.json();
+                        
+                        const fullAddress = data.display_name || "";
+                        addressInput.value = fullAddress;
+                        
+                        validateAddressArea(fullAddress);
+                    } catch (error) {
+                        alert("No pudimos obtener tu dirección exacta automáticamente. Por favor ingrésala de forma manual.");
+                    }
+                }, () => {
+                    alert("Por favor permite el acceso a tu ubicación en el navegador para usar esta función.");
+                });
+            } else {
+                alert("Tu navegador no soporta geolocalización.");
+            }
+        });
+    }
+}
+
+function setupMapModal() {
+    const modal = document.getElementById('mapModal');
+    const openBtn = document.getElementById('mapModalBtn');
+    const closeBtn = document.getElementById('closeMapModal');
+    const cancelBtn = document.getElementById('cancelMapModal');
+    const confirmBtn = document.getElementById('confirmMapModal');
+    const addressInput = document.getElementById('estimateAddress');
+    const mapSearchInput = document.getElementById('mapSearchInput');
+
+    if (!modal || !openBtn) return;
+
+    const dmvCenter = { lat: 38.8951, lng: -77.0364 };
+
+    const restrictionBounds = {
+        north: 39.02,
+        south: 38.78,
+        west: -77.20,
+        east: -76.90,
+    };
+
+    openBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        
+        setTimeout(() => {
+            if (!googleMapInstance) {
+                googleMapInstance = new google.maps.Map(document.getElementById('googleMapContainer'), {
+                    center: dmvCenter,
+                    zoom: 12,
+                    restriction: {
+                        latLngBounds: restrictionBounds,
+                        strictBounds: false,
+                    },
+                });
+
+                mapMarker = new google.maps.Marker({
+                    map: googleMapInstance,
+                    position: dmvCenter,
+                    draggable: true,
+                });
+
+                const geocoder = new google.maps.Geocoder();
+
+                googleMapInstance.addListener('click', (mapsMouseEvent) => {
+                    const clickedPos = mapsMouseEvent.latLng;
+                    mapMarker.setPosition(clickedPos);
+                    
+                    geocoder.geocode({ location: clickedPos }, (results, status) => {
+                        if (status === 'OK' && results[0]) {
+                            selectedMapAddress = results[0].formatted_address;
+                            mapSearchInput.value = selectedMapAddress;
+                        }
+                    });
+                });
+
+                mapMarker.addListener('dragend', () => {
+                    const pos = mapMarker.getPosition();
+                    geocoder.geocode({ location: pos }, (results, status) => {
+                        if (status === 'OK' && results[0]) {
+                            selectedMapAddress = results[0].formatted_address;
+                            mapSearchInput.value = selectedMapAddress;
+                        }
+                    });
+                });
+
+                if (window.google && window.google.maps && window.google.maps.places) {
+                    mapAutocomplete = new google.maps.places.Autocomplete(mapSearchInput, {
+                        bounds: new google.maps.LatLngBounds(
+                            { lat: restrictionBounds.south, lng: restrictionBounds.west },
+                            { lat: restrictionBounds.north, lng: restrictionBounds.east }
+                        ),
+                        componentRestrictions: { country: 'us' }
+                    });
+
+                    mapAutocomplete.addListener('place_changed', () => {
+                        const place = mapAutocomplete.getPlace();
+                        if (place.geometry && place.geometry.location) {
+                            googleMapInstance.setCenter(place.geometry.location);
+                            googleMapInstance.setZoom(15);
+                            mapMarker.setPosition(place.geometry.location);
+                            selectedMapAddress = place.formatted_address || place.name;
+                            mapSearchInput.value = selectedMapAddress;
+                        }
+                    });
+                }
+            } else {
+                google.maps.event.trigger(googleMapInstance, 'resize');
+                googleMapInstance.setCenter(dmvCenter);
+            }
+        }, 100);
+    });
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    confirmBtn.addEventListener('click', () => {
+        if (selectedMapAddress) {
+            addressInput.value = selectedMapAddress;
+            validateAddressArea(selectedMapAddress);
+        }
+        closeModal();
+    });
+}
 
 function setMinDateForService() {
     const dateInput = document.getElementById('estimateDate');
@@ -306,6 +497,13 @@ function setupEstimateForm() {
     form.addEventListener('submit', async e => {
         e.preventDefault();
 
+        const serviceAddress = document.getElementById('estimateAddress').value.trim();
+
+        if (!validateAddressArea(serviceAddress)) {
+            Modal.error('Lo sentimos, por el momento no tenemos servicio en esta zona.', 'Área no disponible');
+            return;
+        }
+
         const triggerError = (elementId, message) => {
             const el = document.getElementById(elementId);
 
@@ -349,9 +547,6 @@ function setupEstimateForm() {
 
         const preferredTime =
             document.getElementById('estimateTime').value;
-
-        const serviceAddress =
-            document.getElementById('estimateAddress').value.trim();
 
         const notesInput =
             document.getElementById('clientNotes');
