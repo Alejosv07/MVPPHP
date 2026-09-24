@@ -365,18 +365,7 @@ async function toggleServiceStatus(service, currentIsActive) {
     });
 }
 
-/**
- * Converts relative image paths from the API
- * into absolute URLs using the current domain.
- *
- * Example:
- * /uploads/image.webp
- *
- * becomes:
- * https://cleaning.mutechlabs.com/uploads/image.webp
- *
- * while absolute URLs are kept unchanged.
- */
+
 function getImageUrl(imageUrl) {
     if (!imageUrl) {
         return null;
@@ -389,7 +378,9 @@ function getImageUrl(imageUrl) {
         return imageUrl;
     }
 
-    return `${window.location.origin}${imageUrl}`;
+    const fixedPath = imageUrl.startsWith('/uploads/') ? `/public${imageUrl}` : imageUrl;
+
+    return `${window.location.origin}${fixedPath}`;
 }
 
 function escapeHTML(str) {
