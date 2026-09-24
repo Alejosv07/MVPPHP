@@ -1,5 +1,5 @@
-import { API } from './js/modules/api.js';
-import { Modal } from './js/modules/modal.js';
+import { API } from './api.js';
+import { Modal } from './modal.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadZones();
