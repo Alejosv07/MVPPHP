@@ -1,4 +1,5 @@
 import { API } from './js/modules/api.js';
+import { Modal } from './js/modules/modal.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadZones();
@@ -20,21 +21,21 @@ async function loadZones() {
             const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${a.area_name}</span>`).join(' ') : 'No areas';
 
             tbody.innerHTML += `
-                        <tr class="hover:bg-surface-warm/5 transition-colors">
-                            <td class="py-4 px-6 text-sm font-bold text-primary">#ZONE-${z.id}</td>
-                            <td class="py-4 px-6 text-sm font-medium text-on-background">${z.city_name}</td>
-                            <td class="py-4 px-6 text-sm text-on-surface-variant font-bold">${z.state_code}</td>
-                            <td class="py-4 px-6 text-sm flex flex-wrap gap-1.5 max-w-md">${areasList}</td>
-                            <td class="py-4 px-6 text-sm text-right space-x-2">
-                                <button onclick='editZone(${JSON.stringify(z)})' class="p-1.5 bg-primary-fixed/30 text-primary rounded hover:bg-primary-fixed transition-colors">
-                                    <span class="material-symbols-outlined text-sm">edit</span>
-                                </button>
-                                <button onclick="deleteZone(${z.id})" class="p-1.5 bg-error-container text-error rounded hover:bg-error/20 transition-colors">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
+                <tr class="hover:bg-surface-warm/5 transition-colors">
+                    <td class="py-4 px-6 text-sm font-bold text-primary">#ZONE-${z.id}</td>
+                    <td class="py-4 px-6 text-sm font-medium text-on-background">${z.city_name}</td>
+                    <td class="py-4 px-6 text-sm text-on-surface-variant font-bold">${z.state_code}</td>
+                    <td class="py-4 px-6 text-sm flex flex-wrap gap-1.5 max-w-md">${areasList}</td>
+                    <td class="py-4 px-6 text-sm text-right space-x-2">
+                        <button onclick='editZone(${JSON.stringify(z)})' class="p-1.5 bg-primary-fixed/30 text-primary rounded hover:bg-primary-fixed transition-colors">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button onclick="deleteZone(${z.id})" class="p-1.5 bg-error-container text-error rounded hover:bg-error/20 transition-colors">
+                            <span class="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `;
         });
     } catch (err) {
         console.error(err);
@@ -69,14 +70,22 @@ window.editZone = function (zone) {
 };
 
 window.deleteZone = async function (id) {
-    if (confirm('Are you sure you want to delete this service zone and its neighborhoods?')) {
-        try {
-            await API.serviceZones.delete(id);
-            loadZones();
-        } catch (err) {
-            alert('Error deleting zone: ' + err.message);
+    Modal.show({
+        type: 'warning',
+        title: 'Delete Service Zone',
+        message: 'Are you sure you want to delete this service zone and its neighborhoods?',
+        confirmText: 'Delete',
+        showCancel: true,
+        onConfirm: async () => {
+            try {
+                await API.serviceZones.delete(id);
+                loadZones();
+                Modal.success('Service zone deleted successfully.', 'Deleted');
+            } catch (err) {
+                Modal.error('Error deleting zone: ' + err.message, 'Error');
+            }
         }
-    }
+    });
 };
 
 function setupForm() {
@@ -95,13 +104,15 @@ function setupForm() {
         try {
             if (id) {
                 await API.serviceZones.update(id, payload);
+                Modal.success('Service zone updated successfully.', 'Updated');
             } else {
                 await API.serviceZones.create(payload);
+                Modal.success('Service zone created successfully.', 'Created');
             }
             closeZoneModal();
             loadZones();
         } catch (err) {
-            alert('Error saving zone: ' + err.message);
+            Modal.error('Error saving zone: ' + err.message, 'Error');
         }
     });
 }
