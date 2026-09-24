@@ -42,6 +42,7 @@ use App\Controllers\AdminController;
 use App\Controllers\AuditController;
 use App\Controllers\SystemScheduleController;
 use App\Controllers\CustomerAuthController;
+use App\Controllers\ServiceZoneController;
 
 $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
@@ -59,15 +60,16 @@ $uriPath = trim($requestPath, '/');
 $segments = explode('/', $uriPath);
 
 $validResources = [
-    'auth', 
-    'reservations', 
-    'categories', 
-    'features', 
-    'services', 
-    'customers', 
-    'admins', 
-    'audit-logs', 
-    'system-schedule'
+    'auth',
+    'reservations',
+    'categories',
+    'features',
+    'services',
+    'customers',
+    'admins',
+    'audit-logs',
+    'system-schedule',
+    'service-zones'
 ];
 
 $resourceIndex = false;
@@ -103,10 +105,10 @@ match ($resource) {
         default           => Response::json(['message' => 'Invalid authentication action'], 404)
     },
     'reservations' => match (true) {
-        $id !== null && $subResource === 'customer-rating' && $method === 'POST' 
-            => (new CustomerAuthController())->submitCustomerRating($id),
+        $id !== null && $subResource === 'customer-rating' && $method === 'POST'
+        => (new CustomerAuthController())->submitCustomerRating($id),
         $id !== null && isset($_GET['action']) && $_GET['action'] === 'staff-rating' && $method === 'POST'
-            => (new CustomerAuthController())->submitStaffRating($id),
+        => (new CustomerAuthController())->submitStaffRating($id),
         default => (new ReservationController())->handle($method, $id, $subResource)
     },
     'categories'      => (new CategoryController())->handle($method, $id),
@@ -116,5 +118,6 @@ match ($resource) {
     'admins'          => (new AdminController())->handle($method, $id, $subResource),
     'audit-logs'      => (new AuditController())->handle($param1),
     'system-schedule' => (new SystemScheduleController())->handle($method),
+    'service-zones'   => (new ServiceZoneController())->handle($method, $id, $subResource),
     default           => Response::json(['message' => 'Endpoint not found'], 404)
 };
