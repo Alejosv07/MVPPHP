@@ -27,12 +27,26 @@ async function loadAuditData() {
         allLogs = Array.isArray(logsResponse) ? logsResponse : (logsResponse.data || []);
         allHistory = Array.isArray(historyResponse) ? historyResponse : (historyResponse.data || []);
 
+        populateEntityFilter();
         applyScopeFilter('all');
 
     } catch (error) {
         console.error('Error loading audit data:', error);
         Modal.error('Failed to load cryptographic audit logs from the server.', 'Sync Error');
     }
+}
+
+function populateEntityFilter() {
+    const entitySelect = document.getElementById('filter-entity');
+    if (!entitySelect) return;
+
+    const uniqueEntities = [...new Set(allLogs.map(log => log.entity_type).filter(Boolean))].sort();
+
+    entitySelect.innerHTML = '<option value="">All Entities</option>';
+    
+    uniqueEntities.forEach(entity => {
+        entitySelect.innerHTML += `<option value="${entity}">${entity}</option>`;
+    });
 }
 
 function setupQuickScopeFilters() {
@@ -55,7 +69,7 @@ function setupQuickScopeFilters() {
 function setupAdvancedFilters() {
     const searchInput = document.querySelector('input[placeholder*="Search by User"]');
     const actionSelect = document.querySelectorAll('select')[0];
-    const entitySelect = document.querySelectorAll('select')[1];
+    const entitySelect = document.getElementById('filter-entity');
 
     const startDateInput = document.getElementById('filter-date-start');
     const endDateInput = document.getElementById('filter-date-end');
@@ -111,7 +125,7 @@ function applyFilters() {
 
     const searchInput = document.querySelector('input[placeholder*="Search by User"]');
     const actionSelect = document.querySelectorAll('select')[0];
-    const entitySelect = document.querySelectorAll('select')[1];
+    const entitySelect = document.getElementById('filter-entity');
 
     if (searchInput && searchInput.value.trim() !== '') {
         const query = searchInput.value.toLowerCase();
@@ -227,6 +241,7 @@ function renderStatistics(logs, history) {
         if (topCountEl) topCountEl.textContent = '0 Executions';
     }
 }
+
 function renderLogsTable(logs) {
     const tbody = document.getElementById('activity-logs-tbody');
     let mobileContainer = document.getElementById('mobile-logs-container');
@@ -265,7 +280,6 @@ function renderLogsTable(logs) {
         if (log.action === 'CREATE') actionBg = 'bg-primary-fixed text-on-primary-fixed';
         if (log.action === 'LOGIN') actionBg = 'bg-secondary-container text-on-secondary-container';
 
-        // 1. Escritorio (Fila de Tabla)
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-surface-container-high/40 transition-colors';
         tr.innerHTML = `
@@ -311,7 +325,6 @@ function renderLogsTable(logs) {
         `;
         tbody.appendChild(tr);
 
-        // 2. Móvil (Tarjeta Adaptativa)
         if (mobileContainer) {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'p-5 space-y-3 hover:bg-surface-warm/50 transition-colors border-b border-outline-variant/20';
@@ -442,6 +455,7 @@ function renderHistoryTable(history) {
 
     renderHistoryPaginationControls(totalPages, history);
 }
+
 function renderLogsPaginationControls(totalPages, logs) {
     const paginationContainer = document.getElementById('pagination-buttons');
     if (!paginationContainer) return;
@@ -492,7 +506,6 @@ function renderLogsPaginationControls(totalPages, logs) {
     });
     paginationContainer.appendChild(nextBtn);
 }
-
 
 function renderHistoryPaginationControls(totalPages, history) {
     const paginationContainer = document.getElementById('history-pagination-buttons');
