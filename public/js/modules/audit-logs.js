@@ -42,7 +42,7 @@ function populateEntityFilter() {
 
     const uniqueEntities = [...new Set(allLogs.map(log => log.entity_type).filter(Boolean))].sort();
 
-    entitySelect.innerHTML = '<option value="">All Entities</option>';
+    entitySelect.innerHTML = '<option value="">ALL ENTITIES</option>';
     
     uniqueEntities.forEach(entity => {
         entitySelect.innerHTML += `<option value="${entity}">${entity}</option>`;
