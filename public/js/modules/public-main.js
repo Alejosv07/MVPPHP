@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAllowedZonesFromDatabase();
     await loadPublicServices();
     await loadPublicServiceZonesUI();
+    await loadPublicReviewsUI();
     setupEstimateForm();
     setMinDateForService();
     setupSupportWidget();
@@ -629,6 +630,71 @@ async function loadPublicServiceZonesUI() {
     } catch (err) {
         console.error('Error loading service zones UI:', err);
         container.innerHTML = `<div class="text-body-md text-on-surface-variant">Could not load service zones.</div>`;
+    }
+}
+
+async function loadPublicReviewsUI() {
+    const reviewsContainer = document.getElementById('dynamic-reviews-container');
+    if (!reviewsContainer) return;
+
+    try {
+        const response = await API.reservations.getAll();
+        let rawData = response;
+
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+            rawData = response.data || response.reservations || [];
+        }
+
+        const reservations = Array.isArray(rawData) ? rawData : [];
+
+        const filteredReviews = reservations.filter(r => {
+            const ratingVal = Number(r.customer_rating || r.rating || 0);
+            return (ratingVal === 4 || ratingVal === 5) && (r.customer_notes || r.notes);
+        });
+
+        reviewsContainer.innerHTML = '';
+
+        if (filteredReviews.length === 0) {
+            reviewsContainer.innerHTML = `<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow"><p class="font-body-md text-on-surface-variant">No reviews available at the moment.</p></div>`;
+            return;
+        }
+
+        filteredReviews.forEach(review => {
+            const rating = Number(review.customer_rating || review.rating || 5);
+            const comment = escapeHTML(review.customer_notes || review.notes || '');
+            const clientName = escapeHTML(review.first_name || review.client_name || 'Anonymous');
+            
+            let shortLocation = 'Arlington';
+            const address = review.service_address || '';
+            if (address) {
+                const parts = address.split(',');
+                if (parts.length > 1) {
+                    shortLocation = parts[parts.length - 2].trim();
+                } else {
+                    shortLocation = address;
+                }
+            }
+
+            let starsHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const isFilled = i < rating ? "1" : "0";
+                starsHTML += `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' ${isFilled};">star</span>`;
+            }
+
+            const reviewDiv = document.createElement('div');
+            reviewDiv.className = 'bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow';
+            reviewDiv.innerHTML = `
+                <div class="flex text-yellow-500 mb-3">
+                    ${starsHTML}
+                </div>
+                <p class="font-body-md text-on-surface-variant mb-4 italic">"${comment}"</p>
+                <div class="font-label-caps text-label-caps text-primary">${clientName} (${shortLocation}, Arlington)</div>
+            `;
+            reviewsContainer.appendChild(reviewDiv);
+        });
+    } catch (err) {
+        console.error('Error loading public reviews:', err);
+        reviewsContainer.innerHTML = `<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow"><p class="font-body-md text-on-surface-variant">Could not load reviews.</p></div>`;
     }
 }
 
