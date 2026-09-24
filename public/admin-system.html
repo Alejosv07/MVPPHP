@@ -52,7 +52,6 @@
             </div>
 
             <div class="space-y-8 max-w-3xl">
-                <!-- Sección 1: Días recurrentes y horas de bloqueo -->
                 <section class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30">
                     <h3 class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
                         Global Schedule & Weekly Restrictions
@@ -108,7 +107,6 @@
                     </div>
                 </section>
 
-                <!-- Sección 2: CRUD con Tabla para Fechas Específicas / Feriados -->
                 <section class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30">
                     <h3 class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
                         Specific Blocked Dates (Holidays / Special Closures)
@@ -118,8 +116,7 @@
                     </p>
                     
                     <div class="space-y-6">
-                        <!-- Formulario para agregar fecha rápida -->
-                        <div class="flex gap-4 items-end bg-surface-container-low/40 p-4 rounded-xl border border-outline-variant/20">
+                        <div class="flex flex-wrap gap-4 items-end bg-surface-container-low/40 p-4 rounded-xl border border-outline-variant/20">
                             <div class="flex-1">
                                 <label class="block font-label-caps text-label-caps text-on-surface-variant mb-2" for="specificDateInput">Select Date to Block</label>
                                 <input class="w-full form-input-line font-body-md text-body-md text-primary cursor-pointer bg-transparent" id="specificDateInput" type="date" />
@@ -129,7 +126,6 @@
                             </button>
                         </div>
 
-                        <!-- Tabla CRUD para listar las fechas bloqueadas -->
                         <div class="overflow-x-auto rounded-xl border border-outline-variant/20">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -140,7 +136,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="blockedDatesTableBody" class="divide-y divide-outline-variant/10 text-sm">
-                                    <!-- Se inyectarán las filas dinámicamente -->
                                 </tbody>
                             </table>
                         </div>

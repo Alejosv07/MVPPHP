@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadZones() {
     const tbody = document.getElementById('zonesTableBody');
+    const mobileContainer = document.getElementById('mobile-zones-container');
+    
     try {
         const response = await API.serviceZones.getAll();
         let rawData = response;
@@ -22,34 +24,81 @@ async function loadZones() {
             rawData = response.data || response.service_zones || [];
         }
         const zones = Array.isArray(rawData) ? rawData : [];
-        tbody.innerHTML = '';
+        
+        if (tbody) tbody.innerHTML = '';
+        if (mobileContainer) mobileContainer.innerHTML = '';
+
         if (zones.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-on-surface-variant">No service zones registered.</td></tr>`;
+            const emptyMsg = `<tr><td colspan="5" class="py-6 text-center text-on-surface-variant">No service zones registered.</td></tr>`;
+            if (tbody) tbody.innerHTML = emptyMsg;
+            if (mobileContainer) mobileContainer.innerHTML = `<div class="p-6 text-center text-on-surface-variant">No service zones registered.</div>`;
             return;
         }
-        zones.forEach(z => {
-            const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${a.area_name}</span>`).join(' ') : 'No areas';
 
-            tbody.innerHTML += `
-                <tr class="hover:bg-surface-warm/5 transition-colors">
-                    <td class="py-4 px-6 text-sm font-bold text-primary">#ZONE-${z.id}</td>
-                    <td class="py-4 px-6 text-sm font-medium text-on-background">${z.city_name}</td>
-                    <td class="py-4 px-6 text-sm text-on-surface-variant font-bold">${z.state_code}</td>
-                    <td class="py-4 px-6 text-sm flex flex-wrap gap-1.5 max-w-md">${areasList}</td>
-                    <td class="py-4 px-6 text-sm text-right space-x-2">
-                        <button onclick='editZone(${JSON.stringify(z)})' class="p-1.5 bg-primary-fixed/30 text-primary rounded hover:bg-primary-fixed transition-colors">
+        if (tbody) {
+            zones.forEach(z => {
+                const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${a.area_name}</span>`).join(' ') : 'No areas';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-surface-warm/5 transition-colors">
+                        <td class="py-4 px-6 text-sm font-bold text-primary">#ZONE-${z.id}</td>
+                        <td class="py-4 px-6 text-sm font-medium text-on-background">${z.city_name}</td>
+                        <td class="py-4 px-6 text-sm text-on-surface-variant font-bold">${z.state_code}</td>
+                        <td class="py-4 px-6 text-sm flex flex-wrap gap-1.5 max-w-md">${areasList}</td>
+                        <td class="py-4 px-6 text-sm text-right space-x-2">
+                            <button onclick='editZone(${JSON.stringify(z)})' class="p-1.5 bg-primary-fixed/30 text-primary rounded hover:bg-primary-fixed transition-colors">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteZone(${z.id})" class="p-1.5 bg-error-container text-error rounded hover:bg-error/20 transition-colors">
+                                <span class="material-symbols-outlined text-sm">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        if (mobileContainer) {
+            zones.forEach(z => {
+                const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${a.area_name}</span>`).join(' ') : 'No areas';
+
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'p-5 space-y-4 hover:bg-surface-warm/50 transition-colors';
+                cardDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium text-xs text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-md">#ZONE-${z.id}</span>
+                        <span class="font-bold text-sm text-on-surface-variant">${z.state_code}</span>
+                    </div>
+                    
+                    <div>
+                        <span class="block text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">City / Region</span>
+                        <span class="font-semibold text-primary text-base">${z.city_name}</span>
+                    </div>
+
+                    <div>
+                        <span class="block text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider mb-1.5">Allowed Areas</span>
+                        <div class="flex flex-wrap gap-1.5">${areasList}</div>
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button onclick='editZone(${JSON.stringify(z)})' class="flex-1 py-2 px-3 rounded-lg bg-surface-container text-primary font-label-caps text-xs flex items-center justify-center gap-1.5 hover:bg-primary hover:text-on-primary transition-all">
                             <span class="material-symbols-outlined text-sm">edit</span>
+                            <span>Edit</span>
                         </button>
-                        <button onclick="deleteZone(${z.id})" class="p-1.5 bg-error-container text-error rounded hover:bg-error/20 transition-colors">
+                        <button onclick="deleteZone(${z.id})" class="py-2 px-3 rounded-lg bg-error-container text-error font-label-caps text-xs flex items-center justify-center gap-1.5 hover:bg-error hover:text-on-error transition-all">
                             <span class="material-symbols-outlined text-sm">delete</span>
+                            <span>Delete</span>
                         </button>
-                    </td>
-                </tr>
-            `;
-        });
+                    </div>
+                `;
+                mobileContainer.appendChild(cardDiv);
+            });
+        }
+
     } catch (err) {
         console.error(err);
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-error">Failed to load service zones.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-error">Failed to load service zones.</td></tr>`;
+        if (mobileContainer) mobileContainer.innerHTML = `<div class="p-6 text-center text-error">Failed to load service zones.</div>`;
     }
 }
 
