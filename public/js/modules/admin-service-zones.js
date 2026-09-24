@@ -100,6 +100,20 @@ window.deleteZone = async function (id) {
 
 function setupForm() {
     const form = document.getElementById('zoneForm');
+
+    const cancelButtons = document.querySelectorAll('#zoneModal button');
+    cancelButtons.forEach(btn => {
+        if (btn.textContent.trim() === 'Cancel') {
+            btn.addEventListener('click', () => closeZoneModal());
+        }
+    });
+
+    const closeIcon = document.getElementById('closeModalBtn') || document.querySelector('#zoneModal .material-symbols-outlined')?.closest('button');
+    if (closeIcon) {
+        closeIcon.addEventListener('click', () => closeZoneModal());
+    }
+
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('zoneId').value;

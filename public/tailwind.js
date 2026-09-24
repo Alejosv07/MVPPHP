@@ -3,7 +3,6 @@ tailwind.config = {
     theme: {
         extend: {
             "colors": {
-                // Colores personalizados de la marca LuxuriaPure
                 "navy": "#0f172a",
                 "gold": "#b89728",
                 "gold-light": "#d4af37",
@@ -20,7 +19,7 @@ tailwind.config = {
                 "on-surface-variant": "#434843",
                 "surface-variant": "#e4e2e2",
                 "surface-container-high": "#eae8e7",
-                "primary": "#0f172a", // Actualizado a Navy principal
+                "primary": "#0f172a",
                 "on-tertiary-fixed": "#360f00",
                 "tertiary-container": "#4c1e08",
                 "on-primary": "#ffffff",
@@ -71,7 +70,7 @@ tailwind.config = {
                 "margin-desktop": "64px"
             },
             "fontFamily": {
-                "serif": ["Georgia", "Cambria", "serif"], // Añadida fuente serif para la marca
+                "serif": ["Georgia", "Cambria", "serif"],
                 "headline-md": ["Hanken Grotesk"],
                 "display-lg-mobile": ["Hanken Grotesk"],
                 "display-lg": ["Hanken Grotesk"],

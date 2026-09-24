@@ -597,7 +597,7 @@ function setupSupportWidget() {
         if (text.includes('Talk to Support')) {
             e.preventDefault();
             const phoneNumber = '15713761694';
-            const message = encodeURIComponent('Hello LuxuriaPure Support, I need help with a cleaning service.');
+            const message = encodeURIComponent('Hello Luxuria Pure Support, I need help with a cleaning service.');
             window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
             return;
         }

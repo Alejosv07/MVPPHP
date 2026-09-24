@@ -28,7 +28,7 @@ class EmailService
             $mail->Port       = 587;
             $mail->CharSet    = 'UTF-8';
 
-            $mail->setFrom('balrking072@gmail.com', 'LuxuriaPure Cleaning Services');
+            $mail->setFrom('balrking072@gmail.com', 'Luxuria Pure Cleaning Services');
 
             $customerName = trim(($reservation['first_name'] ?? '') . ' ' . ($reservation['last_name'] ?? ''));
             if (empty($customerName)) {
@@ -41,7 +41,7 @@ class EmailService
             $resId = '#RES-' . str_pad((string)$reservation['id'], 4, '0', STR_PAD_LEFT);
 
             $mail->isHTML(true);
-            $mail->Subject = "Reservation Update {$resId} - LuxuriaPure";
+            $mail->Subject = "Reservation Update {$resId} - Luxuria Pure";
             $mail->Body    = self::buildHtmlTemplate($reservation, $newStatus, $customerName, $resId, $recipientEmail);
 
             return $mail->send();
@@ -65,7 +65,7 @@ class EmailService
             $mail->Port       = 587;
             $mail->CharSet    = 'UTF-8';
 
-            $mail->setFrom('balrking072@gmail.com', 'LuxuriaPure Cleaning Services');
+            $mail->setFrom('balrking072@gmail.com', 'Luxuria Pure Cleaning Services');
 
             $userName = $user['name'] ?? 'Usuario';
             $recipientEmail = $user['email'];
@@ -73,7 +73,7 @@ class EmailService
             $mail->addAddress($recipientEmail, $userName);
 
             $mail->isHTML(true);
-            $mail->Subject = "Código de Recuperación de Contraseña - LuxuriaPure";
+            $mail->Subject = "Código de Recuperación de Contraseña - Luxuria Pure";
             $mail->Body    = self::buildPasswordResetTemplate($userName, $code);
 
             return $mail->send();
@@ -107,12 +107,12 @@ class EmailService
         <body>
             <div class='wrapper'>
                 <div class='brand-header'>
-                    <h1>LuxuriaPure</h1>
+                    <h1>Luxuria Pure</h1>
                 </div>
                 <div class='content'>
                     <h2 class='greeting'>Hello, {$userName}</h2>
                     <p class='message'>
-                        You have requested to reset your password for LuxuriaPure. Below is your temporary verification code, which is valid for 15 minutes:
+                        You have requested to reset your password for Luxuria Pure. Below is your temporary verification code, which is valid for 15 minutes:
                     </p>
                     <div class='code-box'>
                         <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; font-weight: 600;'>Your recovery code is</div>
@@ -123,7 +123,7 @@ class EmailService
                     </p>
                 </div>
                 <div class='footer'>
-                    &copy; " . date('Y') . " LuxuriaPure Cleaning Services. All rights reserved.
+                    &copy; " . date('Y') . " Luxuria Pure Cleaning Services. All rights reserved.
                 </div>
             </div>
         </body>
@@ -199,7 +199,7 @@ class EmailService
         <head>
             <meta charset='UTF-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <title>Reservation Update - LuxuriaPure</title>
+            <title>Reservation Update - Luxuria Pure</title>
             <style>
                 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 40px 15px; color: #0f172a; }
                 .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
@@ -223,7 +223,7 @@ class EmailService
         <body>
             <div class='wrapper'>
                 <div class='brand-header'>
-                    <h1 class='font-serif text-4xl tracking-tight text-gold'>LuxuriaPure</h1>
+                    <h1 class='font-serif text-4xl tracking-tight text-gold'>Luxuria Pure</h1>
                 </div>
 
                 <div class='content'>
@@ -279,7 +279,7 @@ class EmailService
                 </div>
 
                 <div class='footer'>
-                    &copy; " . date('Y') . " LuxuriaPure Cleaning Services. All rights reserved.
+                    &copy; " . date('Y') . " Luxuria Pure Cleaning Services. All rights reserved.
                 </div>
             </div>
         </body>
@@ -301,11 +301,11 @@ class EmailService
             $mail->Port       = 587;
             $mail->CharSet    = 'UTF-8';
 
-            $mail->setFrom('balrking072@gmail.com', 'LuxuriaPure Cleaning Services');
+            $mail->setFrom('balrking072@gmail.com', 'Luxuria Pure Cleaning Services');
             $mail->addAddress($recipientEmail, 'Valued Customer');
 
             $mail->isHTML(true);
-            $mail->Subject = "Your Security Verification PIN - LuxuriaPure";
+            $mail->Subject = "Your Security Verification PIN - Luxuria Pure";
             $mail->Body    = self::buildOtpTemplate($code);
 
             return $mail->send();
@@ -339,7 +339,7 @@ class EmailService
         <body>
             <div class='wrapper'>
                 <div class='brand-header'>
-                    <h1>LuxuriaPure</h1>
+                    <h1>Luxuria Pure</h1>
                 </div>
                 <div class='content'>
                     <h2 class='greeting'>Hello,</h2>
@@ -355,7 +355,7 @@ class EmailService
                     </p>
                 </div>
                 <div class='footer'>
-                    &copy; " . date('Y') . " LuxuriaPure Cleaning Services. All rights reserved.
+                    &copy; " . date('Y') . " Luxuria Pure Cleaning Services. All rights reserved.
                 </div>
             </div>
         </body>
