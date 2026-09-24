@@ -69,7 +69,7 @@ $validResources = [
     'admins',
     'audit-logs',
     'system-schedule',
-    'service_zones'
+    'service-zones'
 ];
 
 $resourceIndex = false;
@@ -85,8 +85,8 @@ if ($resourceIndex !== false) {
 }
 
 $resource = $segments[0] ?? null;
-$param1   = $segments[1] ?? null;
-$param2   = $segments[2] ?? null;
+$param1  = $segments[1] ?? null;
+$param2  = $segments[2] ?? null;
 
 $id = is_numeric($param1) ? (int)$param1 : null;
 $subResource = is_numeric($param1) ? $param2 : $param1;
@@ -97,7 +97,7 @@ if ($id === null && isset($_GET['id']) && is_numeric($_GET['id'])) {
 
 match ($resource) {
     'auth' => match ($param1) {
-        'login'           => (new AuthController())->login(),
+        'login'          => (new AuthController())->login(),
         'forgot-password' => (new AuthController())->forgotPassword(),
         'reset-password'  => (new AuthController())->resetPassword(),
         'send-otp'        => (new CustomerAuthController())->sendOtp(),
@@ -118,6 +118,6 @@ match ($resource) {
     'admins'          => (new AdminController())->handle($method, $id, $subResource),
     'audit-logs'      => (new AuditController())->handle($param1),
     'system-schedule' => (new SystemScheduleController())->handle($method),
-    'service_zones'   => (new ServiceZoneController())->handle($method, $id, $subResource),
+    'service-zones'   => (new ServiceZoneController())->handle($method, $id, $subResource),
     default           => Response::json(['message' => 'Endpoint not found'], 404)
 };
