@@ -58,14 +58,28 @@ if ($method === 'POST' && isset($_POST['_method']) && strtoupper($_POST['_method
 $uriPath = trim($requestPath, '/');
 $segments = explode('/', $uriPath);
 
-$key = array_search('public', $segments);
-if ($key !== false) {
-    $segments = array_slice($segments, $key + 1);
-} else {
-    $keyApi = array_search('api', $segments);
-    if ($keyApi !== false) {
-        $segments = array_slice($segments, $keyApi + 1);
+$validResources = [
+    'auth', 
+    'reservations', 
+    'categories', 
+    'features', 
+    'services', 
+    'customers', 
+    'admins', 
+    'audit-logs', 
+    'system-schedule'
+];
+
+$resourceIndex = false;
+foreach ($segments as $index => $segment) {
+    if (in_array($segment, $validResources, true)) {
+        $resourceIndex = $index;
+        break;
     }
+}
+
+if ($resourceIndex !== false) {
+    $segments = array_slice($segments, $resourceIndex);
 }
 
 $resource = $segments[0] ?? null;
@@ -88,14 +102,13 @@ match ($resource) {
         'verify-otp'      => (new CustomerAuthController())->verifyOtp(),
         default           => Response::json(['message' => 'Invalid authentication action'], 404)
     },
-'reservations' => match (true) {
+    'reservations' => match (true) {
         $id !== null && $subResource === 'customer-rating' && $method === 'POST' 
             => (new CustomerAuthController())->submitCustomerRating($id),
         $id !== null && isset($_GET['action']) && $_GET['action'] === 'staff-rating' && $method === 'POST'
             => (new CustomerAuthController())->submitStaffRating($id),
         default => (new ReservationController())->handle($method, $id, $subResource)
     },
-
     'categories'      => (new CategoryController())->handle($method, $id),
     'features'        => (new FeatureController())->handle($method, $id),
     'services'        => (new ServiceController())->handle($method, $id),
