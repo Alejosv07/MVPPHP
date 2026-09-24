@@ -64,21 +64,18 @@
     <main
         class="mb-20 lg:mb-0 flex-1 md:ml-64 w-full px-margin-mobile md:px-margin-desktop pt-20 pb-32 md:py-12 max-w-container-max mx-auto overflow-y-auto">
         <div class="p-6 max-w-7xl mx-auto space-y-6">
-            <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow">
+            
+            <div id="mainHeaderSection" class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow transition-all duration-300">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                        <h2 class="font-headline-sm text-headline-sm text-primary">Ratings & Rankings Management
-                        </h2>
-                        <p class="font-body-md text-body-md text-on-surface-variant">Filter and review rating history
-                            by client or staff.</p>
+                        <h2 class="font-headline-sm text-headline-sm text-primary">Ratings & Rankings Management</h2>
+                        <p class="font-body-md text-body-md text-on-surface-variant">Filter and review rating history by client or staff.</p>
                     </div>
                     <div class="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant/30">
                         <button type="button" id="tabClientBtn" onclick="switchRatingTab('client')"
-                            class="px-4 py-2 rounded-md text-xs font-bold bg-primary text-on-primary transition-colors">By
-                            Client</button>
+                            class="px-4 py-2 rounded-md text-xs font-bold bg-primary text-on-primary transition-colors">By Client</button>
                         <button type="button" id="tabStaffBtn" onclick="switchRatingTab('staff')"
-                            class="px-4 py-2 rounded-md text-xs font-bold text-primary hover:bg-surface-container transition-colors">By
-                            Staff</button>
+                            class="px-4 py-2 rounded-md text-xs font-bold text-primary hover:bg-surface-container transition-colors">By Staff</button>
                     </div>
                 </div>
 
@@ -87,14 +84,14 @@
                     <div>
                         <label class="block font-label-caps text-xs text-on-surface-variant mb-1">Year</label>
                         <select id="filterYear"
-                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant">
+                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant bg-transparent">
                             <option value="">All Years</option>
                         </select>
                     </div>
                     <div>
                         <label class="block font-label-caps text-xs text-on-surface-variant mb-1">Month</label>
                         <select id="filterMonth"
-                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant">
+                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant bg-transparent">
                             <option value="">All Months</option>
                             <option value="1">January</option>
                             <option value="2">February</option>
@@ -113,7 +110,7 @@
                     <div>
                         <label class="block font-label-caps text-xs text-on-surface-variant mb-1">Day</label>
                         <input type="date" id="filterDate"
-                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant">
+                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant bg-transparent">
                     </div>
                     <div class="flex gap-2">
                         <button type="button" onclick="applyFilters()"
@@ -121,6 +118,23 @@
                         <button type="button" onclick="resetFiltersToToday()"
                             class="px-3 py-2 bg-surface-container-low text-primary border border-outline-variant rounded text-xs font-semibold hover:bg-surface-container transition-colors"
                             title="Clear and view today's date">Clear (Today)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="individualProfileSection" class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow hidden transition-all duration-300">
+                <div class="flex items-center gap-4 pb-4 border-b border-outline-variant/20">
+                    <button onclick="exitIndividualView()" class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" title="Back to full list">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                    <div class="flex-1">
+                        <h2 id="profileEntityName" class="font-headline-sm text-headline-sm text-primary">Person Name</h2>
+                        <p id="profileSubtitle" class="font-body-md text-body-md text-on-surface-variant">Individual Rating History</p>
+                    </div>
+                    <div class="text-right p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
+                        <div class="font-label-caps text-xs text-on-surface-variant mb-1">Historical Average</div>
+                        <div id="profileAvgRatingDisplay" class="flex items-center gap-1 justify-end"></div>
+                        <div id="profileTotalCount" class="text-xs text-on-surface-variant mt-1">based on 0 services</div>
                     </div>
                 </div>
             </div>
@@ -144,8 +158,7 @@
                         </thead>
                         <tbody id="ratingsTableBody" class="text-sm text-on-surface-variant">
                             <tr>
-                                <td colspan="5" class="py-6 text-center text-on-surface-variant">Loading records...
-                                </td>
+                                <td colspan="5" class="py-6 text-center text-on-surface-variant">Loading records...</td>
                             </tr>
                         </tbody>
                     </table>
