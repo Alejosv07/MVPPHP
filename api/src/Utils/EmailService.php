@@ -165,7 +165,7 @@ class EmailService
             $staffNoticeHtml = "
             <div style='background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 24px;'>
                 <p style='margin: 0; font-size: 14px; color: #166534;'>
-                    <strong>✨ Assigned Staff:</strong> <strong>" . htmlspecialchars($assignedStaff) . "</strong> has been assigned to perform this cleaning service at your location.
+                    <strong>Assigned Staff:</strong> <strong>" . htmlspecialchars($assignedStaff) . "</strong> has been assigned to perform this cleaning service at your location.
                 </p>
             </div>";
         }
