@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="theme-color" content="#0f172a">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Luxuria Pure Cleaning Services | Professional Home & Commercial Cleaning</title>
+    <meta name="title" content="Luxuria Pure Cleaning Services | Professional Home & Commercial Cleaning">
+    <meta name="description"
+        content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
+    <meta name="keywords"
+        content="cleaning services, residential cleaning, commercial cleaning, deep cleaning, professional cleaners, home cleaning">
+    <meta name="author" content="ARFLOW">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cleaning.mutechlabs.com/">
+    <meta property="og:title" content="LuxuriaPure Cleaning Services | Professional Home & Commercial Cleaning">
+    <meta property="og:description"
+        content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
+    <meta property="og:image" content="https://cleaning.mutechlabs.com/public/assets/img/LuxuriaPureCover.png">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://cleaning.mutechlabs.com/">
+    <meta property="twitter:title" content="LuxuriaPure Cleaning Services | Professional Home & Commercial Cleaning">
+    <meta property="twitter:description"
+        content="Experience top-tier residential and commercial cleaning services. Reliable, insured, and detail-oriented professionals dedicated to keeping your spaces pristine.">
+    <meta property="twitter:image" content="https://cleaning.mutechlabs.com/public/assets/img/LuxuriaPureCover.png">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link rel="stylesheet" href="styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <script src="tailwind.js" id="tailwind-config"></script>
+    <script src="js/modules/auth-guard.js"></script>
+</head>
+
+<body
+    class="bg-background text-on-background min-h-screen flex flex-col md:flex-row selection:bg-primary-fixed selection:text-primary-container">
+
+    <div id="sideAdminMenu"></div>
+
+    <div id="sidebar-backdrop"
+        onclick="document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'); this.classList.add('hidden')"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden"></div>
+    <div
+        class="md:hidden fixed top-0 left-0 w-full z-30 flex items-center justify-between bg-surface-container-lowest p-4 border-b border-outline-variant/30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <span class="font-serif text-4xl tracking-tight text-navy">Luxuria<span class="text-gold">
+                    Pure</span></span>
+        </div>
+        <button
+            onclick="document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-backdrop')?.classList.toggle('hidden')"
+            class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+
+    <main
+        class="mb-20 lg:mb-0 flex-1 md:ml-64 w-full px-margin-mobile md:px-margin-desktop pt-20 pb-32 md:py-12 max-w-container-max mx-auto overflow-y-auto">
+        <div class="p-6 max-w-7xl mx-auto space-y-6">
+            <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="font-headline-sm text-headline-sm text-primary">Ratings & Rankings Management
+                        </h2>
+                        <p class="font-body-md text-body-md text-on-surface-variant">Filter and review rating history
+                            by client or staff.</p>
+                    </div>
+                    <div class="flex bg-surface-container-low p-1 rounded-lg border border-outline-variant/30">
+                        <button type="button" id="tabClientBtn" onclick="switchRatingTab('client')"
+                            class="px-4 py-2 rounded-md text-xs font-bold bg-primary text-on-primary transition-colors">By
+                            Client</button>
+                        <button type="button" id="tabStaffBtn" onclick="switchRatingTab('staff')"
+                            class="px-4 py-2 rounded-md text-xs font-bold text-primary hover:bg-surface-container transition-colors">By
+                            Staff</button>
+                    </div>
+                </div>
+
+                <div
+                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end pt-4 border-t border-outline-variant/10">
+                    <div>
+                        <label class="block font-label-caps text-xs text-on-surface-variant mb-1">Year</label>
+                        <select id="filterYear"
+                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant">
+                            <option value="">All Years</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-label-caps text-xs text-on-surface-variant mb-1">Month</label>
+                        <select id="filterMonth"
+                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant">
+                            <option value="">All Months</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-label-caps text-xs text-on-surface-variant mb-1">Day</label>
+                        <input type="date" id="filterDate"
+                            class="w-full input-underline text-sm text-primary pb-1 focus:ring-0 border-b border-outline-variant">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="applyFilters()"
+                            class="flex-1 bg-primary text-on-primary py-2 rounded text-xs font-semibold hover:bg-primary/90 transition-colors">Filter</button>
+                        <button type="button" onclick="resetFiltersToToday()"
+                            class="px-3 py-2 bg-surface-container-low text-primary border border-outline-variant rounded text-xs font-semibold hover:bg-surface-container transition-colors"
+                            title="Clear and view today's date">Clear (Today)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="tableTitle" class="font-headline-sm text-sm font-bold text-primary">Ratings History (Clients)</h3>
+                    <span id="resultCount" class="text-xs text-on-surface-variant font-medium">Showing records</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr
+                                class="border-b border-outline-variant/20 text-xs text-on-surface-variant font-label-caps uppercase">
+                                <th class="py-3 px-4">ID / Date</th>
+                                <th class="py-3 px-4" id="targetHeaderName">Client</th>
+                                <th class="py-3 px-4">Rating</th>
+                                <th class="py-3 px-4">Notes / Comments</th>
+                                <th class="py-3 px-4">Service</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ratingsTableBody" class="text-sm text-on-surface-variant">
+                            <tr>
+                                <td colspan="5" class="py-6 text-center text-on-surface-variant">Loading records...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/modules/layout-admin.js"></script>
+    <script type="module" src="js/modules/admin-ratings.js"></script>
+</body>
+
+</html>
