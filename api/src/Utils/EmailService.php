@@ -185,7 +185,7 @@ class EmailService
         $confirmUrl    = "{$baseUrl}&action=confirm";
         $rescheduleUrl = "{$baseUrl}&action=reschedule";
         $cancelUrl     = "{$baseUrl}&action=cancel";
-        $feedbackUrl   = "{$protocol}://{$host}/api/public/reservations?id={$res['id']}&token={$token}&action=feedback";
+        $feedbackUrl   = "{$baseUrl}&action=feedback";
 
         $actionButtonsHtml = "";
 

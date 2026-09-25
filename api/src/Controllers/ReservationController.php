@@ -180,7 +180,6 @@ class ReservationController
     {
         $payload = json_decode(file_get_contents('php://input'), true);
 
-        // Si solo se está actualizando el estado o se envía un precio junto con el estado actual
         if (isset($payload['status']) && !isset($payload['first_name'])) {
             $this->updateStatusOnly($id, $payload);
             return;
@@ -259,23 +258,75 @@ class ReservationController
         }
     }
 
-
     private function handleEmailAction(): void
     {
         $id = (int)($_GET['id'] ?? 0);
         $action = $_GET['action'] ?? '';
         $token = $_GET['token'] ?? '';
 
-        $secret = 'purenest_secret';
-        $expectedToken = hash('sha256', $id . 'balrking07@gmail.com' . $secret);
-
-        if ($token !== $expectedToken || !in_array($action, ['confirm', 'cancel', 'reschedule'], true)) {
-            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Enlace inválido o expirado.</h2>");
-        }
-
         $reservation = $this->model->getById($id);
         if (!$reservation) {
-            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Reservación no encontrada.</h2>");
+            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Reservation not found.</h2>");
+        }
+
+        $customerEmail = !empty($reservation['email']) ? $reservation['email'] : 'balrking07@gmail.com';
+        $secret = 'purenest_secret';
+        $expectedToken = hash('sha256', $id . $customerEmail . $secret);
+
+        if ($token !== $expectedToken || !in_array($action, ['confirm', 'cancel', 'reschedule', 'feedback'], true)) {
+            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Invalid or expired link.</h2>");
+        }
+
+        if ($action === 'feedback' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $rating = (int)($_POST['rating'] ?? 5);
+            $comment = trim($_POST['comment'] ?? '');
+
+            $db = (new Database())->getConnection();
+            $updateStmt = $db->prepare("UPDATE reservations SET rating = :rating, feedback_comment = :comment WHERE id = :id");
+            $updateStmt->execute([':rating' => $rating, ':comment' => $comment, ':id' => $id]);
+
+            echo "
+            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                    <h2 style='color: #059669;'>Thank You for Your Feedback!</h2>
+                    <p style='color: #4b5563;'>We have saved your rating for reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong>.</p>
+                </div>
+            </div>";
+            return;
+        }
+
+        if ($action === 'feedback') {
+            header("Content-Type: text/html; charset=UTF-8");
+            echo "
+            <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
+                <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
+                    <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
+                    <h3 style='color: #475569; margin-bottom: 25px;'>Rate Our Service</h3>
+                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservation: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
+                    
+                    <form method='POST' action=''>
+                        <div style='margin-bottom: 20px; text-align: left;'>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Rating (1 to 5):</label>
+                            <select name='rating' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none; background: #fff;'>
+                                <option value='5'>⭐⭐⭐⭐⭐ (5 - Excellent)</option>
+                                <option value='4'>⭐⭐⭐⭐ (4 - Very Good)</option>
+                                <option value='3'>⭐⭐⭐ (3 - Good)</option>
+                                <option value='2'>⭐⭐ (2 - Fair)</option>
+                                <option value='1'>⭐ (1 - Poor)</option>
+                            </select>
+                        </div>
+                        <div style='margin-bottom: 20px; text-align: left;'>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Comment:</label>
+                            <textarea name='comment' rows='4' placeholder='Tell us about your experience...' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'></textarea>
+                        </div>
+                        <button type='submit' style='width: 100%; background-color: #059669; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
+                            Submit Rating
+                        </button>
+                    </form>
+                </div>
+            </div>";
+            return;
         }
 
         if ($action === 'reschedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -283,7 +334,7 @@ class ReservationController
             $today = date('Y-m-d');
 
             if (empty($newDate) || $newDate < $today) {
-                echo "<script>alert('Error: No puedes seleccionar una fecha pasada.'); window.history.back();</script>";
+                echo "<script>alert('Error: You cannot select a past date.'); window.history.back();</script>";
                 return;
             }
 
@@ -291,7 +342,7 @@ class ReservationController
                 $id,
                 'RESCHEDULED',
                 null,
-                "Fecha reprogramada a {$newDate} vía enlace de correo",
+                "Service date rescheduled to {$newDate} by customer via email link.",
                 null,
                 $newDate,
                 null,
@@ -313,16 +364,16 @@ class ReservationController
                 }
 
                 echo "
-            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
-                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
-                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
-                    <h2 style='color: #9333ea;'>¡Fecha Reasignada con Éxito!</h2>
-                    <p style='color: #4b5563;'>Tu reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> ha sido actualizada para el día <strong>{$newDate}</strong>.</p>
-                </div>
-            </div>";
+                <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+                    <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                        <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                        <h2 style='color: #9333ea;'>Date Rescheduled Successfully!</h2>
+                        <p style='color: #4b5563;'>Your reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> has been updated to <strong>{$newDate}</strong>.</p>
+                    </div>
+                </div>";
                 return;
             } else {
-                echo "<h2 style='color:red; text-align:center; margin-top:50px;'>No se pudo actualizar la fecha.</h2>";
+                echo "<h2 style='color:red; text-align:center; margin-top:50px;'>Could not update the date.</h2>";
                 return;
             }
         }
@@ -333,29 +384,29 @@ class ReservationController
 
             header("Content-Type: text/html; charset=UTF-8");
             echo "
-        <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
-            <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
-                <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
-                <h3 style='color: #475569; margin-bottom: 25px;'>Reasignar Fecha de Servicio</h3>
-                <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservación: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
-                
-                <form method='POST' action=''>
-                    <div style='margin-bottom: 20px; text-align: left;'>
-                        <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Selecciona la Nueva Fecha:</label>
-                        <input type='date' name='service_date' value='{$currentDate}' min='{$minDate}' required 
-                            style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'>
-                    </div>
-                    <button type='submit' style='width: 100%; background-color: #0f172a; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
-                        Guardar Nueva Fecha
-                    </button>
-                </form>
-            </div>
-        </div>";
+            <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
+                <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
+                    <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
+                    <h3 style='color: #475569; margin-bottom: 25px;'>Reschedule Service Date</h3>
+                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservation: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
+                    
+                    <form method='POST' action=''>
+                        <div style='margin-bottom: 20px; text-align: left;'>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Select New Date:</label>
+                            <input type='date' name='service_date' value='{$currentDate}' min='{$minDate}' required 
+                                style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'>
+                        </div>
+                        <button type='submit' style='width: 100%; background-color: #0f172a; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
+                            Save New Date
+                        </button>
+                    </form>
+                </div>
+            </div>";
             return;
         }
 
         $newStatus = ($action === 'confirm') ? 'CONFIRMED' : 'CANCELLED';
-        $success = $this->model->updateStatus($id, $newStatus, null, "Actualizado a {$newStatus} vía enlace de correo");
+        $success = $this->model->updateStatus($id, $newStatus, null, "Status updated to {$newStatus} via email link");
 
         if ($success) {
             $this->logActivity(
@@ -373,17 +424,17 @@ class ReservationController
 
             header("Content-Type: text/html; charset=UTF-8");
             echo "
-        <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
-            <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
-                <h1 style='color: #0f172a;'>Luxuria Pure</h1>
-                <h2 style='color: " . ($newStatus === 'CONFIRMED' ? '#15803d' : '#b91c1c') . ";'>
-                    Reservación " . ($newStatus === 'CONFIRMED' ? 'Confirmada' : 'Cancelada') . "!
-                </h2>
-                <p style='color: #4b5563;'>El estado de tu reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> ahora es <strong>{$newStatus}</strong>.</p>
-            </div>
-        </div>";
+            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                    <h2 style='color: " . ($newStatus === 'CONFIRMED' ? '#15803d' : '#b91c1c') . ";'>
+                        Reservation " . ($newStatus === 'CONFIRMED' ? 'Confirmed' : 'Cancelled') . "!
+                    </h2>
+                    <p style='color: #4b5563;'>Your reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> status is now <strong>{$newStatus}</strong>.</p>
+                </div>
+            </div>";
         } else {
-            echo "<h2 style='color:red; text-align:center; margin-top:50px;'>Error al actualizar la reservación.</h2>";
+            echo "<h2 style='color:red; text-align:center; margin-top:50px;'>Error updating reservation.</h2>";
         }
     }
 
@@ -391,8 +442,8 @@ class ReservationController
     {
         $ipAddress = $_SERVER['HTTP_CLIENT_IP']
             ?? $_SERVER['HTTP_X_FORWARDED_FOR']
-            ?? $_SERVER['REMOTE_ADDR']
-            ?? '127.0.0.1';
+             ?? $_SERVER['REMOTE_ADDR']
+             ?? '127.0.0.1';
 
         if (str_contains($ipAddress, ',')) {
             $ipAddress = trim(explode(',', $ipAddress)[0]);
