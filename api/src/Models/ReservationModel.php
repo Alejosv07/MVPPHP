@@ -16,7 +16,7 @@ class ReservationModel
         $this->db = (new Database())->getConnection();
     }
 
-    public function getAll(?int $staffId = null, ?string $search = null): array
+public function getAll(?int $staffId = null, ?string $search = null): array
     {
         $sql = "
             SELECT 
@@ -32,7 +32,7 @@ class ReservationModel
                 rr.customer_rating,
                 rr.customer_notes
             FROM reservations r
-            JOIN reservation_ratings rr ON r.id = rr.reservation_id
+            LEFT JOIN reservation_ratings rr ON r.id = rr.reservation_id
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
             LEFT JOIN users u ON r.staff_id = u.id
@@ -76,7 +76,7 @@ class ReservationModel
                 rr.customer_rating,
                 rr.customer_notes
             FROM reservations r
-            JOIN reservation_ratings rr ON r.id = rr.reservation_id
+            LEFT JOIN reservation_ratings rr ON r.id = rr.reservation_id
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
             LEFT JOIN users u ON r.staff_id = u.id
@@ -118,7 +118,7 @@ class ReservationModel
                 rr.customer_rating,
                 rr.customer_notes
             FROM reservations r
-            JOIN reservation_ratings rr ON r.id = rr.reservation_id
+            LEFT JOIN reservation_ratings rr ON r.id = rr.reservation_id
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
             LEFT JOIN users u ON r.staff_id = u.id
