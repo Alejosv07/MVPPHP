@@ -158,50 +158,59 @@
             </div>
 
             <div
-                class="mb-6 p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-3 flex-1 min-w-[280px] max-w-md">
-                    <div class="relative w-full">
+                class="mb-6 p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="relative flex-1">
                         <span
                             class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
                         <input
                             class="w-full pl-10 pr-4 py-2 bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md placeholder:text-outline-muted transition-all"
                             placeholder="Search by name, email, or role..." type="text">
                     </div>
+                    <button
+                        class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-DEFAULT transition-colors shrink-0"
+                        title="Clear filters">
+                        <span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
+                    </button>
                 </div>
-                <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <label class="font-label-caps text-[11px] uppercase text-on-surface-variant">Role:</label>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div
+                        class="flex items-center gap-2 bg-surface-container-low/30 border border-outline-variant/30 rounded-DEFAULT px-3 py-1.5">
+                        <label
+                            class="font-label-caps text-[11px] uppercase text-on-surface-variant shrink-0">Role:</label>
                         <select
-                            class="bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT px-3 py-2 text-[14px] font-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none min-w-[130px]">
+                            class="w-full bg-transparent border-none text-[14px] font-body-md focus:ring-0 outline-none cursor-pointer">
                             <option>All Roles</option>
                             <option>Admin</option>
                             <option>Staff</option>
                         </select>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <label class="font-label-caps text-[11px] uppercase text-on-surface-variant">Status:</label>
+
+                    <div
+                        class="flex items-center gap-2 bg-surface-container-low/30 border border-outline-variant/30 rounded-DEFAULT px-3 py-1.5">
+                        <label
+                            class="font-label-caps text-[11px] uppercase text-on-surface-variant shrink-0">Status:</label>
                         <select
-                            class="bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT px-3 py-2 text-[14px] font-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none min-w-[140px]">
+                            class="w-full bg-transparent border-none text-[14px] font-body-md focus:ring-0 outline-none cursor-pointer">
                             <option>All Statuses</option>
-                            <option>Active (is_active=true)</option>
-                            <option>Inactive (is_active=false)</option>
+                            <option>Active</option>
+                            <option>Inactive</option>
                         </select>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <label class="font-label-caps text-[11px] uppercase text-on-surface-variant">Token:</label>
+
+                    <div
+                        class="flex items-center gap-2 bg-surface-container-low/30 border border-outline-variant/30 rounded-DEFAULT px-3 py-1.5">
+                        <label
+                            class="font-label-caps text-[11px] uppercase text-on-surface-variant shrink-0">Token:</label>
                         <select
-                            class="bg-surface-container-low/50 border border-outline-variant/40 rounded-DEFAULT px-3 py-2 text-[14px] font-body-md focus:ring-1 focus:ring-primary focus:border-primary outline-none min-w-[130px]">
+                            class="w-full bg-transparent border-none text-[14px] font-body-md focus:ring-0 outline-none cursor-pointer">
                             <option>All</option>
                             <option>Active Reset Token</option>
                             <option>No Token</option>
                             <option>Expired Token</option>
                         </select>
                     </div>
-                    <button
-                        class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-DEFAULT transition-colors"
-                        title="Clear filters">
-                        <span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
-                    </button>
                 </div>
             </div>
 
