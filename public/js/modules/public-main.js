@@ -710,7 +710,7 @@ async function loadPublicServiceZonesUI() {
             return;
         }
 
-        let gridHTML = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">';
+        let gridHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
 
         zones.forEach(zone => {
             if (Number(zone.is_active) === 1 && zone.city_name) {
