@@ -24,6 +24,7 @@ function populateYearDropdown(data) {
     const yearSelect = document.getElementById('filterYear');
     if (!yearSelect) return;
 
+    const currentSelectedYear = yearSelect.value;
     yearSelect.innerHTML = '<option value="">All Years</option>';
 
     const yearsSet = new Set();
@@ -52,6 +53,10 @@ function populateYearDropdown(data) {
             opt.textContent = y;
             yearSelect.appendChild(opt);
         });
+    }
+
+    if (currentSelectedYear) {
+        yearSelect.value = currentSelectedYear;
     }
 }
 
@@ -110,10 +115,16 @@ window.applyFilters = function() {
 };
 
 window.resetFiltersToToday = function() {
-    document.getElementById('filterYear').value = '';
-    document.getElementById('filterMonth').value = '';
-    document.getElementById('filterSearch').value = '';
+    const yearEl = document.getElementById('filterYear');
+    const monthEl = document.getElementById('filterMonth');
+    const searchEl = document.getElementById('filterSearch');
+
+    if (yearEl) yearEl.value = '';
+    if (monthEl) monthEl.value = '';
+    if (searchEl) searchEl.value = '';
+    
     setDefaultDateToEmpty();
+
     if (isIndividualView) {
         updateIndividualProfileData();
     }
