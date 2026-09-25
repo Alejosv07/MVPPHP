@@ -52,9 +52,10 @@ class CustomerAuthModel
 
         $inClause = implode(',', $customerIds);
         $resStmt = $this->db->prepare("
-            SELECT r.*, s.name AS service_name 
+            SELECT r.*, s.name AS service_name, rr.customer_rating, rr.customer_notes 
             FROM reservations r 
             LEFT JOIN services s ON r.service_id = s.id 
+            LEFT JOIN reservation_ratings rr ON r.id = rr.reservation_id
             WHERE r.customer_id IN ({$inClause})
             ORDER BY r.service_date DESC
         ");
