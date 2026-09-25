@@ -6,6 +6,9 @@ let loadedServices = [];
 let googleMapInstance = null;
 let mapMarker = null;
 let selectedMapAddress = '';
+let currentReviewPage = 1;
+const reviewsPerPage = 6;
+let cachedFilteredReviews = [];
 
 let allowedZones = [];
 
@@ -20,6 +23,121 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupAddressValidation();
     setupMapModal();
 });
+
+async function loadPublicReviewsUI() {
+    const reviewsContainer = document.getElementById('dynamic-reviews-container');
+    if (!reviewsContainer) return;
+
+    try {
+        if (cachedFilteredReviews.length === 0) {
+            const response = await API.reservations.getAll();
+            let rawData = response;
+
+            if (response && typeof response === 'object' && !Array.isArray(response)) {
+                rawData = response.data || response.reservations || [];
+            }
+
+            const reservations = Array.isArray(rawData) ? rawData : [];
+
+            cachedFilteredReviews = reservations.filter(r => {
+                const ratingVal = Number(r.customer_rating || r.rating || 0);
+                return (ratingVal === 4 || ratingVal === 5) && (r.customer_notes || r.notes);
+            });
+        }
+
+        reviewsContainer.innerHTML = '';
+
+        if (cachedFilteredReviews.length === 0) {
+            reviewsContainer.innerHTML = `<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow"><p class="font-body-md text-on-surface-variant">No reviews available at the moment.</p></div>`;
+            return;
+        }
+
+        const totalPages = Math.ceil(cachedFilteredReviews.length / reviewsPerPage);
+        if (currentReviewPage > totalPages) currentReviewPage = totalPages;
+        if (currentReviewPage < 1) currentReviewPage = 1;
+
+        const startIndex = (currentReviewPage - 1) * reviewsPerPage;
+        const endIndex = startIndex + reviewsPerPage;
+        const paginatedReviews = cachedFilteredReviews.slice(startIndex, endIndex);
+
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+
+        paginatedReviews.forEach(review => {
+            const rating = Number(review.customer_rating || review.rating || 5);
+            const comment = escapeHTML(review.customer_notes || review.notes || '');
+            const clientName = escapeHTML(review.first_name || review.client_name || 'Anonymous');
+
+            let shortLocation = 'Arlington';
+            const address = review.service_address || '';
+            if (address) {
+                const parts = address.split(',');
+                if (parts.length > 1) {
+                    shortLocation = parts[parts.length - 2].trim();
+                } else {
+                    shortLocation = address;
+                }
+            }
+
+            let starsHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const isFilled = i < rating ? "1" : "0";
+                starsHTML += `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' ${isFilled};">star</span>`;
+            }
+
+            const reviewDiv = document.createElement('div');
+            reviewDiv.className = 'bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow flex flex-col justify-between';
+            reviewDiv.innerHTML = `
+                <div>
+                    <div class="flex text-yellow-500 mb-3">
+                        ${starsHTML}
+                    </div>
+                    <p class="font-body-md text-on-surface-variant mb-4 italic">"${comment}"</p>
+                </div>
+                <div class="font-label-caps text-label-caps text-primary pt-4 border-t border-outline-variant/10">${clientName} (${shortLocation})</div>
+            `;
+            gridDiv.appendChild(reviewDiv);
+        });
+
+        reviewsContainer.appendChild(gridDiv);
+
+        if (totalPages > 1) {
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'flex justify-center items-center gap-4 mt-8';
+
+            paginationDiv.innerHTML = `
+                <button id="prevReviewPage" ${currentReviewPage === 1 ? 'disabled' : ''} class="px-4 py-2 rounded border border-outline-variant font-label-caps text-xs text-primary hover:bg-surface-container-low disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    PREVIOUS
+                </button>
+                <span class="font-label-caps text-xs text-on-surface-variant">Page ${currentReviewPage} of ${totalPages}</span>
+                <button id="nextReviewPage" ${currentReviewPage === totalPages ? 'disabled' : ''} class="px-4 py-2 rounded border border-outline-variant font-label-caps text-xs text-primary hover:bg-surface-container-low disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    NEXT
+                </button>
+            `;
+
+            reviewsContainer.appendChild(paginationDiv);
+
+            document.getElementById('prevReviewPage').addEventListener('click', () => {
+                if (currentReviewPage > 1) {
+                    currentReviewPage--;
+                    loadPublicReviewsUI();
+                    reviewsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+
+            document.getElementById('nextReviewPage').addEventListener('click', () => {
+                if (currentReviewPage < totalPages) {
+                    currentReviewPage++;
+                    loadPublicReviewsUI();
+                    reviewsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        }
+
+    } catch (err) {
+        reviewsContainer.innerHTML = `<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow"><p class="font-body-md text-on-surface-variant">Could not load reviews.</p></div>`;
+    }
+}
 
 async function loadAllowedZonesFromDatabase() {
     try {
@@ -624,67 +742,66 @@ async function loadPublicServiceZonesUI() {
     }
 }
 
-async function loadPublicReviewsUI() {
-    const reviewsContainer = document.getElementById('dynamic-reviews-container');
-    if (!reviewsContainer) return;
+async function loadPublicServiceZonesUI() {
+    const container = document.getElementById('dynamic-service-zones');
+    if (!container) return;
 
     try {
-        const response = await API.reservations.getAll();
+        const response = await API.serviceZones.getAll();
         let rawData = response;
 
         if (response && typeof response === 'object' && !Array.isArray(response)) {
-            rawData = response.data || response.reservations || [];
+            rawData = response.data || response.service_zones || response.zones || [];
         }
 
-        const reservations = Array.isArray(rawData) ? rawData : [];
+        const zones = Array.isArray(rawData) ? rawData : [];
+        container.innerHTML = '';
 
-        const filteredReviews = reservations.filter(r => {
-            const ratingVal = Number(r.customer_rating || r.rating || 0);
-            return (ratingVal === 4 || ratingVal === 5) && (r.customer_notes || r.notes);
-        });
-
-        reviewsContainer.innerHTML = '';
-
-        if (filteredReviews.length === 0) {
-            reviewsContainer.innerHTML = `<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow"><p class="font-body-md text-on-surface-variant">No reviews available at the moment.</p></div>`;
+        if (zones.length === 0) {
+            container.innerHTML = `<div class="text-body-md text-on-surface-variant">No active service zones found.</div>`;
             return;
         }
 
-        filteredReviews.forEach(review => {
-            const rating = Number(review.customer_rating || review.rating || 5);
-            const comment = escapeHTML(review.customer_notes || review.notes || '');
-            const clientName = escapeHTML(review.first_name || review.client_name || 'Anonymous');
-            
-            let shortLocation = 'Arlington';
-            const address = review.service_address || '';
-            if (address) {
-                const parts = address.split(',');
-                if (parts.length > 1) {
-                    shortLocation = parts[parts.length - 2].trim();
-                } else {
-                    shortLocation = address;
+        let gridHTML = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">';
+
+        zones.forEach(zone => {
+            if (Number(zone.is_active) === 1 && zone.city_name) {
+                const cityName = escapeHTML(zone.city_name);
+                const stateCode = zone.state_code ? `(${escapeHTML(zone.state_code)})` : '';
+
+                let areasListHTML = '';
+                if (zone.areas && Array.isArray(zone.areas)) {
+                    zone.areas.forEach(area => {
+                        if (Number(area.is_active) === 1 && area.area_name) {
+                            areasListHTML += `
+                                <li class="flex items-center gap-2 text-body-md text-on-surface-variant">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                    <span>${escapeHTML(area.area_name)}</span>
+                                </li>
+                            `;
+                        }
+                    });
                 }
-            }
 
-            let starsHTML = '';
-            for (let i = 0; i < 5; i++) {
-                const isFilled = i < rating ? "1" : "0";
-                starsHTML += `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' ${isFilled};">star</span>`;
+                gridHTML += `
+                    <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/20 soft-shadow flex flex-col justify-between relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-1.5 bg-primary/80"></div>
+                        <div>
+                            <h3 class="font-headline-sm text-headline-sm text-primary mb-4">${cityName} ${stateCode}</h3>
+                            <ul class="space-y-2 mb-6">
+                                ${areasListHTML || '<li class="text-xs text-on-surface-variant italic">No specific areas listed</li>'}
+                            </ul>
+                        </div>
+                    </div>
+                `;
             }
-
-            const reviewDiv = document.createElement('div');
-            reviewDiv.className = 'bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow';
-            reviewDiv.innerHTML = `
-                <div class="flex text-yellow-500 mb-3">
-                    ${starsHTML}
-                </div>
-                <p class="font-body-md text-on-surface-variant mb-4 italic">"${comment}"</p>
-                <div class="font-label-caps text-label-caps text-primary">${clientName} (${shortLocation}, Arlington)</div>
-            `;
-            reviewsContainer.appendChild(reviewDiv);
         });
+
+        gridHTML += '</div>';
+        container.innerHTML = gridHTML;
+
     } catch (err) {
-        reviewsContainer.innerHTML = `<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow"><p class="font-body-md text-on-surface-variant">Could not load reviews.</p></div>`;
+        container.innerHTML = `<div class="text-body-md text-on-surface-variant">Could not load service zones.</div>`;
     }
 }
 
@@ -777,7 +894,7 @@ function setupSupportWidget() {
                                             const statusColor = found.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : found.status === 'CONFIRMED' ? 'bg-primary-fixed text-primary-container' : 'bg-tertiary-fixed text-tertiary-container';
                                             const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
                                             const isCompleted = found.status === 'COMPLETED';
-                                            
+
                                             console.log("Datos de la reserva:", found);
 
                                             const existingRating = Number(found.customer_rating || found.rating || found.score || found.user_rating || 0);
