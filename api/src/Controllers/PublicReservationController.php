@@ -36,7 +36,7 @@ class PublicReservationController {
             $comment = trim($_POST['comment'] ?? '');
 
             try {
-                $updateStmt = $db->prepare("UPDATE reservations SET customer_rating = :rating, customer_notes = :comment WHERE id = :id");
+                $updateStmt = $db->prepare("UPDATE reservation_ratings SET customer_rating = :rating, customer_notes = :comment WHERE reservation_id = :id");
                 $updateStmt->execute([':rating' => $rating, ':comment' => $comment, ':id' => $id]);
             } catch (\Exception $e) {
                 header("Content-Type: text/html; charset=UTF-8");
