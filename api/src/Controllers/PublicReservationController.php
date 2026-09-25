@@ -15,7 +15,7 @@ class PublicReservationController {
         $token = $_GET['token'] ?? null;
         $action = $_GET['action'] ?? null;
 
-        if (!$id || !$token || !in_array($action, ['confirm', 'cancel', 'reschedule'], true)) {
+        if (!$id || !$token || !in_array($action, ['confirm', 'cancel', 'reschedule', 'feedback'], true)) {
             Response::json(['message' => 'Invalid parameters'], 400);
             return;
         }
@@ -31,11 +31,61 @@ class PublicReservationController {
             return;
         }
 
+        if ($action === 'feedback' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $rating = (int)($_POST['rating'] ?? 5);
+            $comment = trim($_POST['comment'] ?? '');
+
+            $updateStmt = $db->prepare("UPDATE reservations SET rating = :rating, feedback_comment = :comment WHERE id = :id");
+            $updateStmt->execute([':rating' => $rating, ':comment' => $comment, ':id' => $id]);
+
+            echo "
+            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                    <h2 style='color: #059669;'>¡Gracias por tu Comentario!</h2>
+                    <p style='color: #4b5563;'>Hemos guardado tu calificación para la reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong>.</p>
+                </div>
+            </div>";
+            return;
+        }
+
+        if ($action === 'feedback') {
+            header("Content-Type: text/html; charset=UTF-8");
+            echo "
+            <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
+                <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
+                    <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
+                    <h3 style='color: #475569; margin-bottom: 25px;'>Califica nuestro servicio</h3>
+                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservación: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
+                    
+                    <form method='POST' action=''>
+                        <div style='margin-bottom: 20px; text-align: left;'>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Calificación (1 al 5):</label>
+                            <select name='rating' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none; background: #fff;'>
+                                <option value='5'>⭐⭐⭐⭐⭐ (5 - Excelente)</option>
+                                <option value='4'>⭐⭐⭐⭐ (4 - Muy bueno)</option>
+                                <option value='3'>⭐⭐⭐ (3 - Bueno)</option>
+                                <option value='2'>⭐⭐ (2 - Regular)</option>
+                                <option value='1'>⭐ (1 - Malo)</option>
+                            </select>
+                        </div>
+                        <div style='margin-bottom: 20px; text-align: left;'>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Comentario:</label>
+                            <textarea name='comment' rows='4' placeholder='Cuéntanos tu experiencia...' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'></textarea>
+                        </div>
+                        <button type='submit' style='width: 100%; background-color: #059669; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
+                            Enviar Calificación
+                        </button>
+                    </form>
+                </div>
+            </div>";
+            return;
+        }
+
         if ($action === 'reschedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $newDate = $_POST['service_date'] ?? '';
             $today = date('Y-m-d');
 
-            // Validación estricta: la fecha no puede ser anterior a hoy
             if (empty($newDate) || $newDate < $today) {
                 echo "<script>alert('Error: No puedes seleccionar una fecha pasada.'); window.history.back();</script>";
                 return;
@@ -97,7 +147,6 @@ class PublicReservationController {
             return;
         }
 
-        // Procesamiento normal para Confirmar o Cancelar
         $newStatus = ($action === 'confirm') ? 'CONFIRMED' : 'CANCELLED';
 
         $updateStmt = $db->prepare("UPDATE reservations SET status = :status WHERE id = :id");

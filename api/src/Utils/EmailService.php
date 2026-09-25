@@ -170,8 +170,9 @@ class EmailService
             </div>";
         }
 
+        $customerEmail = !empty($res['email']) ? $res['email'] : 'balrking07@gmail.com';
         $secret = 'purenest_secret';
-        $token = hash('sha256', $res['id'] . 'balrking07@gmail.com' . $secret);
+        $token = hash('sha256', $res['id'] . $customerEmail . $secret);
 
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
         if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
@@ -184,7 +185,7 @@ class EmailService
         $confirmUrl    = "{$baseUrl}&action=confirm";
         $rescheduleUrl = "{$baseUrl}&action=reschedule";
         $cancelUrl     = "{$baseUrl}&action=cancel";
-        $feedbackUrl   = "{$protocol}://{$host}/purenest/feedback.php?id={$res['id']}&token={$token}";
+        $feedbackUrl   = "{$protocol}://{$host}/api/public/reservations?id={$res['id']}&token={$token}&action=feedback";
 
         $actionButtonsHtml = "";
 
