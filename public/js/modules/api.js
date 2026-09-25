@@ -223,12 +223,16 @@ export const API = {
         }
     },
     reservations: {
-        getAll: async (month = null, year = null) => {
+        getAll: async (month = null, year = null, search = null) => {
             let endpoint = '/reservations';
             const params = [];
 
             if (month && year) {
                 params.push(`month=${month}&year=${year}`);
+            }
+
+            if (search) {
+                params.push(`search=${encodeURIComponent(search)}`);
             }
 
             const rawUser = localStorage.getItem('purenest_user') || localStorage.getItem('luxuriapure_user');

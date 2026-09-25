@@ -16,7 +16,7 @@ class ReservationModel
         $this->db = (new Database())->getConnection();
     }
 
-public function getAll(?int $staffId = null): array
+    public function getAll(?int $staffId = null, ?string $search = null): array
     {
         $sql = "
             SELECT 
@@ -26,17 +26,29 @@ public function getAll(?int $staffId = null): array
                 c.email, 
                 c.phone_number,
                 s.name AS service_name,
-                u.name AS staff_name
+                u.name AS staff_name,
+                rr.staff_rating,
+                rr.staff_notes,
+                rr.customer_rating,
+                rr.customer_notes
             FROM reservations r
+            JOIN reservation_ratings rr ON r.id = rr.reservation_id
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
             LEFT JOIN users u ON r.staff_id = u.id
+            WHERE 1=1
         ";
 
         $params = [];
+
         if ($staffId !== null) {
-            $sql .= " WHERE r.staff_id = :staff_id";
+            $sql .= " AND r.staff_id = :staff_id";
             $params[':staff_id'] = $staffId;
+        }
+
+        if (!empty($search)) {
+            $sql .= " AND (c.first_name LIKE :search OR c.last_name LIKE :search OR c.email LIKE :search OR u.name LIKE :search)";
+            $params[':search'] = "%{$search}%";
         }
 
         $sql .= " ORDER BY r.id DESC";
@@ -46,7 +58,7 @@ public function getAll(?int $staffId = null): array
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getByMonthAndYear(int $month, int $year, ?int $staffId = null): array
+    public function getByMonthAndYear(int $month, int $year, ?int $staffId = null, ?string $search = null): array
     {
         $formattedMonth = str_pad((string)$month, 2, '0', STR_PAD_LEFT);
 
@@ -57,10 +69,17 @@ public function getAll(?int $staffId = null): array
                 c.last_name, 
                 c.email, 
                 c.phone_number,
-                s.name AS service_name
+                s.name AS service_name,
+                u.name AS staff_name,
+                rr.staff_rating,
+                rr.staff_notes,
+                rr.customer_rating,
+                rr.customer_notes
             FROM reservations r
+            JOIN reservation_ratings rr ON r.id = rr.reservation_id
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
+            LEFT JOIN users u ON r.staff_id = u.id
             WHERE r.service_date LIKE :yearMonth
         ";
 
@@ -69,6 +88,11 @@ public function getAll(?int $staffId = null): array
         if ($staffId !== null) {
             $sql .= " AND r.staff_id = :staff_id";
             $params[':staff_id'] = $staffId;
+        }
+
+        if (!empty($search)) {
+            $sql .= " AND (c.first_name LIKE :search OR c.last_name LIKE :search OR c.email LIKE :search OR u.name LIKE :search)";
+            $params[':search'] = "%{$search}%";
         }
 
         $sql .= " ORDER BY r.id DESC";
@@ -88,8 +112,13 @@ public function getAll(?int $staffId = null): array
                 c.email, 
                 c.phone_number,
                 s.name AS service_name,
-                u.name AS staff_name
+                u.name AS staff_name,
+                rr.staff_rating,
+                rr.staff_notes,
+                rr.customer_rating,
+                rr.customer_notes
             FROM reservations r
+            JOIN reservation_ratings rr ON r.id = rr.reservation_id
             LEFT JOIN customers c ON r.customer_id = c.id
             LEFT JOIN services s ON r.service_id = s.id
             LEFT JOIN users u ON r.staff_id = u.id
@@ -153,6 +182,10 @@ public function getAll(?int $staffId = null): array
             ]);
 
             $reservationId = (int)$this->db->lastInsertId();
+
+            // Asegura que se cree su respectiva fila en reservation_ratings
+            $stmtRating = $this->db->prepare("INSERT INTO reservation_ratings (reservation_id) VALUES (:id)");
+            $stmtRating->execute([':id' => $reservationId]);
 
             $stmtHistory = $this->db->prepare("
                 INSERT INTO reservation_history (reservation_id, user_id, previous_status, new_status, comment)

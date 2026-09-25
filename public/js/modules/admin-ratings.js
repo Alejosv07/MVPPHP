@@ -83,13 +83,28 @@ window.switchRatingTab = function(type) {
 
 async function loadRatingsData() {
     try {
-        const response = await API.ratings.getAll ? await API.ratings.getAll() : await API.reservations.getAll();
+        const year = document.getElementById('filterYear').value;
+        const month = document.getElementById('filterMonth').value;
+        const search = document.getElementById('filterSearch')?.value || '';
+
+        let endpoint = '/reservations?';
+        const params = [];
+
+        if (month && year) {
+            params.push(`month=${month}&year=${year}`);
+        }
+        if (search) {
+            params.push(`search=${encodeURIComponent(search)}`);
+        }
+
+        endpoint += params.join('&');
+
+        const response = await API.reservations.getAll ? await apiFetch(endpoint) : [];
         let rawData = response;
         if (response && typeof response === 'object' && !Array.isArray(response)) {
             rawData = response.data || response.ratings || response.reservations || [];
         }
         allRatingsData = Array.isArray(rawData) ? rawData : [];
-        populateYearDropdown(allRatingsData);
         renderRatingsTable(allRatingsData);
     } catch (err) {
         console.error('Error loading ratings:', err);

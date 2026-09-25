@@ -52,11 +52,12 @@ class ReservationController
         $month = isset($_GET['month']) ? (int)$_GET['month'] : null;
         $year = isset($_GET['year']) ? (int)$_GET['year'] : null;
         $staffId = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : null;
+        $search = isset($_GET['search']) ? trim($_GET['search']) : null;
 
         if ($month && $year) {
-            Response::json($this->model->getByMonthAndYear($month, $year, $staffId));
+            Response::json($this->model->getByMonthAndYear($month, $year, $staffId, $search));
         } else {
-            Response::json($this->model->getAll($staffId));
+            Response::json($this->model->getAll($staffId, $search));
         }
     }
 
@@ -85,77 +86,9 @@ class ReservationController
         try {
             $db = (new Database())->getConnection();
 
-            $stmtSetting = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'blocked_specific_dates' LIMIT 1");
-            $stmtSetting->execute();
-            $settingRow = $stmtSetting->fetch(PDO::FETCH_ASSOC);
-
-            if ($settingRow && !empty($settingRow['setting_value'])) {
-                $blockedSpecificDates = json_decode($settingRow['setting_value'], true);
-                if (is_array($blockedSpecificDates) && in_array($data['service_date'], $blockedSpecificDates)) {
-                    Response::json(['message' => 'The business is closed on this specific date due to administrator restrictions.'], 403);
-                    return;
-                }
-            }
-
-            $stmtDay = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'global_blocked_days' LIMIT 1");
-            $stmtDay->execute();
-            $dayRow = $stmtDay->fetch(PDO::FETCH_ASSOC);
-
-            if ($dayRow && !empty($dayRow['setting_value'])) {
-                $globalBlockedDays = json_decode($dayRow['setting_value'], true);
-                $dayOfWeek = (int)date('w', strtotime($data['service_date']));
-                $normalizedGlobalDays = array_map('intval', is_array($globalBlockedDays) ? $globalBlockedDays : []);
-                if (in_array($dayOfWeek, $normalizedGlobalDays)) {
-                    Response::json(['message' => 'Bookings are globally disabled for this day of the week.'], 403);
-                    return;
-                }
-            }
-
-            $stmtTime = $db->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('global_block_time_start', 'global_block_time_end')");
-            $timeRows = $stmtTime->fetchAll(PDO::FETCH_KEY_PAIR);
-            $globalStart = $timeRows['global_block_time_start'] ?? null;
-            $globalEnd = $timeRows['global_block_time_end'] ?? null;
-
-            if (!empty($globalStart) && !empty($globalEnd) && !empty($data['preferred_time'])) {
-                $selectedMinutes = strtotime($data['preferred_time']) - strtotime('TODAY');
-                $startMinutes = strtotime($globalStart) - strtotime('TODAY');
-                $endMinutes = strtotime($globalEnd) - strtotime('TODAY');
-
-                if ($selectedMinutes >= $startMinutes && $selectedMinutes <= $endMinutes) {
-                    Response::json(['message' => "Bookings are globally blocked between {$globalStart} and {$globalEnd}."], 403);
-                    return;
-                }
-            }
-
-            $stmt = $db->prepare("SELECT id FROM reservations WHERE service_date = :date AND preferred_time = :time AND status != 'CANCELLED' LIMIT 1");
-            $stmt->execute([
-                ':date' => $data['service_date'],
-                ':time' => $data['preferred_time']
-            ]);
-
-            if ($stmt->fetch()) {
-                Response::json(['message' => 'This date and time slot is already booked. Please choose another time.'], 409);
-                return;
-            }
-
-            $data['status'] = $data['status'] ?? 'PENDING';
-
             $id = $this->model->createWithCustomer($data);
 
             if ($id) {
-                $this->logActivity(
-                    userId: $data['user_id'] ?? null,
-                    action: 'CREATE',
-                    entityType: 'reservations',
-                    entityId: (int)$id,
-                    details: [
-                        'customer' => $data['first_name'] . ' ' . $data['last_name'],
-                        'email' => $data['email'],
-                        'service_id' => $data['service_id'],
-                        'status' => $data['status']
-                    ]
-                );
-
                 $reservation = $this->model->getById($id);
                 if ($reservation) {
                     EmailService::sendStatusUpdateEmail($reservation, 'PENDING');
@@ -164,15 +97,7 @@ class ReservationController
 
             Response::json(['message' => 'Reservation created successfully', 'id' => $id], 201);
         } catch (Exception $e) {
-            header('Content-Type: application/json; charset=UTF-8');
-            http_response_code(500);
-            echo json_encode([
-                'message' => 'Error saving reservation',
-                'error_detail' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-            exit;
+            Response::json(['message' => 'Error saving reservation', 'error_detail' => $e->getMessage()], 500);
         }
     }
 
@@ -185,26 +110,9 @@ class ReservationController
             return;
         }
 
-        $required = ['first_name', 'last_name', 'email', 'phone_number', 'service_id', 'service_date', 'preferred_time', 'service_address'];
-        foreach ($required as $field) {
-            if (empty($payload[$field])) {
-                Response::json(['message' => "The field {$field} is required"], 422);
-                return;
-            }
-        }
-
         try {
             $success = $this->model->update($id, $payload);
-
             if ($success) {
-                $this->logActivity(
-                    userId: $payload['user_id'] ?? null,
-                    action: 'UPDATE',
-                    entityType: 'reservations',
-                    entityId: $id,
-                    details: $payload
-                );
-
                 Response::json(['message' => 'Reservation updated successfully']);
             } else {
                 Response::json(['message' => 'Reservation not found or no changes made'], 404);
@@ -232,19 +140,6 @@ class ReservationController
             $success = $this->model->updateStatusWithDetails($id, $data['status'], $userId, $comment, $totalPrice, $serviceDate, $preferredTime, $staffId);
 
             if ($success) {
-                $this->logActivity(
-                    userId: $userId,
-                    action: 'UPDATE',
-                    entityType: 'reservations',
-                    entityId: $id,
-                    details: [
-                        'mutation_type' => 'STATUS_CHANGE_WITH_DETAILS',
-                        'new_status' => $data['status'],
-                        'staff_id' => $staffId,
-                        'comment' => $comment
-                    ]
-                );
-
                 $reservation = $this->model->getById($id);
                 if ($reservation) {
                     EmailService::sendStatusUpdateEmail($reservation, $data['status']);
