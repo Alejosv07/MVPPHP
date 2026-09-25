@@ -46,12 +46,12 @@
     </div>
     <main class="mb-20 lg:mb-0 ml-64 mt-16 p-margin-desktop w-full max-w-container-max mx-auto pb-section-gap">
         <form id="systemScheduleForm" novalidate>
-            <div class="mb-12">
+            <div class="flex-wrap gap-2 lg:gap-2 pb-6 pt-20 lg:pt-6 bg-background/80 backdrop-blur-md px-margin-mobile md:px-margin-desktop py-6 flex justify-between items-center border-b border-outline-variant/30">
                 <h2 class="font-headline-lg text-headline-lg text-primary mb-2">Global System Availability</h2>
                 <p class="font-body-md text-body-md text-on-surface-variant">Configure general business days, specific holiday dates, and global time restrictions to automatically reject client bookings across the entire platform.</p>
             </div>
 
-            <div class="space-y-8 max-w-3xl">
+            <div class="px-margin-mobile md:px-margin-desktop py-8 max-w-container-max mx-auto w-full">
                 <section class="bg-surface-container-lowest rounded-xl p-8 soft-shadow border border-outline-variant/30">
                     <h3 class="font-headline-sm text-headline-sm text-primary border-b border-outline-variant/30 pb-4 mb-6">
                         Global Schedule & Weekly Restrictions
@@ -62,7 +62,7 @@
                     <div class="space-y-6">
                         <div>
                             <label class="block font-label-caps text-label-caps text-on-surface-variant mb-3">Globally Blocked Days of the Week</label>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <label class="flex items-center gap-2 p-3 bg-surface-container-low/50 rounded-lg border border-outline-variant/30 cursor-pointer">
                                     <input type="checkbox" name="global_blocked_days" value="1" class="rounded text-primary focus:ring-primary">
                                     <span class="text-sm font-medium">Monday</span>
