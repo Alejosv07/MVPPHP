@@ -183,7 +183,6 @@ class ReservationModel
 
             $reservationId = (int)$this->db->lastInsertId();
 
-            // Asegura que se cree su respectiva fila en reservation_ratings
             $stmtRating = $this->db->prepare("INSERT INTO reservation_ratings (reservation_id) VALUES (:id)");
             $stmtRating->execute([':id' => $reservationId]);
 
