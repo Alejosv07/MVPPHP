@@ -3,7 +3,6 @@ import { Modal } from './modal.js';
 
 let currentViewType = 'client';
 let allRatingsData = [];
-let globalYearsLoaded = false;
 
 let isIndividualView = false;
 let individualEntityId = null;
@@ -11,8 +10,7 @@ let individualEntityName = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
     setDefaultDateToEmpty();
-    await loadInitialYears();
-    await loadRatingsData();
+    await loadAllRatingsData();
 });
 
 function setDefaultDateToEmpty() {
@@ -21,43 +19,57 @@ function setDefaultDateToEmpty() {
         dateInput.value = '';
     }
 }
-async function loadInitialYears() {
+
+async function loadAllRatingsData() {
     try {
-        const response = await API.reservations.getAll();
+        const search = document.getElementById('filterSearch')?.value || '';
+        
+        const response = await API.reservations.getAll(null, null, search);
+        
         let rawData = response;
         if (response && typeof response === 'object' && !Array.isArray(response)) {
             rawData = response.data || response.ratings || response.reservations || [];
         }
         
-        const yearSelect = document.getElementById('filterYear');
-        if (!yearSelect) return;
-
-        yearSelect.innerHTML = '<option value="">All Years</option>';
-        const yearsSet = new Set();
-        
-        rawData.forEach(item => {
-            const dateStr = item.service_date || item.created_at || '';
-            if (dateStr) {
-                const year = new Date(dateStr).getFullYear();
-                if (!isNaN(year)) {
-                    yearsSet.add(year);
-                }
-            }
-        });
-
-        yearsSet.add(new Date().getFullYear());
-
-        const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
-        sortedYears.forEach(y => {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            yearSelect.appendChild(opt);
-        });
-
-        globalYearsLoaded = true;
+        allRatingsData = Array.isArray(rawData) ? rawData : [];
+        populateYearDropdown(allRatingsData);
+        renderRatingsTable(allRatingsData);
     } catch (err) {
-        console.error('Error loading initial years:', err);
+        console.error('Error loading ratings:', err);
+        Modal.error('Could not load rating history.', 'Connection Error');
+    }
+}
+
+function populateYearDropdown(data) {
+    const yearSelect = document.getElementById('filterYear');
+    if (!yearSelect) return;
+
+    const currentSelectedYear = yearSelect.value;
+    yearSelect.innerHTML = '<option value="">All Years</option>';
+
+    const yearsSet = new Set();
+    data.forEach(item => {
+        const dateStr = item.service_date || item.created_at || '';
+        if (dateStr) {
+            const year = new Date(dateStr).getFullYear();
+            if (!isNaN(year)) {
+                yearsSet.add(year);
+            }
+        }
+    });
+
+    yearsSet.add(new Date().getFullYear());
+
+    const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+    sortedYears.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        yearSelect.appendChild(opt);
+    });
+
+    if (currentSelectedYear) {
+        yearSelect.value = currentSelectedYear;
     }
 }
 
@@ -86,32 +98,11 @@ window.switchRatingTab = function(type) {
     renderRatingsTable(allRatingsData);
 };
 
-async function loadRatingsData() {
-    try {
-        const year = document.getElementById('filterYear')?.value || '';
-        const month = document.getElementById('filterMonth')?.value || '';
-        const search = document.getElementById('filterSearch')?.value || '';
-
-        const response = await API.reservations.getAll(month, year, search);
-        
-        let rawData = response;
-        if (response && typeof response === 'object' && !Array.isArray(response)) {
-            rawData = response.data || response.ratings || response.reservations || [];
-        }
-        
-        allRatingsData = Array.isArray(rawData) ? rawData : [];
-        renderRatingsTable(allRatingsData);
-    } catch (err) {
-        console.error('Error loading ratings:', err);
-        Modal.error('Could not load rating history.', 'Connection Error');
-    }
-}
-
 window.applyFilters = function() {
     if (isIndividualView) {
         updateIndividualProfileData();
     }
-    loadRatingsData();
+    loadAllRatingsData();
 };
 
 window.resetFiltersToToday = function() {
@@ -128,7 +119,7 @@ window.resetFiltersToToday = function() {
     if (isIndividualView) {
         updateIndividualProfileData();
     }
-    loadRatingsData();
+    loadAllRatingsData();
 };
 
 function showIndividualHistory(entityId, entityName) {
@@ -216,6 +207,8 @@ function renderRatingsTable(data) {
     const countLabel = document.getElementById('resultCount');
     if (!tbody) return;
 
+    const filterYear = document.getElementById('filterYear')?.value || '';
+    const filterMonth = document.getElementById('filterMonth')?.value || '';
     const filterDate = document.getElementById('filterDate')?.value || '';
 
     const filtered = data.filter(item => {
@@ -223,8 +216,12 @@ function renderRatingsTable(data) {
         if (!dateStr) return false;
 
         const itemDate = new Date(dateStr);
+        const itemYear = itemDate.getFullYear().toString();
+        const itemMonth = (itemDate.getMonth() + 1).toString();
         const itemDayFormatted = itemDate.toISOString().split('T')[0];
 
+        if (filterYear && filterYear !== '' && itemYear !== filterYear) return false;
+        if (filterMonth && filterMonth !== '' && itemMonth !== filterMonth) return false;
         if (filterDate && filterDate !== '' && itemDayFormatted !== filterDate) return false;
 
         if (isIndividualView) {
