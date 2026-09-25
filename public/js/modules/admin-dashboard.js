@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
     const headerTitle = document.querySelector('header h1');
     if (headerTitle && user.name) {
-        headerTitle.textContent = `Good morning, ${user.name.split(' ')[0]}.`;
+        headerTitle.textContent = `Hi, ${user.name.split(' ')[0]}.`;
     }
 
     await loadDashboardData();
