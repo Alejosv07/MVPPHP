@@ -9,15 +9,14 @@ let individualEntityId = null;
 let individualEntityName = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    setDefaultDateToToday();
+    setDefaultDateToEmpty();
     await loadRatingsData();
 });
 
-function setDefaultDateToToday() {
-    const todayStr = new Date().toISOString().split('T')[0];
+function setDefaultDateToEmpty() {
     const dateInput = document.getElementById('filterDate');
     if (dateInput) {
-        dateInput.value = todayStr;
+        dateInput.value = '';
     }
 }
 
@@ -107,17 +106,18 @@ window.applyFilters = function() {
     if (isIndividualView) {
         updateIndividualProfileData();
     }
-    renderRatingsTable(allRatingsData);
+    loadRatingsData();
 };
 
 window.resetFiltersToToday = function() {
     document.getElementById('filterYear').value = '';
     document.getElementById('filterMonth').value = '';
-    setDefaultDateToToday();
+    document.getElementById('filterSearch').value = '';
+    setDefaultDateToEmpty();
     if (isIndividualView) {
         updateIndividualProfileData();
     }
-    renderRatingsTable(allRatingsData);
+    loadRatingsData();
 };
 
 function showIndividualHistory(entityId, entityName) {
@@ -205,22 +205,16 @@ function renderRatingsTable(data) {
     const countLabel = document.getElementById('resultCount');
     if (!tbody) return;
 
-    const filterYear = document.getElementById('filterYear').value;
-    const filterMonth = document.getElementById('filterMonth').value;
-    const filterDate = document.getElementById('filterDate').value;
+    const filterDate = document.getElementById('filterDate')?.value || '';
 
     const filtered = data.filter(item => {
         const dateStr = item.service_date || item.created_at || '';
         if (!dateStr) return false;
 
         const itemDate = new Date(dateStr);
-        const itemYear = itemDate.getFullYear().toString();
-        const itemMonth = (itemDate.getMonth() + 1).toString();
         const itemDayFormatted = itemDate.toISOString().split('T')[0];
 
-        if (filterYear && itemYear !== filterYear) return false;
-        if (filterMonth && itemMonth !== filterMonth) return false;
-        if (filterDate && itemDayFormatted !== filterDate) return false;
+        if (filterDate && filterDate !== '' && itemDayFormatted !== filterDate) return false;
 
         if (isIndividualView) {
             const itemId = currentViewType === 'client' ? (item.customer_id || item.client_id) : item.staff_id;
