@@ -4,12 +4,12 @@ import { Modal } from './modal.js';
 let selectedFrequency = 'One-time';
 let loadedServices = [];
 let googleMapInstance = null;
+let serviceZonesMapInstance = null;
 let mapMarker = null;
 let selectedMapAddress = '';
 let currentReviewPage = 1;
 const reviewsPerPage = 6;
 let cachedFilteredReviews = [];
-
 let allowedZones = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadPublicServices();
     await loadPublicServiceZonesUI();
     await loadPublicReviewsUI();
+    
+    setTimeout(() => {
+        initServiceZonesMap();
+    }, 200);
+
     setupEstimateForm();
     setMinDateForService();
     setupSupportWidget();
@@ -277,8 +282,7 @@ function setupMapModal() {
                             selectedMapAddress = data.display_name;
                             mapSearchInput.value = selectedMapAddress;
                         }
-                    } catch (e) {
-                    }
+                    } catch (e) {}
                 };
 
                 googleMapInstance.on('click', async (e) => {
@@ -310,8 +314,7 @@ function setupMapModal() {
                             } else {
                                 alert("Location not found.");
                             }
-                        } catch (err) {
-                        }
+                        } catch (err) {}
                     });
                 }
             } else {
@@ -331,6 +334,70 @@ function setupMapModal() {
         }
         closeModal();
     });
+}
+
+async function initServiceZonesMap() {
+    const mapContainer = document.getElementById('serviceZonesMap');
+    if (!mapContainer) return;
+    if (serviceZonesMapInstance) return;
+
+    serviceZonesMapInstance = L.map('serviceZonesMap').setView([38.8951, -77.0364], 11);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors & CARTO'
+    }).addTo(serviceZonesMapInstance);
+
+    try {
+        const response = await API.serviceZones.getAll();
+        let rawData = response;
+
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+            rawData = response.data || response.service_zones || response.zones || [];
+        }
+
+        const zones = Array.isArray(rawData) ? rawData.filter(z => Number(z.is_active) === 1 && z.city_name) : [];
+        const totalZones = zones.length;
+
+        for (let i = 0; i < totalZones; i++) {
+            const zone = zones[i];
+            const cityName = zone.city_name;
+            const stateCode = zone.state_code ? `, ${zone.state_code}` : '';
+            const queryText = `${cityName}${stateCode}, USA`;
+
+            const hue = totalZones > 1 ? (i * 360) / totalZones : 220;
+            const zoneColor = `hsl(${hue}, 70%, 55%)`;
+
+            try {
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}`);
+                const geoData = await geoRes.json();
+
+                if (geoData && geoData.length > 0) {
+                    const lat = parseFloat(geoData[0].lat);
+                    const lon = parseFloat(geoData[0].lon);
+
+                    let areasHtml = '';
+                    if (zone.areas && Array.isArray(zone.areas)) {
+                        const activeAreas = zone.areas.filter(a => Number(a.is_active) === 1 && a.area_name);
+                        if (activeAreas.length > 0) {
+                            areasHtml = `<br><b style="margin-top:4px;display:block;">Areas:</b> <span style="font-size:12px;">${activeAreas.map(a => a.area_name).join(', ')}</span>`;
+                        }
+                    }
+
+                    L.circle([lat, lon], {
+                        color: zoneColor,
+                        fillColor: zoneColor,
+                        fillOpacity: 0.3,
+                        radius: 4500
+                    }).addTo(serviceZonesMapInstance)
+                      .bindPopup(`<b>${escapeHTML(cityName)} ${escapeHTML(stateCode)}</b>${areasHtml}`);
+
+                    L.marker([lat, lon]).addTo(serviceZonesMapInstance)
+                      .bindPopup(`<b>${escapeHTML(cityName)}</b>`);
+                }
+            } catch (geoErr) {}
+        }
+    } catch (err) {}
 }
 
 function setMinDateForService() {
@@ -556,8 +623,7 @@ function setupEstimateForm() {
         try {
             const scheduleResponse = await API.systemSchedule.get();
             systemSchedule = scheduleResponse.data || scheduleResponse || {};
-        } catch (err) {
-        }
+        } catch (err) {}
 
         let rawSpecificDates = systemSchedule.blocked_specific_dates || [];
         if (typeof rawSpecificDates === 'string') {
@@ -843,8 +909,6 @@ function setupSupportWidget() {
                                             const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
                                             const isCompleted = found.status === 'COMPLETED';
 
-                                            console.log("Datos de la reserva:", found);
-
                                             const existingRating = Number(found.customer_rating || found.rating || found.score || found.user_rating || 0);
                                             const hasAlreadyRated = existingRating > 0;
 
@@ -887,7 +951,7 @@ function setupSupportWidget() {
                                             listHTML += `
                                                 <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1.5 shadow-sm">
                                                     <div class="flex justify-between items-center">
-                                                        <span class="text-xs font-bold text-primary">#RES-${String(found.id).padStart(4, '0')} - ${escapeHTML(found.service_name || 'Cleaning Service')}</span>
+                                                        <span class="text-xs font-bold text-primary">#RES-${String(found.id).padStart(4, '0')} ${escapeHTML(found.service_name || 'Cleaning Service')}</span>
                                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${found.status || 'PENDING'}</span>
                                                     </div>
                                                     <div class="text-xs text-on-surface-variant flex flex-col gap-0.5">
