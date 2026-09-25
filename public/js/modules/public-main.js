@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadPublicServices();
     await loadPublicServiceZonesUI();
     await loadPublicReviewsUI();
-    
+
     setTimeout(() => {
         initServiceZonesMap();
     }, 200);
@@ -282,7 +282,7 @@ function setupMapModal() {
                             selectedMapAddress = data.display_name;
                             mapSearchInput.value = selectedMapAddress;
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 };
 
                 googleMapInstance.on('click', async (e) => {
@@ -314,7 +314,7 @@ function setupMapModal() {
                             } else {
                                 alert("Location not found.");
                             }
-                        } catch (err) {}
+                        } catch (err) { }
                     });
                 }
             } else {
@@ -343,9 +343,9 @@ async function initServiceZonesMap() {
 
     serviceZonesMapInstance = L.map('serviceZonesMap').setView([38.8951, -77.0364], 11);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors & CARTO'
+        attribution: '&copy; OpenStreetMap contributors'
     }).addTo(serviceZonesMapInstance);
 
     try {
@@ -390,14 +390,14 @@ async function initServiceZonesMap() {
                         fillOpacity: 0.3,
                         radius: 4500
                     }).addTo(serviceZonesMapInstance)
-                      .bindPopup(`<b>${escapeHTML(cityName)} ${escapeHTML(stateCode)}</b>${areasHtml}`);
+                        .bindPopup(`<b>${escapeHTML(cityName)} ${escapeHTML(stateCode)}</b>${areasHtml}`);
 
                     L.marker([lat, lon]).addTo(serviceZonesMapInstance)
-                      .bindPopup(`<b>${escapeHTML(cityName)}</b>`);
+                        .bindPopup(`<b>${escapeHTML(cityName)}</b>`);
                 }
-            } catch (geoErr) {}
+            } catch (geoErr) { }
         }
-    } catch (err) {}
+    } catch (err) { }
 }
 
 function setMinDateForService() {
@@ -623,7 +623,7 @@ function setupEstimateForm() {
         try {
             const scheduleResponse = await API.systemSchedule.get();
             systemSchedule = scheduleResponse.data || scheduleResponse || {};
-        } catch (err) {}
+        } catch (err) { }
 
         let rawSpecificDates = systemSchedule.blocked_specific_dates || [];
         if (typeof rawSpecificDates === 'string') {
