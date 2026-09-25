@@ -61,7 +61,7 @@ async function loadPublicReviewsUI() {
         const paginatedReviews = cachedFilteredReviews.slice(startIndex, endIndex);
 
         const gridDiv = document.createElement('div');
-        gridDiv.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+        gridDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
 
         paginatedReviews.forEach(review => {
             const rating = Number(review.customer_rating || review.rating || 5);
