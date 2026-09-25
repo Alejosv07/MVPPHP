@@ -778,13 +778,15 @@ function setupSupportWidget() {
                                             const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
                                             const isCompleted = found.status === 'COMPLETED';
                                             
-                                            const existingRating = Number(found.customer_rating || found.rating || 0);
+                                            console.log("Datos de la reserva:", found);
+
+                                            const existingRating = Number(found.customer_rating || found.rating || found.score || found.user_rating || 0);
                                             const hasAlreadyRated = existingRating > 0;
 
                                             let ratingSection = '';
                                             if (isCompleted) {
                                                 if (hasAlreadyRated) {
-                                                    const existingNotes = escapeHTML(found.customer_notes || found.notes || 'No comments');
+                                                    const existingNotes = escapeHTML(found.customer_notes || found.notes || found.review || 'No comments');
                                                     ratingSection = `
                                                         <div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-1">
                                                             <span class="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
