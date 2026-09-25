@@ -180,7 +180,7 @@ class EmailService
         }
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-        $baseUrl = "{$protocol}://{$host}/purenest/api/public/reservations?id={$res['id']}&token={$token}";
+        $baseUrl = "{$protocol}://{$host}/api/public/reservations?id={$res['id']}&token={$token}";
 
         $confirmUrl    = "{$baseUrl}&action=confirm";
         $rescheduleUrl = "{$baseUrl}&action=reschedule";
