@@ -710,58 +710,6 @@ async function loadPublicServiceZonesUI() {
             return;
         }
 
-        let htmlContent = '';
-        zones.forEach(zone => {
-            if (Number(zone.is_active) === 1 && zone.city_name) {
-                htmlContent += `
-                    <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
-                        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 
-                        ${escapeHTML(zone.city_name)} ${zone.state_code ? `(${escapeHTML(zone.state_code)})` : ''}
-                    </div>
-                `;
-            }
-
-            if (zone.areas && Array.isArray(zone.areas)) {
-                zone.areas.forEach(area => {
-                    if (Number(area.is_active) === 1 && area.area_name) {
-                        htmlContent += `
-                            <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
-                                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 
-                                ${escapeHTML(area.area_name)}
-                            </div>
-                        `;
-                    }
-                });
-            }
-        });
-
-        container.innerHTML = htmlContent || `<div class="text-body-md text-on-surface-variant">No available areas at the moment.</div>`;
-
-    } catch (err) {
-        container.innerHTML = `<div class="text-body-md text-on-surface-variant">Could not load service zones.</div>`;
-    }
-}
-
-async function loadPublicServiceZonesUI() {
-    const container = document.getElementById('dynamic-service-zones');
-    if (!container) return;
-
-    try {
-        const response = await API.serviceZones.getAll();
-        let rawData = response;
-
-        if (response && typeof response === 'object' && !Array.isArray(response)) {
-            rawData = response.data || response.service_zones || response.zones || [];
-        }
-
-        const zones = Array.isArray(rawData) ? rawData : [];
-        container.innerHTML = '';
-
-        if (zones.length === 0) {
-            container.innerHTML = `<div class="text-body-md text-on-surface-variant">No active service zones found.</div>`;
-            return;
-        }
-
         let gridHTML = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">';
 
         zones.forEach(zone => {
