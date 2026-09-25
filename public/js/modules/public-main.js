@@ -363,7 +363,27 @@ async function initServiceZonesMap() {
             const zone = zones[i];
             const cityName = zone.city_name;
             const stateCode = zone.state_code ? `, ${zone.state_code}` : '';
-            const queryText = `${cityName}${stateCode}, USA`;
+
+            let firstAreaName = '';
+            let areasHtml = '';
+            
+            if (zone.areas && Array.isArray(zone.areas)) {
+                const activeAreas = zone.areas.filter(a => Number(a.is_active) === 1 && a.area_name);
+                if (activeAreas.length > 0) {
+                    firstAreaName = activeAreas[0].area_name;
+                    areasHtml = `<br><b style="margin-top:4px;display:block;">Areas:</b> <span style="font-size:12px;">${activeAreas.map(a => a.area_name).join(', ')}</span>`;
+                }
+            }
+
+            let queryText = '';
+            const genericTerms = ['maryland', 'virginia', 'dc', 'washington dc'];
+            const isGenericCity = genericTerms.includes(cityName.toLowerCase().trim());
+
+            if (isGenericCity && firstAreaName) {
+                queryText = `${firstAreaName}, ${cityName}${stateCode}, USA`;
+            } else {
+                queryText = `${cityName}${stateCode}, USA`;
+            }
 
             const hue = totalZones > 1 ? (i * 360) / totalZones : 220;
             const zoneColor = `hsl(${hue}, 70%, 55%)`;
@@ -376,28 +396,20 @@ async function initServiceZonesMap() {
                     const lat = parseFloat(geoData[0].lat);
                     const lon = parseFloat(geoData[0].lon);
 
-                    let areasHtml = '';
-                    if (zone.areas && Array.isArray(zone.areas)) {
-                        const activeAreas = zone.areas.filter(a => Number(a.is_active) === 1 && a.area_name);
-                        if (activeAreas.length > 0) {
-                            areasHtml = `<br><b style="margin-top:4px;display:block;">Areas:</b> <span style="font-size:12px;">${activeAreas.map(a => a.area_name).join(', ')}</span>`;
-                        }
-                    }
-
                     L.circle([lat, lon], {
                         color: zoneColor,
                         fillColor: zoneColor,
                         fillOpacity: 0.3,
                         radius: 4500
                     }).addTo(serviceZonesMapInstance)
-                        .bindPopup(`<b>${escapeHTML(cityName)} ${escapeHTML(stateCode)}</b>${areasHtml}`);
+                      .bindPopup(`<b>${escapeHTML(cityName)} ${escapeHTML(stateCode)}</b>${areasHtml}`);
 
                     L.marker([lat, lon]).addTo(serviceZonesMapInstance)
-                        .bindPopup(`<b>${escapeHTML(cityName)}</b>`);
+                      .bindPopup(`<b>${escapeHTML(cityName)}</b>`);
                 }
-            } catch (geoErr) { }
+            } catch (geoErr) {}
         }
-    } catch (err) { }
+    } catch (err) {}
 }
 
 function setMinDateForService() {
