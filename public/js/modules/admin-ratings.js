@@ -205,6 +205,8 @@ function generateStarsHTML(rating, sizeClass = 'text-sm') {
 function renderRatingsTable(data) {
     const tbody = document.getElementById('ratingsTableBody');
     const countLabel = document.getElementById('resultCount');
+    const container = tbody?.closest('.bg-surface-container-lowest');
+    
     if (!tbody) return;
 
     const filterYear = document.getElementById('filterYear')?.value || '';
@@ -240,12 +242,30 @@ function renderRatingsTable(data) {
         ? `Showing ${filtered.length} historical records for ${individualEntityName}`
         : `Showing ${filtered.length} global records`;
 
+    let mobileCardsContainer = document.getElementById('ratingsMobileCards');
+    if (!mobileCardsContainer && container) {
+        mobileCardsContainer = document.createElement('div');
+        mobileCardsContainer.id = 'ratingsMobileCards';
+        mobileCardsContainer.className = 'grid grid-cols-1 gap-4 md:hidden mt-4';
+        container.appendChild(mobileCardsContainer);
+    }
+
     if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-on-surface-variant">No records found for the selected filters.</td></tr>`;
+        if (mobileCardsContainer) {
+            mobileCardsContainer.innerHTML = `<div class="p-6 text-center text-on-surface-variant bg-surface-container-low rounded-lg">No records found for the selected filters.</div>`;
+        }
         return;
     }
 
+    const tableWrapper = tbody.closest('.overflow-x-auto');
+    if (tableWrapper) {
+        tableWrapper.className = 'hidden md:block overflow-x-auto';
+    }
+
     tbody.innerHTML = '';
+    let cardsHTML = '';
+
     filtered.forEach(item => {
         const id = item.id || item.reservation_id || '---';
         const date = item.service_date || item.created_at || 'N/A';
@@ -266,6 +286,9 @@ function renderRatingsTable(data) {
         }
 
         const serviceName = item.service_name || 'General Service';
+        const safeTargetName = escapeHTML(targetName);
+        const safeNotes = escapeHTML(notes);
+        const safeService = escapeHTML(serviceName);
 
         const tr = document.createElement('tr');
         tr.className = 'border-b border-outline-variant/10 hover:bg-surface-container-low transition-colors';
@@ -281,12 +304,12 @@ function renderRatingsTable(data) {
         if (!isIndividualView && entityId) {
             const nameLink = document.createElement('button');
             nameLink.type = 'button';
-            nameLink.textContent = escapeHTML(targetName);
+            nameLink.textContent = safeTargetName;
             nameLink.className = 'hover:text-primary-fixed hover:underline text-left focus:outline-none cursor-pointer';
             nameLink.onclick = () => showIndividualHistory(entityId, targetName);
             nameCell.appendChild(nameLink);
         } else {
-            nameCell.textContent = escapeHTML(targetName);
+            nameCell.textContent = safeTargetName;
         }
         tr.appendChild(nameCell);
 
@@ -297,18 +320,51 @@ function renderRatingsTable(data) {
 
         const notesCell = document.createElement('td');
         notesCell.className = 'py-3 px-4 max-w-xs truncate';
-        notesCell.title = escapeHTML(notes);
-        notesCell.textContent = escapeHTML(notes);
+        notesCell.title = safeNotes;
+        notesCell.textContent = safeNotes;
         tr.appendChild(notesCell);
 
         const serviceCell = document.createElement('td');
         serviceCell.className = 'py-3 px-4 text-xs';
-        serviceCell.textContent = escapeHTML(serviceName);
+        serviceCell.textContent = safeService;
         tr.appendChild(serviceCell);
 
         tbody.appendChild(tr);
+
+        cardsHTML += `
+            <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20 space-y-3 shadow-sm">
+                <div class="flex justify-between items-start border-b border-outline-variant/10 pb-2">
+                    <div>
+                        <span class="text-xs font-bold text-primary">#${id}</span>
+                        <div class="text-[11px] text-on-surface-variant">${date}</div>
+                    </div>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-medium">${safeService}</span>
+                </div>
+                <div>
+                    <div class="text-xs font-label-caps text-on-surface-variant">${currentViewType === 'client' ? 'Client' : 'Staff Member'}</div>
+                    <div class="text-sm font-semibold text-primary">
+                        ${!isIndividualView && entityId ? `<button type="button" onclick="window.triggerIndividualView(${entityId}, '${safeTargetName.replace(/'/g, "\\'")}')" class="hover:underline text-left text-primary">${safeTargetName}</button>` : safeTargetName}
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    ${generateStarsHTML(rating)} <span class="text-xs font-bold ml-1">(${rating}/5)</span>
+                </div>
+                <div class="bg-surface-container-lowest p-3 rounded border border-outline-variant/10 text-xs text-on-surface-variant">
+                    <span class="font-bold block text-primary mb-1">Notes / Comments:</span>
+                    ${safeNotes}
+                </div>
+            </div>
+        `;
     });
+
+    if (mobileCardsContainer) {
+        mobileCardsContainer.innerHTML = cardsHTML;
+    }
 }
+
+window.triggerIndividualView = function(entityId, entityName) {
+    showIndividualHistory(entityId, entityName);
+};
 
 function escapeHTML(str) {
     return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
