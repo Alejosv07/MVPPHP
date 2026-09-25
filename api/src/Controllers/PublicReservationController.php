@@ -168,12 +168,24 @@ class PublicReservationController {
             ':comment' => "Status updated to {$newStatus} by customer via email link."
         ]);
 
-        EmailService::sendStatusUpdateEmail($reservation, $newStatus);
+        $stmtUpdated = $db->prepare("SELECT r.*, c.email, c.first_name, c.last_name, s.name as service_name FROM reservations r JOIN customers c ON r.customer_id = c.id JOIN services s ON r.service_id = s.id WHERE r.id = :id LIMIT 1");
+        $stmtUpdated->execute([':id' => $id]);
+        $updatedReservation = $stmtUpdated->fetch(PDO::FETCH_ASSOC);
+
+        if ($updatedReservation) {
+            EmailService::sendStatusUpdateEmail($updatedReservation, $newStatus);
+        }
 
         header("Content-Type: text/html; charset=UTF-8");
-        echo "<div style='text-align:center; padding:50px; font-family:sans-serif;'>
-                <h2>Reservation Updated!</h2>
-                <p>Your reservation #RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . " status is now <strong>{$newStatus}</strong>.</p>
-              </div>";
+        echo "
+        <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
+            <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
+                <h1 style='color: #0f172a;'>Luxuria Pure</h1>
+                <h2 style='color: " . ($newStatus === 'CONFIRMED' ? '#15803d' : '#b91c1c') . ";'>
+                    Reservation " . ($newStatus === 'CONFIRMED' ? 'Confirmed' : 'Cancelled') . "!
+                </h2>
+                <p style='color: #4b5563;'>Your reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> status is now <strong>{$newStatus}</strong>.</p>
+            </div>
+        </div>";
     }
 }
