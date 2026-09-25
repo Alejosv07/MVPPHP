@@ -5,7 +5,6 @@ let selectedFrequency = 'One-time';
 let loadedServices = [];
 let googleMapInstance = null;
 let mapMarker = null;
-let mapAutocomplete = null;
 let selectedMapAddress = '';
 
 let allowedZones = [];
@@ -48,7 +47,6 @@ async function loadAllowedZonesFromDatabase() {
             });
         }
     } catch (error) {
-        console.error('Error loading zones from database, using fallback:', error);
         allowedZones = ["alexandria", "old town", "del ray", "rosemont", "arlington", "clarendon", "ballston"];
     }
 }
@@ -162,7 +160,6 @@ function setupMapModal() {
                             mapSearchInput.value = selectedMapAddress;
                         }
                     } catch (e) {
-                        console.error(e);
                     }
                 };
 
@@ -196,7 +193,6 @@ function setupMapModal() {
                                 alert("Location not found.");
                             }
                         } catch (err) {
-                            console.error(err);
                         }
                     });
                 }
@@ -332,7 +328,6 @@ async function loadPublicServices() {
             }
         });
     } catch (error) {
-        console.error('Error loading services:', error);
         Modal.error('Failed to load available services. Please try again later.', 'Connection Error');
     }
 }
@@ -444,7 +439,6 @@ function setupEstimateForm() {
             const scheduleResponse = await API.systemSchedule.get();
             systemSchedule = scheduleResponse.data || scheduleResponse || {};
         } catch (err) {
-            console.warn('Could not fetch system schedule restrictions:', err);
         }
 
         let rawSpecificDates = systemSchedule.blocked_specific_dates || [];
@@ -547,7 +541,6 @@ function setupEstimateForm() {
                 }
             });
         } catch (error) {
-            console.error(error);
             Modal.error(error.message || 'An error occurred while saving your reservation.', 'Booking Error');
         } finally {
             if (submitBtn) {
@@ -575,7 +568,6 @@ window.submitClientRating = async function (reservationId) {
             showCancel: false
         });
     } catch (err) {
-        console.error(err);
         Modal.error('Could not submit rating. Please try again.', 'Rating Error');
     }
 };
@@ -628,7 +620,6 @@ async function loadPublicServiceZonesUI() {
         container.innerHTML = htmlContent || `<div class="text-body-md text-on-surface-variant">No available areas at the moment.</div>`;
 
     } catch (err) {
-        console.error('Error loading service zones UI:', err);
         container.innerHTML = `<div class="text-body-md text-on-surface-variant">Could not load service zones.</div>`;
     }
 }
@@ -693,7 +684,6 @@ async function loadPublicReviewsUI() {
             reviewsContainer.appendChild(reviewDiv);
         });
     } catch (err) {
-        console.error('Error loading public reviews:', err);
         reviewsContainer.innerHTML = `<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 soft-shadow"><p class="font-body-md text-on-surface-variant">Could not load reviews.</p></div>`;
     }
 }
@@ -787,23 +777,45 @@ function setupSupportWidget() {
                                             const statusColor = found.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : found.status === 'CONFIRMED' ? 'bg-primary-fixed text-primary-container' : 'bg-tertiary-fixed text-tertiary-container';
                                             const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
                                             const isCompleted = found.status === 'COMPLETED';
+                                            
+                                            const existingRating = Number(found.customer_rating || found.rating || 0);
+                                            const hasAlreadyRated = existingRating > 0;
 
-                                            const ratingSection = isCompleted ? `
-                                                <div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-1.5">
-                                                    <span class="text-[11px] font-bold text-primary">Rate your Cleaner / Staff:</span>
-                                                    <div class="flex items-center gap-2">
-                                                        <select id="clientRating-${found.id}" class="text-xs bg-surface-container-low p-1 rounded border border-outline-variant">
-                                                            <option value="5">⭐⭐⭐⭐⭐ (5)</option>
-                                                            <option value="4">⭐⭐⭐⭐ (4)</option>
-                                                            <option value="3">⭐⭐⭐ (3)</option>
-                                                            <option value="2">⭐⭐ (2)</option>
-                                                            <option value="1">⭐ (1)</option>
-                                                        </select>
-                                                        <input type="text" id="clientNotes-${found.id}" placeholder="Leave a note..." class="text-xs p-1 bg-surface-container-low rounded border border-outline-variant flex-1">
-                                                        <button onclick="submitClientRating(${found.id})" class="px-2.5 py-1 bg-primary text-on-primary rounded text-xs font-semibold">Send</button>
-                                                    </div>
-                                                </div>
-                                            ` : '';
+                                            let ratingSection = '';
+                                            if (isCompleted) {
+                                                if (hasAlreadyRated) {
+                                                    const existingNotes = escapeHTML(found.customer_notes || found.notes || 'No comments');
+                                                    ratingSection = `
+                                                        <div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-1">
+                                                            <span class="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                                                                <span class="material-symbols-outlined text-[14px]">check_circle</span> You already rated this service:
+                                                            </span>
+                                                            <div class="flex items-center gap-1">
+                                                                ${'⭐'.repeat(existingRating)}
+                                                                <span class="text-xs font-bold">(${existingRating}/5)</span>
+                                                            </div>
+                                                            <p class="text-xs text-on-surface-variant italic">"${existingNotes}"</p>
+                                                        </div>
+                                                    `;
+                                                } else {
+                                                    ratingSection = `
+                                                        <div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-1.5">
+                                                            <span class="text-[11px] font-bold text-primary">Rate your Cleaner / Staff:</span>
+                                                            <div class="flex items-center gap-2">
+                                                                <select id="clientRating-${found.id}" class="text-xs bg-surface-container-low p-1 rounded border border-outline-variant">
+                                                                    <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                                                                    <option value="4">⭐⭐⭐⭐ (4)</option>
+                                                                    <option value="3">⭐⭐⭐ (3)</option>
+                                                                    <option value="2">⭐⭐ (2)</option>
+                                                                    <option value="1">⭐ (1)</option>
+                                                                </select>
+                                                                <input type="text" id="clientNotes-${found.id}" placeholder="Leave a note..." class="text-xs p-1 bg-surface-container-low rounded border border-outline-variant flex-1">
+                                                                <button onclick="submitClientRating(${found.id})" class="px-2.5 py-1 bg-primary text-on-primary rounded text-xs font-semibold">Send</button>
+                                                            </div>
+                                                        </div>
+                                                    `;
+                                                }
+                                            }
 
                                             listHTML += `
                                                 <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1.5 shadow-sm">
@@ -835,14 +847,12 @@ function setupSupportWidget() {
                                         Modal.error('No reservations were found for this email address.', 'Result');
                                     }
                                 } catch (error) {
-                                    console.error('Error verifying PIN:', error);
                                     Modal.error('Invalid or expired PIN code. Please try again.', 'Verification Error');
                                 }
                                 return false;
                             }
                         });
                     } catch (error) {
-                        console.error('Error sending OTP:', error);
                         Modal.error('Could not send verification code. Please check the email address.', 'Error');
                     }
                     return false;
