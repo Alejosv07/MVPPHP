@@ -42,8 +42,8 @@ class PublicReservationController {
             <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
                 <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
                     <h1 style='color: #0f172a;'>Luxuria Pure</h1>
-                    <h2 style='color: #059669;'>¡Gracias por tu Comentario!</h2>
-                    <p style='color: #4b5563;'>Hemos guardado tu calificación para la reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong>.</p>
+                    <h2 style='color: #059669;'>Thank You for Your Feedback!</h2>
+                    <p style='color: #4b5563;'>We have saved your rating for reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong>.</p>
                 </div>
             </div>";
             return;
@@ -55,26 +55,26 @@ class PublicReservationController {
             <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
                 <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
                     <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
-                    <h3 style='color: #475569; margin-bottom: 25px;'>Califica nuestro servicio</h3>
-                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservación: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
+                    <h3 style='color: #475569; margin-bottom: 25px;'>Rate Our Service</h3>
+                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservation: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
                     
                     <form method='POST' action=''>
                         <div style='margin-bottom: 20px; text-align: left;'>
-                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Calificación (1 al 5):</label>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Rating (1 to 5):</label>
                             <select name='rating' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none; background: #fff;'>
-                                <option value='5'>⭐⭐⭐⭐⭐ (5 - Excelente)</option>
-                                <option value='4'>⭐⭐⭐⭐ (4 - Muy bueno)</option>
-                                <option value='3'>⭐⭐⭐ (3 - Bueno)</option>
-                                <option value='2'>⭐⭐ (2 - Regular)</option>
-                                <option value='1'>⭐ (1 - Malo)</option>
+                                <option value='5'>⭐⭐⭐⭐⭐ (5 - Excellent)</option>
+                                <option value='4'>⭐⭐⭐⭐ (4 - Very Good)</option>
+                                <option value='3'>⭐⭐⭐ (3 - Good)</option>
+                                <option value='2'>⭐⭐ (2 - Fair)</option>
+                                <option value='1'>⭐ (1 - Poor)</option>
                             </select>
                         </div>
                         <div style='margin-bottom: 20px; text-align: left;'>
-                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Comentario:</label>
-                            <textarea name='comment' rows='4' placeholder='Cuéntanos tu experiencia...' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'></textarea>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Comment:</label>
+                            <textarea name='comment' rows='4' placeholder='Tell us about your experience...' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'></textarea>
                         </div>
                         <button type='submit' style='width: 100%; background-color: #059669; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
-                            Enviar Calificación
+                            Submit Rating
                         </button>
                     </form>
                 </div>
@@ -87,7 +87,7 @@ class PublicReservationController {
             $today = date('Y-m-d');
 
             if (empty($newDate) || $newDate < $today) {
-                echo "<script>alert('Error: No puedes seleccionar una fecha pasada.'); window.history.back();</script>";
+                echo "<script>alert('Error: You cannot select a past date.'); window.history.back();</script>";
                 return;
             }
 
@@ -113,8 +113,8 @@ class PublicReservationController {
             <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
                 <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
                     <h1 style='color: #0f172a;'>Luxuria Pure</h1>
-                    <h2 style='color: #9333ea;'>¡Fecha Reasignada con Éxito!</h2>
-                    <p style='color: #4b5563;'>Tu reservación <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> ha sido actualizada para el día <strong>{$newDate}</strong>.</p>
+                    <h2 style='color: #9333ea;'>Date Rescheduled Successfully!</h2>
+                    <p style='color: #4b5563;'>Your reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> has been updated to <strong>{$newDate}</strong>.</p>
                 </div>
             </div>";
             return;
@@ -129,17 +129,17 @@ class PublicReservationController {
             <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
                 <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
                     <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
-                    <h3 style='color: #475569; margin-bottom: 25px;'>Reasignar Fecha de Servicio</h3>
-                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservación: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
+                    <h3 style='color: #475569; margin-bottom: 25px;'>Reschedule Service Date</h3>
+                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservation: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
                     
                     <form method='POST' action=''>
                         <div style='margin-bottom: 20px; text-align: left;'>
-                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Selecciona la Nueva Fecha:</label>
+                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Select New Date:</label>
                             <input type='date' name='service_date' value='{$currentDate}' min='{$minDate}' required 
                                 style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'>
                         </div>
                         <button type='submit' style='width: 100%; background-color: #0f172a; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
-                            Guardar Nueva Fecha
+                            Save New Date
                         </button>
                     </form>
                 </div>
