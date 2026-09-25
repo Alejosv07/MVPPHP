@@ -3,6 +3,7 @@ import { Modal } from './modal.js';
 
 let currentViewType = 'client';
 let allRatingsData = [];
+let globalYearsLoaded = false;
 
 let isIndividualView = false;
 let individualEntityId = null;
@@ -10,6 +11,7 @@ let individualEntityName = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
     setDefaultDateToEmpty();
+    await loadInitialYears();
     await loadRatingsData();
 });
 
@@ -19,44 +21,43 @@ function setDefaultDateToEmpty() {
         dateInput.value = '';
     }
 }
-
-function populateYearDropdown(data) {
-    const yearSelect = document.getElementById('filterYear');
-    if (!yearSelect) return;
-
-    const currentSelectedYear = yearSelect.value;
-    yearSelect.innerHTML = '<option value="">All Years</option>';
-
-    const yearsSet = new Set();
-    data.forEach(item => {
-        const dateStr = item.service_date || item.created_at || '';
-        if (dateStr) {
-            const year = new Date(dateStr).getFullYear();
-            if (!isNaN(year)) {
-                yearsSet.add(year);
-            }
+async function loadInitialYears() {
+    try {
+        const response = await API.reservations.getAll();
+        let rawData = response;
+        if (response && typeof response === 'object' && !Array.isArray(response)) {
+            rawData = response.data || response.ratings || response.reservations || [];
         }
-    });
+        
+        const yearSelect = document.getElementById('filterYear');
+        if (!yearSelect) return;
 
-    const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+        yearSelect.innerHTML = '<option value="">All Years</option>';
+        const yearsSet = new Set();
+        
+        rawData.forEach(item => {
+            const dateStr = item.service_date || item.created_at || '';
+            if (dateStr) {
+                const year = new Date(dateStr).getFullYear();
+                if (!isNaN(year)) {
+                    yearsSet.add(year);
+                }
+            }
+        });
 
-    if (sortedYears.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = "";
-        opt.disabled = true;
-        opt.textContent = "- No records found -";
-        yearSelect.appendChild(opt);
-    } else {
+        yearsSet.add(new Date().getFullYear());
+
+        const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
         sortedYears.forEach(y => {
             const opt = document.createElement('option');
             opt.value = y;
             opt.textContent = y;
             yearSelect.appendChild(opt);
         });
-    }
 
-    if (currentSelectedYear) {
-        yearSelect.value = currentSelectedYear;
+        globalYearsLoaded = true;
+    } catch (err) {
+        console.error('Error loading initial years:', err);
     }
 }
 
@@ -99,7 +100,6 @@ async function loadRatingsData() {
         }
         
         allRatingsData = Array.isArray(rawData) ? rawData : [];
-        populateYearDropdown(allRatingsData);
         renderRatingsTable(allRatingsData);
     } catch (err) {
         console.error('Error loading ratings:', err);
