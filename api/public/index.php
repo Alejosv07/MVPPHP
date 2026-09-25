@@ -104,11 +104,16 @@ match ($resource) {
         'verify-otp'      => (new CustomerAuthController())->verifyOtp(),
         default           => Response::json(['message' => 'Invalid authentication action'], 404)
     },
-    'reservations' => match (true) {
+'reservations' => match (true) {
         $id !== null && $subResource === 'customer-rating' && $method === 'POST'
         => (new CustomerAuthController())->submitCustomerRating($id),
+        
         $id !== null && isset($_GET['action']) && $_GET['action'] === 'staff-rating' && $method === 'POST'
         => (new CustomerAuthController())->submitStaffRating($id),
+        
+        $method === 'GET' && isset($_GET['action']) 
+        => (new App\Controllers\PublicReservationController())->handleAction(),
+        
         default => (new ReservationController())->handle($method, $id, $subResource)
     },
     'categories'      => (new CategoryController())->handle($method, $id),
