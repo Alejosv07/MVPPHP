@@ -38,6 +38,7 @@ class PublicReservationController {
             $updateStmt = $db->prepare("UPDATE reservations SET rating = :rating, feedback_comment = :comment WHERE id = :id");
             $updateStmt->execute([':rating' => $rating, ':comment' => $comment, ':id' => $id]);
 
+            header("Content-Type: text/html; charset=UTF-8");
             echo "
             <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
                 <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
@@ -109,6 +110,7 @@ class PublicReservationController {
                 EmailService::sendStatusUpdateEmail($updatedReservation, 'RESCHEDULED');
             }
 
+            header("Content-Type: text/html; charset=UTF-8");
             echo "
             <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
                 <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
@@ -162,6 +164,7 @@ class PublicReservationController {
 
         EmailService::sendStatusUpdateEmail($reservation, $newStatus);
 
+        header("Content-Type: text/html; charset=UTF-8");
         echo "<div style='text-align:center; padding:50px; font-family:sans-serif;'>
                 <h2>Reservation Updated!</h2>
                 <p>Your reservation #RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . " status is now <strong>{$newStatus}</strong>.</p>
