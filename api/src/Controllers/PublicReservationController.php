@@ -35,8 +35,14 @@ class PublicReservationController {
             $rating = (int)($_POST['rating'] ?? 5);
             $comment = trim($_POST['comment'] ?? '');
 
-            $updateStmt = $db->prepare("UPDATE reservations SET rating = :rating, feedback_comment = :comment WHERE id = :id");
-            $updateStmt->execute([':rating' => $rating, ':comment' => $comment, ':id' => $id]);
+            try {
+                $updateStmt = $db->prepare("UPDATE reservations SET customer_rating = :rating, customer_notes = :comment WHERE id = :id");
+                $updateStmt->execute([':rating' => $rating, ':comment' => $comment, ':id' => $id]);
+            } catch (\Exception $e) {
+                header("Content-Type: text/html; charset=UTF-8");
+                echo "<h3 style='color: red; text-align: center; margin-top: 50px;'>Database Error: " . htmlspecialchars($e->getMessage()) . "</h3>";
+                return;
+            }
 
             header("Content-Type: text/html; charset=UTF-8");
             echo "
