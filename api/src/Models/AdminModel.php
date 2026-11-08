@@ -17,13 +17,13 @@ class AdminModel
 
     public function getAll(): array
     {
-        $stmt = $this->db->query("SELECT id, name, email, role, reset_code, reset_expires_at, is_active, created_at, updated_at FROM users ORDER BY created_at DESC");
+        $stmt = $this->db->query("SELECT id, name, email, role, IF(reset_expires_at > NOW(), reset_code, NULL) AS reset_code, reset_expires_at, is_active, created_at, updated_at FROM users ORDER BY created_at DESC");
         return $stmt->fetchAll();
     }
 
     public function getById(int $id): ?array
     {
-        $stmt = $this->db->prepare("SELECT id, name, email, role, reset_code, reset_expires_at, is_active, created_at, updated_at FROM users WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT id, name, email, role, IF(reset_expires_at > NOW(), reset_code, NULL) AS reset_code, reset_expires_at, is_active, created_at, updated_at FROM users WHERE id = ?");
         $stmt->execute([$id]);
         $user = $stmt->fetch();
         return $user ?: null;

@@ -288,28 +288,28 @@ function renderReservationsTable(reservations) {
 
         tr.innerHTML = `
             <td class="py-4 px-4 align-top">
-                <div class="font-headline-sm text-[16px] text-on-surface font-semibold">${res.preferred_time || '08:00 AM'}</div>
-                <div class="text-xs text-outline font-medium">${res.frequency || 'One-time'}</div>
+                <div class="font-headline-sm text-[16px] text-on-surface font-semibold">${escapeHTML(res.preferred_time || '08:00 AM')}</div>
+                <div class="text-xs text-outline font-medium">${escapeHTML(res.frequency || 'One-time')}</div>
             </td>
             
             <td class="py-4 px-4 align-top">
                 <div class="font-label-caps text-[11px] text-accent-rust tracking-wider uppercase">#RES-${formattedId}</div>
                 <div class="flex items-center gap-2 mt-1">
                     <div class="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed font-bold text-xs flex items-center justify-center">
-                        ${initials}
+                        ${escapeHTML(initials)}
                     </div>
                     <div>
                         <div class="font-body-md text-body-md font-semibold text-on-surface leading-tight">
-                            ${res.first_name || 'No Name'} ${res.last_name || ''}
+                            ${escapeHTML(res.first_name || 'No Name')} ${escapeHTML(res.last_name || '')}
                         </div>
-                        <div class="text-xs text-outline">${res.phone_number || 'No Phone'}</div>
+                        <div class="text-xs text-outline">${escapeHTML(res.phone_number || 'No Phone')}</div>
                     </div>
                 </div>
             </td>
 
             <td class="py-4 px-4 align-top max-w-[200px]">
-                <div class="font-medium text-xs text-on-surface">${res.service_name || 'General Service'}</div>
-                <div class="text-xs text-outline truncate mt-0.5">${res.service_address || 'No Address'}</div>
+                <div class="font-medium text-xs text-on-surface">${escapeHTML(res.service_name || 'General Service')}</div>
+                <div class="text-xs text-outline truncate mt-0.5">${escapeHTML(res.service_address || 'No Address')}</div>
             </td>
 
             <td class="py-4 px-4 align-top">
@@ -357,21 +357,21 @@ function renderReservationsTable(reservations) {
 
                 <div class="flex items-center space-x-3 pt-1">
                     <div class="w-9 h-9 rounded-full bg-primary-fixed text-on-primary-fixed font-bold text-xs flex items-center justify-center shrink-0">
-                        ${initials}
+                        ${escapeHTML(initials)}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-primary text-sm truncate">${res.first_name || 'No Name'} ${res.last_name || ''}</p>
-                        <p class="text-outline text-xs">${res.phone_number || 'No Phone'}</p>
+                        <p class="font-semibold text-primary text-sm truncate">${escapeHTML(res.first_name || 'No Name')} ${escapeHTML(res.last_name || '')}</p>
+                        <p class="text-outline text-xs">${escapeHTML(res.phone_number || 'No Phone')}</p>
                     </div>
                     <div class="text-right shrink-0">
-                        <div class="font-headline-sm text-sm font-semibold text-on-surface">${res.preferred_time || '08:00 AM'}</div>
-                        <div class="text-[11px] text-outline">${res.frequency || 'One-time'}</div>
+                        <div class="font-headline-sm text-sm font-semibold text-on-surface">${escapeHTML(res.preferred_time || '08:00 AM')}</div>
+                        <div class="text-[11px] text-outline">${escapeHTML(res.frequency || 'One-time')}</div>
                     </div>
                 </div>
 
                 <div class="text-xs pt-2 border-t border-outline-variant/10 space-y-1">
-                    <p class="font-medium text-on-surface">${res.service_name || 'General Service'}</p>
-                    <p class="text-outline truncate">${res.service_address || 'No Address'}</p>
+                    <p class="font-medium text-on-surface">${escapeHTML(res.service_name || 'General Service')}</p>
+                    <p class="text-outline truncate">${escapeHTML(res.service_address || 'No Address')}</p>
                 </div>
 
                 <div class="flex items-center justify-between pt-2 border-t border-outline-variant/10">
@@ -448,18 +448,18 @@ window.selectReservation = async function (id) {
                 <span class="font-label-caps text-label-caps uppercase text-outline">Customer & Access</span>
                 <div class="flex items-center gap-3 p-3.5 rounded-lg bg-surface-container-low">
                     <div class="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed font-bold text-sm flex items-center justify-center flex-shrink-0">
-                        ${initials}
+                        ${escapeHTML(initials)}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="font-body-md text-body-md font-semibold text-on-surface truncate">${firstName} ${lastName}</div>
+                        <div class="font-body-md text-body-md font-semibold text-on-surface truncate">${escapeHTML(firstName)} ${escapeHTML(lastName)}</div>
                         <div class="text-xs text-on-surface-variant flex items-center gap-1.5 mt-0.5">
                             <span class="material-symbols-outlined text-[14px]">call</span>
-                            <span>${phone}</span>
+                            <span>${escapeHTML(phone)}</span>
                         </div>
                     </div>
                     <div class="px-2.5 py-1 bg-surface-container rounded text-center">
                         <div class="text-[10px] uppercase font-semibold text-outline">Total</div>
-                        <div class="text-xs font-bold text-on-surface">$${totalPrice}</div>
+                        <div class="text-xs font-bold text-on-surface">$${escapeHTML(totalPrice)}</div>
                     </div>
                 </div>
             </div>
@@ -469,17 +469,17 @@ window.selectReservation = async function (id) {
                 <div class="space-y-2 text-xs">
                     <div class="flex justify-between py-1.5 bg-surface-container-low/50 px-3 rounded">
                         <span class="text-outline">Service Tier</span>
-                        <span class="font-semibold text-on-surface">${serviceName}</span>
+                        <span class="font-semibold text-on-surface">${escapeHTML(serviceName)}</span>
                     </div>
                     <div class="flex justify-between py-1.5 bg-surface-container-low/50 px-3 rounded">
                         <span class="text-outline">Scheduled Window</span>
-                        <span class="font-semibold text-on-surface">${serviceDate} • ${preferredTime}</span>
+                        <span class="font-semibold text-on-surface">${escapeHTML(serviceDate)} • ${escapeHTML(preferredTime)}</span>
                     </div>
                     <div class="flex flex-col py-2 bg-surface-container-low/50 px-3 rounded space-y-1">
                         <span class="text-outline">Address</span>
                         <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(serviceAddress)}" target="_blank" rel="noopener noreferrer" class="flex items-start gap-1.5 text-on-surface font-semibold hover:text-accent-rust transition-colors group" title="Open in Google Maps">
                             <span class="material-symbols-outlined text-[16px] text-accent-rust flex-shrink-0 group-hover:scale-110 transition-transform">location_on</span>
-                            <span class="underline underline-offset-2">${serviceAddress}</span>
+                            <span class="underline underline-offset-2">${escapeHTML(serviceAddress)}</span>
                         </a>
                     </div>
                 </div>
@@ -491,7 +491,7 @@ window.selectReservation = async function (id) {
                     <span>Residence Notes</span>
                 </div>
                 <p class="text-xs text-on-surface-variant leading-relaxed">
-                    "${instructions}"
+                    "${escapeHTML(instructions)}"
                 </p>
             </div>
 
@@ -689,4 +689,9 @@ function updateDashboardMetrics(reservations) {
     if (elPending) elPending.textContent = pendingCount;
     if (elActive) elActive.textContent = activeCount;
     if (elCompleted) elCompleted.textContent = completedCount;
+}
+
+function escapeHTML(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
 }

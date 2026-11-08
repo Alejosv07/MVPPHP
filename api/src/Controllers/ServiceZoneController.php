@@ -68,7 +68,7 @@ class ServiceZoneController
             $id = $this->model->create($data);
 
             $this->logActivity(
-                $data['user_id'] ?? null,
+                \App\Utils\Auth::userId(),
                 'CREATE',
                 'service_zones',
                 $id,
@@ -77,7 +77,7 @@ class ServiceZoneController
 
             Response::json(['message' => 'Service zone created successfully', 'id' => $id], 201);
         } catch (Exception $e) {
-            Response::json(['message' => 'Error creating service zone', 'error_detail' => $e->getMessage()], 500);
+            Response::json(['message' => 'Error creating service zone', 'error' => 'internal'], 500);
         }
     }
 
@@ -95,7 +95,7 @@ class ServiceZoneController
 
             if ($success) {
                 $this->logActivity(
-                    $data['user_id'] ?? null,
+                    \App\Utils\Auth::userId(),
                     'UPDATE',
                     'service_zones',
                     $id,
@@ -107,14 +107,14 @@ class ServiceZoneController
                 Response::json(['message' => 'Service zone not found or no changes made'], 404);
             }
         } catch (Exception $e) {
-            Response::json(['message' => 'Error updating service zone', 'error_detail' => $e->getMessage()], 500);
+            Response::json(['message' => 'Error updating service zone', 'error' => 'internal'], 500);
         }
     }
 
     private function delete(int $id): void
     {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
-        $userId = $data['user_id'] ?? null;
+        $userId = \App\Utils\Auth::userId();
 
         try {
             $success = $this->model->delete($id);
@@ -133,13 +133,13 @@ class ServiceZoneController
                 Response::json(['message' => 'Service zone not found'], 404);
             }
         } catch (Exception $e) {
-            Response::json(['message' => 'Error deleting service zone', 'error_detail' => $e->getMessage()], 500);
+            Response::json(['message' => 'Error deleting service zone', 'error' => 'internal'], 500);
         }
     }
 
     private function logActivity(?int $userId, string $action, string $entityType, int $entityId, array $details): void
     {
-        $ipAddress = $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
         if (str_contains($ipAddress, ',')) {
             $ipAddress = trim(explode(',', $ipAddress)[0]);
         }

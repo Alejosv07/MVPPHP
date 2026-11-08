@@ -358,4 +358,57 @@ public function getAll(?int $staffId = null, ?string $search = null): array
 
         return $updated;
     }
+
+    /**
+     * Public testimonials: 4-5 star reviews with a comment.
+     * Exposes only first name + last initial, city part of the address and service name.
+     */
+    public function getPublicReviews(int $limit = 30): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT r.id, c.first_name, LEFT(c.last_name, 1) AS last_initial,
+                   s.name AS service_name, r.service_address,
+                   rr.customer_rating, rr.customer_notes, r.service_date
+            FROM reservation_ratings rr
+            JOIN reservations r ON r.id = rr.reservation_id
+            LEFT JOIN customers c ON c.id = r.customer_id
+            LEFT JOIN services s ON s.id = r.service_id
+            WHERE rr.customer_rating >= 4
+              AND rr.customer_notes IS NOT NULL AND rr.customer_notes <> ''
+            ORDER BY r.service_date DESC
+            LIMIT :lim
+        ");
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(static function (array $row): array {
+            // Keep only the city/area portion of the address, never the street
+            $parts = array_map('trim', explode(',', (string)$row['service_address']));
+            $row['location'] = count($parts) > 1 ? $parts[count($parts) - 2] : '';
+            if (preg_match('/\d/', $row['location'])) {
+                $row['location'] = '';
+            }
+            unset($row['service_address']);
+            $row['client_name'] = trim($row['first_name'] . ' ' . ($row['last_initial'] ? $row['last_initial'] . '.' : ''));
+            return $row;
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    /**
+     * Stores proof of Terms acceptance / SMS opt-in.
+     * Needs database/migrations/2026-11-08_consent_columns.sql; silently skipped until it is applied.
+     */
+    public function recordConsent(int $reservationId, bool $smsConsent, string $ip): void
+    {
+        try {
+            $this->db->prepare("UPDATE reservations SET terms_accepted_at = NOW(), consent_ip = :ip WHERE id = :id")
+                ->execute([":ip" => $ip, ":id" => $reservationId]);
+            if ($smsConsent) {
+                $this->db->prepare("UPDATE customers c JOIN reservations r ON r.customer_id = c.id SET c.sms_consent_at = NOW() WHERE r.id = :id")
+                    ->execute([":id" => $reservationId]);
+            }
+        } catch (\PDOException $e) {
+            error_log("Consent not recorded (run the consent migration): " . $e->getMessage());
+        }
+    }
 }

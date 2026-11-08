@@ -1,0 +1,18 @@
+# Secrets & runtime data (never commit)
+api/config/secrets.php
+api/storage/
+.env
+*.log
+php_errorlog
+error_log
+
+# Database dumps
+*.sql
+!database/migrations/*.sql
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+database.php

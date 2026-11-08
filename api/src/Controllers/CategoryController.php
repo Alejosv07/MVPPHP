@@ -56,7 +56,7 @@ class CategoryController {
 
         $id = $this->model->create($data['name'], $data['description'] ?? null);
         
-        $userId = $data['user_id'] ?? $_SESSION['user_id'] ?? null;
+        $userId = \App\Utils\Auth::userId();
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
         $this->auditModel->log($userId ? (int)$userId : null, 'CREATE', 'service_categories', $id, json_encode($data), $ip);
 
@@ -73,7 +73,7 @@ class CategoryController {
         $updated = $this->model->update($id, $data['name'], $data['description'] ?? null);
 
         if ($updated) {
-            $userId = $data['user_id'] ?? $_SESSION['user_id'] ?? null;
+            $userId = \App\Utils\Auth::userId();
             $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
             $this->auditModel->log($userId ? (int)$userId : null, 'UPDATE', 'service_categories', $id, json_encode($data), $ip);
 
@@ -87,7 +87,7 @@ class CategoryController {
         try {
             $deleted = $this->model->delete($id);
             if ($deleted) {
-                $userId = $_GET['user_id'] ?? $_SESSION['user_id'] ?? null;
+                $userId = \App\Utils\Auth::userId();
                 $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
                 $this->auditModel->log($userId ? (int)$userId : null, 'DELETE', 'service_categories', $id, null, $ip);
 

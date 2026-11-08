@@ -5,7 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLogout.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('purenest_user');
-            window.location.href = `${window.location.origin}/index.html`;
+            localStorage.removeItem('luxuriapure_user');
+            window.location.href = 'index.html';
         });
     }
 });

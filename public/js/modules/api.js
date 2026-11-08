@@ -1,5 +1,20 @@
 const API_BASE_URL = 'https://cleaning.mutechlabs.com/api/public';
 
+export function getSessionToken() {
+    try {
+        const raw = localStorage.getItem('purenest_user');
+        const user = raw && raw !== 'undefined' ? JSON.parse(raw) : null;
+        return user && user.token ? user.token : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+export function clearSession() {
+    localStorage.removeItem('purenest_user');
+    localStorage.removeItem('luxuriapure_user');
+}
+
 async function apiFetch(endpoint, options = {}) {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${API_BASE_URL}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, "$1");
@@ -13,6 +28,12 @@ async function apiFetch(endpoint, options = {}) {
         delete defaultHeaders['Content-Type'];
     }
 
+    // Staff/admin session token (set on login). Callers may override Authorization.
+    const sessionToken = getSessionToken();
+    if (sessionToken) {
+        defaultHeaders.Authorization = `Bearer ${sessionToken}`;
+    }
+
     options.headers = {
         ...defaultHeaders,
         ...(options.headers || {})
@@ -21,19 +42,25 @@ async function apiFetch(endpoint, options = {}) {
     try {
         const response = await fetch(url, options);
 
+        if (response.status === 401 && sessionToken && !cleanEndpoint.startsWith('/auth/')) {
+            // Session expired or revoked: back to login
+            clearSession();
+            window.location.href = 'login.html';
+            throw new Error('Your session has expired. Please sign in again.');
+        }
+
         if (!response.ok) {
             let errorData;
             try {
                 errorData = await response.json();
-                console.error("ERROR REAL DEL BACKEND:", errorData);
             } catch (e) {
                 errorData = {
-                    message: `Error HTTP [${options.method || 'GET'} ${endpoint}]: Endpoint no encontrado`
+                    message: `Error HTTP [${options.method || 'GET'} ${endpoint}]`
                 };
             }
 
             const finalMessage =
-                errorData.error_detail ||
+                (errorData.data && errorData.data.message) ||
                 errorData.message ||
                 `HTTP error! status: ${response.status}`;
 
@@ -108,10 +135,14 @@ export const API = {
             body: JSON.stringify({ email, code })
         })
     },
+    reviews: {
+        getPublic: async () => apiFetch('/reviews')
+    },
     ratings: {
-        submitCustomerRating: async (reservationId, data) => {
+        submitCustomerRating: async (reservationId, data, customerToken) => {
             return await apiFetch(`/reservations/${reservationId}/customer-rating`, {
                 method: 'POST',
+                headers: { Authorization: `Bearer ${customerToken}` },
                 body: JSON.stringify(data)
             });
         },

@@ -1,6 +1,9 @@
 import { API } from './api.js';
 import { Modal } from './modal.js';
 
+// Short-lived token returned after email PIN verification (kept in memory only)
+let customerSessionToken = null;
+
 let selectedFrequency = 'One-time';
 let loadedServices = [];
 let googleMapInstance = null;
@@ -35,7 +38,7 @@ async function loadPublicReviewsUI() {
 
     try {
         if (cachedFilteredReviews.length === 0) {
-            const response = await API.reservations.getAll();
+            const response = await API.reviews.getPublic();
             let rawData = response;
 
             if (response && typeof response === 'object' && !Array.isArray(response)) {
@@ -71,18 +74,9 @@ async function loadPublicReviewsUI() {
         paginatedReviews.forEach(review => {
             const rating = Number(review.customer_rating || review.rating || 5);
             const comment = escapeHTML(review.customer_notes || review.notes || '');
-            const clientName = escapeHTML(review.first_name || review.client_name || 'Anonymous');
+            const clientName = escapeHTML(review.client_name || review.first_name || 'Anonymous');
 
-            let shortLocation = 'Arlington';
-            const address = review.service_address || '';
-            if (address) {
-                const parts = address.split(',');
-                if (parts.length > 1) {
-                    shortLocation = parts[parts.length - 2].trim();
-                } else {
-                    shortLocation = address;
-                }
-            }
+            const shortLocation = escapeHTML(review.location || 'DMV Area');
 
             let starsHTML = '';
             for (let i = 0; i < 5; i++) {
@@ -600,6 +594,12 @@ function setupEstimateForm() {
         const notesInput = document.getElementById('clientNotes');
         const userNotes = notesInput ? notesInput.value.trim() : '';
 
+        const termsBox = document.getElementById('acceptTerms');
+        if (termsBox && !termsBox.checked) {
+            Modal.error('Please accept the Terms of Service and Privacy Policy to send your request.', 'Agreement Required');
+            return;
+        }
+
         if (!firstName) { triggerError('clientFirstName', 'Please enter your first name.'); return; }
         if (!lastName) { triggerError('clientLastName', 'Please enter your last name.'); return; }
         if (!email) { triggerError('clientEmail', 'Please enter your email address.'); return; }
@@ -721,7 +721,9 @@ function setupEstimateForm() {
                 frequency: selectedFrequency,
                 total_price: 0.00,
                 status: 'PENDING',
-                special_instructions: finalInstructions
+                special_instructions: finalInstructions,
+                accept_terms: true,
+                sms_consent: !!(document.getElementById('smsConsent') && document.getElementById('smsConsent').checked)
             };
 
             await API.reservations.create(payload);
@@ -752,10 +754,14 @@ window.submitClientRating = async function (reservationId) {
     const notes = document.getElementById(`clientNotes-${reservationId}`).value.trim();
 
     try {
+        if (!customerSessionToken) {
+            Modal.error('Your verification has expired. Please verify your email again.', 'Session Expired');
+            return;
+        }
         await API.ratings.submitCustomerRating(reservationId, {
             customer_rating: Number(rating),
             customer_notes: notes
-        });
+        }, customerSessionToken);
         Modal.show({
             type: 'success',
             title: 'Thank You!',
@@ -869,7 +875,7 @@ function setupSupportWidget() {
             Modal.show({
                 type: 'info',
                 title: 'Secure Booking Access',
-                message: 'We will send a 4-digit verification code to your email.',
+                message: 'We will send a 6-digit verification code to your email.',
                 htmlContent: step1HTML,
                 confirmText: 'Send Security PIN',
                 showCancel: true,
@@ -886,9 +892,9 @@ function setupSupportWidget() {
                         await API.authCustomer.sendOtp(email);
                         const step2HTML = `
                             <div class="flex flex-col gap-3 pt-2" id="otpStep2">
-                                <p class="text-xs text-emerald-600 font-medium">A 4-digit PIN has been sent to <b>${escapeHTML(email)}</b>.</p>
-                                <label class="text-xs sm:text-sm text-on-surface-variant font-medium">Enter the 4-digit PIN:</label>
-                                <input type="text" maxlength="4" id="trackingPinInput" placeholder="1234" class="w-full text-center tracking-widest text-xl input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none">
+                                <p class="text-xs text-emerald-600 font-medium">If this email has bookings with us, a 6-digit PIN has been sent to <b>${escapeHTML(email)}</b>.</p>
+                                <label class="text-xs sm:text-sm text-on-surface-variant font-medium">Enter the 6-digit PIN:</label>
+                                <input type="text" maxlength="6" inputmode="numeric" autocomplete="one-time-code" id="trackingPinInput" placeholder="123456" class="w-full text-center tracking-widest text-xl input-underline text-body-md text-primary pb-2 focus:ring-0 border-b border-outline-variant/50 outline-none">
                             </div>
                         `;
 
@@ -903,13 +909,14 @@ function setupSupportWidget() {
                                 const pinInput = document.getElementById('trackingPinInput');
                                 const pinCode = pinInput ? pinInput.value.trim() : '';
 
-                                if (!pinCode || pinCode.length !== 4) {
-                                    Modal.error('Please enter a valid 4-digit PIN.', 'Verification Error');
+                                if (!/^\d{6}$/.test(pinCode)) {
+                                    Modal.error('Please enter a valid 6-digit PIN.', 'Verification Error');
                                     return false;
                                 }
 
                                 try {
                                     const response = await API.authCustomer.verifyOtp(email, pinCode);
+                                    customerSessionToken = (response && (response.customer_token || (response.data && response.data.customer_token))) || null;
                                     let reservations = response.reservations || (response.data && response.data.reservations) || [];
 
                                     if (reservations.length > 0) {

@@ -217,11 +217,28 @@
                             <p id="estimatePriceDisplay" class="text-xl font-bold text-primary">$0.00</p>
                         </div>
 
+                        <div class="space-y-2 pt-1">
+                            <label class="flex items-start gap-2 text-xs text-on-surface-variant leading-snug cursor-pointer">
+                                <input type="checkbox" id="acceptTerms" required
+                                    class="mt-0.5 rounded border-outline-variant text-primary focus:ring-primary">
+                                <span>I agree to the <a href="terms-of-service.html" target="_blank" class="underline text-primary">Terms of Service</a>,
+                                    <a href="cancellation-policy.html" target="_blank" class="underline text-primary">Cancellation Policy</a> and
+                                    <a href="privacy-policy.html" target="_blank" class="underline text-primary">Privacy Policy</a>. *</span>
+                            </label>
+                            <label class="flex items-start gap-2 text-xs text-on-surface-variant leading-snug cursor-pointer">
+                                <input type="checkbox" id="smsConsent"
+                                    class="mt-0.5 rounded border-outline-variant text-primary focus:ring-primary">
+                                <span>Optional: text me appointment updates. Msg &amp; data rates may apply. Reply STOP to opt out.
+                                    <a href="sms-terms.html" target="_blank" class="underline text-primary">SMS Terms</a>.</span>
+                            </label>
+                        </div>
+
                         <button
                             class="w-full bg-primary text-on-primary py-3 rounded font-label-caps text-label-caps hover:bg-primary/90 transition-colors mt-2"
                             type="submit">
-                            Confirm & Book Reservation
+                            Request My Booking
                         </button>
+                        <p class="text-[11px] text-on-surface-variant text-center">No payment now. We'll email your price quote to confirm.</p>
                     </form>
                 </div>
 

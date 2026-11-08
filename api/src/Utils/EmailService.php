@@ -7,379 +7,366 @@ namespace App\Utils;
 require_once __DIR__ . '/../Libs/PHPMailer/src/Exception.php';
 require_once __DIR__ . '/../Libs/PHPMailer/src/PHPMailer.php';
 require_once __DIR__ . '/../Libs/PHPMailer/src/SMTP.php';
+require_once __DIR__ . '/../../config/config.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
+use App\Config\Config;
 use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
+/**
+ * All outgoing email.
+ *
+ * Address roles (configure in api/config/secrets.php):
+ *   MAIL_FROM      no-reply@…  sender of every automated message
+ *   MAIL_REPLY_TO  bookings@…  where customer replies go
+ *   MAIL_BOOKINGS  bookings@…  internal alerts: new booking, customer confirmed/cancelled/rescheduled
+ *   MAIL_SUPPORT   info@…      general contact shown to customers
+ *   MAIL_PRIVACY   privacy@…   shown in the Privacy Policy
+ */
 class EmailService
 {
-    public static function sendStatusUpdateEmail(array $reservation, string $newStatus): bool
+    /* ====================================================================
+     * Public API
+     * ==================================================================== */
+
+    /** Customer-facing email for each reservation status (and reminders). */
+    public static function sendStatusUpdateEmail(array $reservation, string $status): bool
     {
-        $mail = new PHPMailer(true);
-
-        try {
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'balrking072@gmail.com';
-            $mail->Password   = 'tzxyzvbbewjctwjy';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-            $mail->CharSet    = 'UTF-8';
-
-            $mail->setFrom('balrking072@gmail.com', 'Luxuria Pure Cleaning Services');
-
-            $customerName = trim(($reservation['first_name'] ?? '') . ' ' . ($reservation['last_name'] ?? ''));
-            if (empty($customerName)) {
-                $customerName = $reservation['customer_name'] ?? 'Valued Customer';
-            }
-
-            $recipientEmail = !empty($reservation['email']) ? $reservation['email'] : 'balrking07@gmail.com';
-            $mail->addAddress($recipientEmail, $customerName);
-
-            $resId = '#RES-' . str_pad((string)$reservation['id'], 4, '0', STR_PAD_LEFT);
-
-            $mail->isHTML(true);
-            $mail->Subject = "Reservation Update {$resId} - Luxuria Pure";
-            $mail->Body    = self::buildHtmlTemplate($reservation, $newStatus, $customerName, $resId, $recipientEmail);
-
-            return $mail->send();
-        } catch (Exception $e) {
-            error_log("Error sending email: {$mail->ErrorInfo}");
+        $to = trim((string)($reservation['email'] ?? ''));
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            error_log('Status email skipped: reservation ' . ($reservation['id'] ?? '?') . ' has no valid email');
             return false;
         }
+
+        $status = strtoupper($status);
+        $copy = self::statusCopy($reservation, $status);
+        $name = self::customerName($reservation);
+        $ref = self::ref($reservation);
+
+        $html = self::layout(
+            $copy['headline'],
+            "<span style='display:inline-block;padding:5px 14px;border-radius:50px;color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:{$copy['color']};margin-bottom:20px'>" . self::e($copy['badge']) . "</span>
+            <h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>Hello " . self::e($name) . ",</h2>
+            <p style='font-size:15px;line-height:1.6;color:#475569;margin:0 0 24px'>{$copy['message']}</p>"
+            . self::staffNotice($reservation, $status)
+            . self::detailsTable($reservation)
+            . self::actionButtons($reservation, $copy['actions'])
+            . "<p style='font-size:13px;color:#64748b;margin-top:20px;line-height:1.5;text-align:center'>Questions? Just reply to this email or call us at " . self::e((string)Config::get('BUSINESS_PHONE')) . '.</p>'
+        );
+
+        $text = "Hello {$name},\n\n" . strip_tags($copy['message']) . "\n\n" . self::detailsText($reservation)
+            . "\nQuestions? Reply to this email or call " . Config::get('BUSINESS_PHONE') . ".\n";
+
+        return self::send($to, $name, "{$copy['subject']} {$ref}", $html, $text);
+    }
+
+    /** Internal alert to the bookings inbox when a customer submits a request. */
+    public static function sendNewBookingAlert(array $reservation): bool
+    {
+        $ref = self::ref($reservation);
+        $name = self::customerName($reservation);
+        $admin = rtrim((string)Config::get('SITE_URL'), '/') . '/admin-reservation-index.html';
+
+        $html = self::layout('New booking request',
+            "<h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>New booking request {$ref}</h2>
+            <p style='font-size:15px;color:#475569'>" . self::e($name) . ' · ' . self::e((string)($reservation['email'] ?? '')) . ' · ' . self::e((string)($reservation['phone_number'] ?? '')) . '</p>'
+            . self::detailsTable($reservation)
+            . "<div style='text-align:center;margin:28px 0'><a href='" . self::e($admin) . "' style='background:#0f172a;color:#fff;padding:12px 22px;text-decoration:none;border-radius:6px;font-weight:bold;font-size:13px'>Open admin panel</a></div>",
+            false
+        );
+
+        return self::send((string)Config::get('MAIL_BOOKINGS'), 'Bookings', "New booking request {$ref} - {$name}", $html,
+            "New booking request {$ref}\n{$name}\n" . self::detailsText($reservation), (string)($reservation['email'] ?? ''));
+    }
+
+    /** Internal alert when the customer confirms, cancels or reschedules from an email link. */
+    public static function sendCustomerActionAlert(array $reservation, string $status): bool
+    {
+        $ref = self::ref($reservation);
+        $name = self::customerName($reservation);
+        $verb = ['CONFIRMED' => 'confirmed', 'CANCELLED' => 'cancelled', 'RESCHEDULED' => 'rescheduled'][$status] ?? strtolower($status);
+
+        $html = self::layout("Customer {$verb} {$ref}",
+            "<h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>" . self::e($name) . " {$verb} {$ref}</h2>"
+            . self::detailsTable($reservation),
+            false
+        );
+
+        return self::send((string)Config::get('MAIL_BOOKINGS'), 'Bookings', "Customer {$verb} {$ref} - {$name}", $html,
+            "{$name} {$verb} {$ref}\n" . self::detailsText($reservation), (string)($reservation['email'] ?? ''));
     }
 
     public static function sendPasswordResetEmail(array $user, string $code): bool
     {
-        $mail = new PHPMailer(true);
+        $name = (string)($user['name'] ?? 'there');
+        $html = self::layout('Password reset code',
+            "<h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>Hello " . self::e($name) . ",</h2>
+            <p style='font-size:15px;line-height:1.6;color:#475569'>We received a request to reset the password of your Luxuria Pure staff account. Use this code within <strong>15 minutes</strong>:</p>"
+            . self::codeBox('Your reset code', $code)
+            . "<p style='font-size:13px;color:#475569;text-align:center'>If you didn't request this, you can ignore this email — your password won't change.</p>",
+            false
+        );
 
-        try {
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'balrking072@gmail.com';
-            $mail->Password   = 'tzxyzvbbewjctwjy';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-            $mail->CharSet    = 'UTF-8';
-
-            $mail->setFrom('balrking072@gmail.com', 'Luxuria Pure Cleaning Services');
-
-            $userName = $user['name'] ?? 'User';
-            $recipientEmail = $user['email'];
-
-            $mail->addAddress($recipientEmail, $userName);
-
-            $mail->isHTML(true);
-            $mail->Subject = "Password Reset Code - Luxuria Pure";
-            $mail->Body    = self::buildPasswordResetTemplate($userName, $code);
-
-            return $mail->send();
-        } catch (Exception $e) {
-            error_log("Error sending password reset email: {$mail->ErrorInfo}");
-            return false;
-        }
-    }
-
-    private static function buildPasswordResetTemplate(string $userName, string $code): string
-    {
-        return "
-        <!DOCTYPE html>
-        <html lang='en'>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Password Reset</title>
-            <style>
-                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfbf9; margin: 0; padding: 40px 15px; color: #0f172a; }
-                .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d9d2c9; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
-                .brand-header { background-color: #0f172a; padding: 32px 20px; text-align: center; }
-                .brand-header h1 { font-family: Georgia, serif; color: #d4af37; margin: 0; font-size: 28px; font-weight: normal; letter-spacing: -0.025em; text-transform: uppercase; }
-                .content { padding: 40px 32px; }
-                .greeting { font-family: Georgia, serif; font-size: 22px; font-weight: normal; margin: 0 0 12px 0; color: #0f172a; letter-spacing: -0.025em; }
-                .message { font-size: 15px; line-height: 1.6; color: #475569; margin: 0 0 28px 0; }
-                .code-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 28px; }
-                .code-text { font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #d4af37; font-family: monospace; }
-                .footer { background-color: #f1f5f9; padding: 24px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
-            </style>
-        </head>
-        <body>
-            <div class='wrapper'>
-                <div class='brand-header'>
-                    <h1>Luxuria Pure</h1>
-                </div>
-                <div class='content'>
-                    <h2 class='greeting'>Hello, {$userName}</h2>
-                    <p class='message'>
-                        You have requested to reset your password for Luxuria Pure. Below is your temporary verification code, which is valid for 15 minutes:
-                    </p>
-                    <div class='code-box'>
-                        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; font-weight: 600;'>Your recovery code is</div>
-                        <div class='code-text'>{$code}</div>
-                    </div>
-                    <p style='font-size: 13px; color: #475569; line-height: 1.5; text-align: center;'>
-                        If you did not request this change, you can safely ignore this message.
-                    </p>
-                </div>
-                <div class='footer'>
-                    &copy; " . date('Y') . " Luxuria Pure Cleaning Services. All rights reserved.
-                </div>
-            </div>
-        </body>
-        </html>
-        ";
-    }
-
-    private static function buildHtmlTemplate(array $res, string $status, string $customerName, string $resId, string $recipientEmail): string
-    {
-        $statusColors = [
-            'PENDING'     => '#b45309',
-            'INITIATED'   => '#1d4ed8',
-            'ON_THE_WAY'  => '#d97706',
-            'RESCHEDULED' => '#9333ea',
-            'COMPLETED'   => '#059669',
-            'CANCELLED'   => '#b91c1c',
-            'REJECTED'    => '#b91c1c'
-        ];
-
-        $badgeColor = $statusColors[$status] ?? '#0f172a';
-
-        $formattedDate = !empty($res['service_date']) ? date('F j, Y', strtotime($res['service_date'])) : 'N/A';
-        $formattedTime = !empty($res['preferred_time']) ? date('g:i A', strtotime($res['preferred_time'])) : '09:00 AM';
-        $serviceName   = $res['service_name'] ?? 'Standard Cleaning Service';
-        $address       = $res['service_address'] ?? 'Address registered in system';
-
-        $bedrooms      = isset($res['bedrooms']) ? $res['bedrooms'] . ' Bedroom(s)' : 'N/A';
-        $bathrooms     = isset($res['bathrooms']) ? $res['bathrooms'] . ' Bathroom(s)' : 'N/A';
-        $frequency     = $res['frequency'] ?? 'One-time';
-
-        $rawPrice = isset($res['total_price']) ? (float)$res['total_price'] : 0.00;
-        $totalPrice = $rawPrice > 0 ? '$' . number_format($rawPrice, 2) : 'Pending Review / Awaiting Quote';
-
-        $instructions  = !empty($res['special_instructions']) ? htmlspecialchars($res['special_instructions']) : 'None specified';
-
-        $assignedStaff = $res['staff_name'] ?? null;
-        $staffNoticeHtml = "";
-        
-        if (!empty($assignedStaff)) {
-            $staffNoticeHtml = "
-            <div style='background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 24px;'>
-                <p style='margin: 0; font-size: 14px; color: #166534;'>
-                    <strong>Assigned Staff:</strong> <strong>" . htmlspecialchars($assignedStaff) . "</strong> has been assigned to perform this cleaning service at your location.
-                </p>
-            </div>";
-        }
-
-        $customerEmail = !empty($res['email']) ? $res['email'] : 'balrking07@gmail.com';
-        $secret = 'purenest_secret';
-        $token = hash('sha256', $res['id'] . $customerEmail . $secret);
-
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-            $protocol = 'https';
-        }
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-
-        $baseUrl = "{$protocol}://{$host}/api/public/reservations?id={$res['id']}&token={$token}";
-
-        $confirmUrl    = "{$baseUrl}&action=confirm";
-        $rescheduleUrl = "{$baseUrl}&action=reschedule";
-        $cancelUrl     = "{$baseUrl}&action=cancel";
-        $feedbackUrl   = "{$baseUrl}&action=feedback";
-
-        $actionButtonsHtml = "";
-
-        if ($status === 'COMPLETED') {
-            $actionButtonsHtml = "
-            <div style='text-align: center; margin: 32px 0 16px 0;'>
-                <a href='{$feedbackUrl}' style='background-color: #059669; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
-                    Rate Service & Leave Feedback
-                </a>
-            </div>";
-        } elseif (!in_array($status, ['INITIATED', 'ON_THE_WAY', 'CANCELLED', 'REJECTED'], true)) {
-            $actionButtonsHtml = "
-            <div style='text-align: center; margin: 32px 0 16px 0;'>
-                <a href='{$confirmUrl}' style='background-color: #0f172a; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block;'>
-                    Confirm
-                </a>
-                <a href='{$rescheduleUrl}' style='background-color: #9333ea; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; margin-right: 5px; display: inline-block;'>
-                    Reschedule
-                </a>
-                <a href='{$cancelUrl}' style='background-color: #b91c1c; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;'>
-                    Cancel
-                </a>
-            </div>";
-        }
-
-        return "
-        <!DOCTYPE html>
-        <html lang='en'>
-        <head>
-            <meta charset='UTF-8'>
-            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <title>Reservation Update - Luxuria Pure</title>
-            <style>
-                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 40px 15px; color: #0f172a; }
-                .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
-                .brand-header { background-color: #0f172a; padding: 36px 20px; text-align: center; }
-                .brand-header h1 { font-family: Georgia, serif; color: #d4af37; margin: 0; font-size: 36px; font-weight: normal; letter-spacing: -0.025em; text-transform: uppercase; }
-                .content { padding: 40px 32px; }
-                .status-badge { display: inline-block; padding: 6px 16px; border-radius: 50px; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background-color: {$badgeColor}; margin-bottom: 24px; }
-                .greeting { font-family: Georgia, serif; font-size: 24px; font-weight: normal; margin: 0 0 12px 0; color: #0f172a; letter-spacing: -0.025em; }
-                .message { font-size: 15px; line-height: 1.6; color: #475569; margin: 0 0 28px 0; }
-                .details-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
-                .details-table { width: 100%; border-collapse: collapse; }
-                .details-table td { padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-                .details-table tr:last-child td { border-bottom: none; }
-                .label { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-                .value { color: #0f172a; font-weight: 600; text-align: right; }
-                .footer { background-color: #f1f5f9; padding: 24px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
-                .text-navy { color: #0f172a; }
-                .text-gold { color: #d4af37; }
-            </style>
-        </head>
-        <body>
-            <div class='wrapper'>
-                <div class='brand-header'>
-                    <h1 class='font-serif text-4xl tracking-tight text-gold'>Luxuria Pure</h1>
-                </div>
-
-                <div class='content'>
-                    <span class='status-badge'>{$status}</span>
-                    
-                    <h2 class='greeting font-serif text-4xl tracking-tight text-navy'>Hello {$customerName},</h2>
-                    <p class='message'>
-                        The status of your cleaning reservation has been updated. Please review the comprehensive details of your scheduled service below:
-                    </p>
-
-                    {$staffNoticeHtml}
-
-                    <div class='details-card'>
-                        <table class='details-table'>
-                            <tr>
-                                <td class='label'>Reservation ID</td>
-                                <td class='value text-navy'>{$resId}</td>
-                            </tr>
-                            <tr>
-                                <td class='label'>Service</td>
-                                <td class='value text-navy'>{$serviceName}</td>
-                            </tr>
-                            <tr>
-                                <td class='label'>Date & Time</td>
-                                <td class='value text-navy'>{$formattedDate} at {$formattedTime}</td>
-                            </tr>
-                            <tr>
-                                <td class='label'>Bedrooms / Bathrooms</td>
-                                <td class='value text-navy'>{$bedrooms} / {$bathrooms}</td>
-                            </tr>
-                            <tr>
-                                <td class='label'>Frequency</td>
-                                <td class='value text-navy'>{$frequency}</td>
-                            </tr>
-                            <tr>
-                                <td class='label'>Address</td>
-                                <td class='value text-navy'>{$address}</td>
-                            </tr>
-                            <tr>
-                                <td class='label'>Special Instructions</td>
-                                <td class='value text-navy'>{$instructions}</td>
-                            </tr>
-                            <tr>
-                                <td class='label' style='font-size: 13px;'>Total Price</td>
-                                <td class='value text-gold' style='font-size: 15px; font-weight: bold;'>{$totalPrice}</td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    {$actionButtonsHtml}
-
-                    <p style='font-size: 13px; color: #64748b; margin-top: 20px; line-height: 1.5; text-align: center;'>
-                        If you need to make further adjustments, please contact our support team.
-                    </p>
-                </div>
-
-                <div class='footer'>
-                    &copy; " . date('Y') . " Luxuria Pure Cleaning Services. All rights reserved.
-                </div>
-            </div>
-        </body>
-        </html>
-        ";
+        return self::send((string)$user['email'], $name, 'Your password reset code', $html,
+            "Your Luxuria Pure password reset code is {$code}. It expires in 15 minutes. If you didn't request it, ignore this email.");
     }
 
     public static function sendOtpEmail(string $recipientEmail, string $code): bool
     {
+        $html = self::layout('Your security PIN',
+            "<h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>Hello,</h2>
+            <p style='font-size:15px;line-height:1.6;color:#475569'>Use this PIN to view your bookings and leave feedback. It is valid for <strong>10 minutes</strong> and can be used once:</p>"
+            . self::codeBox('Your security PIN', $code)
+            . "<p style='font-size:13px;color:#475569;text-align:center'>If you didn't request this code, you can ignore this email.</p>"
+        );
+
+        return self::send($recipientEmail, '', 'Your Luxuria Pure security PIN', $html,
+            "Your Luxuria Pure security PIN is {$code}. It is valid for 10 minutes.");
+    }
+
+    /* ====================================================================
+     * Content per status
+     * ==================================================================== */
+
+    private static function statusCopy(array $res, string $status): array
+    {
+        $date = self::date($res);
+        $hasPrice = (float)($res['total_price'] ?? 0) > 0;
+        $confirmOrNot = $hasPrice ? ['confirm', 'reschedule', 'cancel'] : ['reschedule', 'cancel'];
+
+        return match ($status) {
+            'PENDING' => [
+                'subject' => 'We received your booking request', 'badge' => 'Request received', 'color' => '#b45309',
+                'headline' => 'Booking request received',
+                'message' => $hasPrice
+                    ? 'Thank you for choosing Luxuria Pure. Please review the details and price below and confirm your appointment.'
+                    : "Thank you for choosing Luxuria Pure. We've received your request for <strong>{$date}</strong>. Our team will review availability and send you a price quote within one business day. <strong>Nothing is charged until you confirm.</strong>",
+                'actions' => $confirmOrNot,
+            ],
+            'CONFIRMED' => [
+                'subject' => 'Your cleaning is confirmed', 'badge' => 'Confirmed', 'color' => '#15803d',
+                'headline' => 'Your cleaning is confirmed',
+                'message' => "Your appointment for <strong>{$date}</strong> is confirmed. Please make sure our team can access the property at the scheduled time. Free cancellation up to 48 hours before the service.",
+                'actions' => ['reschedule', 'cancel'],
+            ],
+            'RESCHEDULED' => [
+                'subject' => 'Your appointment has a new date', 'badge' => 'Rescheduled', 'color' => '#9333ea',
+                'headline' => 'New date for your cleaning',
+                'message' => "Your appointment has been moved to <strong>{$date}</strong>." . ($hasPrice ? ' Please confirm the new date below.' : ' We will confirm availability shortly.'),
+                'actions' => $confirmOrNot,
+            ],
+            'ON_THE_WAY' => [
+                'subject' => 'Your cleaner is on the way', 'badge' => 'On the way', 'color' => '#d97706',
+                'headline' => 'Your cleaner is on the way',
+                'message' => 'Our team is heading to your address now and will arrive shortly.',
+                'actions' => [],
+            ],
+            'INITIATED' => [
+                'subject' => 'Your cleaning has started', 'badge' => 'In progress', 'color' => '#1d4ed8',
+                'headline' => 'Your cleaning has started',
+                'message' => "Our team has arrived and started your service. We'll let you know as soon as it's finished.",
+                'actions' => [],
+            ],
+            'COMPLETED' => [
+                'subject' => 'Your cleaning is complete — how did we do?', 'badge' => 'Completed', 'color' => '#059669',
+                'headline' => 'Service completed',
+                'message' => 'Your cleaning is complete. Thank you for trusting Luxuria Pure! If anything isn\'t right, reply within 24 hours and we\'ll come back to fix it at no cost. We\'d love to hear your feedback.',
+                'actions' => ['feedback'],
+            ],
+            'CANCELLED' => [
+                'subject' => 'Your reservation has been cancelled', 'badge' => 'Cancelled', 'color' => '#b91c1c',
+                'headline' => 'Reservation cancelled',
+                'message' => 'Your reservation has been cancelled. If this was a mistake or you want to book another date, just reply to this email.',
+                'actions' => [],
+            ],
+            'REJECTED' => [
+                'subject' => "We can't take this booking", 'badge' => 'Not available', 'color' => '#b91c1c',
+                'headline' => 'We are unable to take this booking',
+                'message' => "Unfortunately we can't accommodate this request (the date may be fully booked or the address may be outside our service area). You have not been charged. Reply to this email and we'll gladly suggest another option.",
+                'actions' => [],
+            ],
+            'REMINDER' => [
+                'subject' => 'Reminder: your cleaning is coming up', 'badge' => 'Reminder', 'color' => '#0f172a',
+                'headline' => 'Upcoming cleaning reminder',
+                'message' => "This is a friendly reminder that your cleaning is scheduled for <strong>{$date}</strong>. Need to change it? Use the buttons below (free up to 48 hours before).",
+                'actions' => ['reschedule', 'cancel'],
+            ],
+            default => [
+                'subject' => 'Update on your reservation', 'badge' => str_replace('_', ' ', $status), 'color' => '#0f172a',
+                'headline' => 'Reservation update',
+                'message' => 'There is an update on your reservation. Please review the details below.',
+                'actions' => [],
+            ],
+        };
+    }
+
+    /* ====================================================================
+     * Building blocks
+     * ==================================================================== */
+
+    private static function mailer(): PHPMailer
+    {
         $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = (string)Config::get('SMTP_HOST');
+        $mail->SMTPAuth   = true;
+        $mail->Username   = (string)Config::get('SMTP_USER');
+        $mail->Password   = (string)Config::get('SMTP_PASSWORD');
+        $mail->SMTPSecure = Config::get('SMTP_SECURE') === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = (int)Config::get('SMTP_PORT');
+        $mail->CharSet    = 'UTF-8';
+        $mail->Timeout    = 15;
 
+        $mail->setFrom((string)Config::get('MAIL_FROM'), (string)Config::get('MAIL_FROM_NAME'));
+        $mail->addReplyTo((string)Config::get('MAIL_REPLY_TO'), (string)Config::get('MAIL_FROM_NAME'));
+        return $mail;
+    }
+
+    private static function send(string $to, string $name, string $subject, string $html, string $text, string $replyTo = ''): bool
+    {
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
         try {
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'balrking072@gmail.com';
-            $mail->Password   = 'tzxyzvbbewjctwjy';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-            $mail->CharSet    = 'UTF-8';
-
-            $mail->setFrom('balrking072@gmail.com', 'Luxuria Pure Cleaning Services');
-            $mail->addAddress($recipientEmail, 'Valued Customer');
-
+            $mail = self::mailer();
+            if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                $mail->clearReplyTos();
+                $mail->addReplyTo($replyTo);
+            }
+            $mail->addAddress($to, $name);
             $mail->isHTML(true);
-            $mail->Subject = "Your Security Verification PIN - Luxuria Pure";
-            $mail->Body    = self::buildOtpTemplate($code);
-
+            $mail->Subject = $subject . ' - Luxuria Pure';
+            $mail->Body = $html;
+            $mail->AltBody = $text;
             return $mail->send();
         } catch (Exception $e) {
-            error_log("Error sending OTP email: {$mail->ErrorInfo}");
+            error_log('Email "' . $subject . '" failed: ' . $e->getMessage());
             return false;
         }
     }
 
-    private static function buildOtpTemplate(string $code): string
+    private static function layout(string $title, string $content, bool $customerFooter = true): string
     {
-        return "
-        <!DOCTYPE html>
-        <html lang='en'>
-        <head>
-            <meta charset='UTF-8'>
-            <title>Security Verification PIN</title>
-            <style>
-                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfbf9; margin: 0; padding: 40px 15px; color: #0f172a; }
-                .wrapper { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #d9d2c9; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
-                .brand-header { background-color: #0f172a; padding: 32px 20px; text-align: center; }
-                .brand-header h1 { font-family: Georgia, serif; color: #d4af37; margin: 0; font-size: 28px; font-weight: normal; letter-spacing: -0.025em; text-transform: uppercase; }
-                .content { padding: 40px 32px; }
-                .greeting { font-family: Georgia, serif; font-size: 22px; font-weight: normal; margin: 0 0 12px 0; color: #0f172a; }
-                .message { font-size: 15px; line-height: 1.6; color: #475569; margin: 0 0 28px 0; }
-                .code-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 28px; }
-                .code-text { font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #d4af37; font-family: monospace; }
-                .footer { background-color: #f1f5f9; padding: 24px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
-            </style>
-        </head>
-        <body>
-            <div class='wrapper'>
-                <div class='brand-header'>
-                    <h1>Luxuria Pure</h1>
-                </div>
-                <div class='content'>
-                    <h2 class='greeting'>Hello,</h2>
-                    <p class='message'>
-                        You have requested to securely view your booking history and submit feedback. Below is your 4-digit verification PIN, valid for 10 minutes:
-                    </p>
-                    <div class='code-box'>
-                        <div style='font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; font-weight: 600;'>Your Security PIN</div>
-                        <div class='code-text'>{$code}</div>
-                    </div>
-                    <p style='font-size: 13px; color: #475569; line-height: 1.5; text-align: center;'>
-                        If you did not request this code, you can safely ignore this message.
-                    </p>
-                </div>
-                <div class='footer'>
-                    &copy; " . date('Y') . " Luxuria Pure Cleaning Services. All rights reserved.
-                </div>
-            </div>
-        </body>
-        </html>
-        ";
+        $site = rtrim((string)Config::get('SITE_URL'), '/');
+        $brand = self::e((string)Config::get('BUSINESS_NAME'));
+        $address = trim((string)Config::get('BUSINESS_ADDRESS'));
+        $support = self::e((string)Config::get('MAIL_SUPPORT'));
+        $phone = self::e((string)Config::get('BUSINESS_PHONE'));
+        $year = date('Y');
+
+        $footer = $customerFooter
+            ? "{$brand}" . ($address !== '' ? ' · ' . self::e($address) : '') . "<br>{$phone} · <a href='mailto:{$support}' style='color:#64748b'>{$support}</a><br>
+               <a href='{$site}/terms-of-service.html' style='color:#64748b'>Terms</a> · <a href='{$site}/cancellation-policy.html' style='color:#64748b'>Cancellation Policy</a> · <a href='{$site}/privacy-policy.html' style='color:#64748b'>Privacy Policy</a><br>
+               You are receiving this transactional email because you requested a service from us.<br>&copy; {$year} {$brand}"
+            : "Internal notification · &copy; {$year} {$brand}";
+
+        return "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" . self::e($title) . "</title></head>
+<body style='margin:0;padding:32px 12px;background:#f8f9fa;font-family:Helvetica,Arial,sans-serif;color:#0f172a'>
+<div style='max-width:580px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0'>
+  <div style='background:#0f172a;padding:30px 20px;text-align:center'><div style='font-family:Georgia,serif;color:#d4af37;font-size:30px;text-transform:uppercase;letter-spacing:-0.5px'>Luxuria Pure</div></div>
+  <div style='padding:36px 30px'>{$content}</div>
+  <div style='background:#f1f5f9;padding:22px 30px;text-align:center;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.7;color:#64748b'>{$footer}</div>
+</div></body></html>";
+    }
+
+    private static function codeBox(string $label, string $code): string
+    {
+        return "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:22px;text-align:center;margin:24px 0'>
+            <div style='font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:8px;font-weight:600'>" . self::e($label) . "</div>
+            <div style='font-size:32px;font-weight:bold;letter-spacing:6px;color:#d4af37;font-family:monospace'>" . self::e($code) . '</div></div>';
+    }
+
+    private static function rows(array $res): array
+    {
+        $price = (float)($res['total_price'] ?? 0);
+        $time = !empty($res['preferred_time']) ? date('g:i A', strtotime((string)$res['preferred_time'])) : 'To be confirmed';
+
+        return [
+            'Reservation'     => self::ref($res),
+            'Service'         => (string)($res['service_name'] ?? 'Cleaning service'),
+            'Date & time'     => self::date($res) . ' at ' . $time,
+            'Home'            => ($res['bedrooms'] ?? '-') . ' bed / ' . ($res['bathrooms'] ?? '-') . ' bath',
+            'Frequency'       => (string)($res['frequency'] ?? 'One-time'),
+            'Address'         => (string)($res['service_address'] ?? ''),
+            'Instructions'    => trim((string)($res['special_instructions'] ?? '')) ?: 'None',
+            'Total'           => $price > 0 ? '$' . number_format($price, 2) : 'Quote pending',
+        ];
+    }
+
+    private static function detailsTable(array $res): string
+    {
+        $html = "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 20px;margin-bottom:20px'><table style='width:100%;border-collapse:collapse'>";
+        foreach (self::rows($res) as $label => $value) {
+            $isTotal = $label === 'Total';
+            $html .= "<tr><td style='padding:10px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600;vertical-align:top'>" . self::e($label) . "</td>
+                <td style='padding:10px 0 10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:14px;font-weight:600;color:" . ($isTotal ? '#b8912a' : '#0f172a') . "'>" . nl2br(self::e($value)) . '</td></tr>';
+        }
+        return $html . '</table></div>';
+    }
+
+    private static function detailsText(array $res): string
+    {
+        $out = '';
+        foreach (self::rows($res) as $label => $value) {
+            $out .= str_pad($label . ':', 16) . $value . "\n";
+        }
+        return $out;
+    }
+
+    private static function staffNotice(array $res, string $status): string
+    {
+        $staff = trim((string)($res['staff_name'] ?? ''));
+        if ($staff === '' || !in_array($status, ['CONFIRMED', 'RESCHEDULED', 'ON_THE_WAY', 'INITIATED', 'REMINDER'], true)) {
+            return '';
+        }
+        // First name only, for staff privacy
+        $first = self::e(explode(' ', $staff)[0]);
+        return "<div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px;color:#166534'><strong>Your cleaner:</strong> {$first}</div>";
+    }
+
+    private static function actionButtons(array $res, array $actions): string
+    {
+        if (!$actions || empty($res['id']) || empty($res['email'])) {
+            return '';
+        }
+
+        $token = Auth::reservationLinkToken((int)$res['id'], (string)$res['email']);
+        $base = rtrim((string)Config::get('APP_URL'), '/') . '/api/public/reservations?id=' . (int)$res['id'] . '&token=' . $token;
+
+        $styles = [
+            'confirm'    => ['Confirm', '#0f172a'],
+            'reschedule' => ['Reschedule', '#9333ea'],
+            'cancel'     => ['Cancel', '#b91c1c'],
+            'feedback'   => ['Rate your service', '#059669'],
+        ];
+
+        $buttons = '';
+        foreach ($actions as $action) {
+            [$label, $color] = $styles[$action];
+            $url = self::e("{$base}&action={$action}");
+            $buttons .= "<a href='{$url}' style='background:{$color};color:#fff;padding:12px 18px;text-decoration:none;border-radius:6px;font-weight:bold;font-size:13px;margin:4px;display:inline-block'>{$label}</a>";
+        }
+        return "<div style='text-align:center;margin:28px 0 12px'>{$buttons}</div>";
+    }
+
+    private static function customerName(array $res): string
+    {
+        $name = trim(($res['first_name'] ?? '') . ' ' . ($res['last_name'] ?? ''));
+        return $name !== '' ? $name : (string)($res['customer_name'] ?? 'Valued Customer');
+    }
+
+    private static function ref(array $res): string
+    {
+        return '#RES-' . str_pad((string)($res['id'] ?? 0), 4, '0', STR_PAD_LEFT);
+    }
+
+    private static function date(array $res): string
+    {
+        return !empty($res['service_date']) ? date('l, F j, Y', strtotime((string)$res['service_date'])) : 'a date to be confirmed';
+    }
+
+    private static function e(string $s): string
+    {
+        return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
     }
 }

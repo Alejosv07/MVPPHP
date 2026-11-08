@@ -104,32 +104,9 @@ class ServiceController
 
         $imageUrl = null;
 
-        if (
-            isset($_FILES['image']) &&
-            $_FILES['image']['error'] === UPLOAD_ERR_OK
-        ) {
-            $uploadDir = dirname(__DIR__, 3) . '/public/uploads/';
-
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            $ext = pathinfo(
-                $_FILES['image']['name'],
-                PATHINFO_EXTENSION
-            );
-
-            $filename = uniqid('service_', true) . '.' . strtolower($ext);
-            $uploadPath = $uploadDir . $filename;
-
-            if (
-                move_uploaded_file(
-                    $_FILES['image']['tmp_name'],
-                    $uploadPath
-                )
-            ) {
-                $imageUrl = '/uploads/' . $filename;
-            }
+        $uploaded = $this->handleImageUpload();
+        if ($uploaded !== null) {
+            $imageUrl = $uploaded;
         }
 
         $data = $inputData;
@@ -144,8 +121,7 @@ class ServiceController
             $featureIdsInput
         );
 
-        $userId = $inputData['user_id'] ?? $_POST['user_id'] ?? $_GET['user_id'] ?? ($_SESSION['user_id'] ?? null);
-        $userId = is_numeric($userId) ? (int) $userId : null;
+        $userId = \App\Utils\Auth::userId();
 
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
@@ -194,32 +170,9 @@ class ServiceController
 
         $imageUrl = $currentService['image_url'] ?? null;
 
-        if (
-            isset($_FILES['image']) &&
-            $_FILES['image']['error'] === UPLOAD_ERR_OK
-        ) {
-            $uploadDir = dirname(__DIR__, 3) . '/public/uploads/';
-
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            $ext = pathinfo(
-                $_FILES['image']['name'],
-                PATHINFO_EXTENSION
-            );
-
-            $filename = uniqid('service_', true) . '.' . strtolower($ext);
-            $uploadPath = $uploadDir . $filename;
-
-            if (
-                move_uploaded_file(
-                    $_FILES['image']['tmp_name'],
-                    $uploadPath
-                )
-            ) {
-                $imageUrl = '/uploads/' . $filename;
-            }
+        $uploaded = $this->handleImageUpload();
+        if ($uploaded !== null) {
+            $imageUrl = $uploaded;
         }
 
         $data = [
@@ -260,8 +213,7 @@ class ServiceController
         if ($updated) {
             $newServiceState = $this->model->getById($id);
 
-            $userId = $inputData['user_id'] ?? $_POST['user_id'] ?? $_GET['user_id'] ?? ($_SESSION['user_id'] ?? null);
-            $userId = is_numeric($userId) ? (int) $userId : null;
+            $userId = \App\Utils\Auth::userId();
 
             $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
@@ -373,8 +325,7 @@ class ServiceController
                 $inputData = json_decode($rawInput, true) ?? [];
             }
 
-            $userId = $inputData['user_id'] ?? $_GET['user_id'] ?? $_POST['user_id'] ?? ($_SESSION['user_id'] ?? null);
-            $userId = is_numeric($userId) ? (int) $userId : null;
+            $userId = \App\Utils\Auth::userId();
 
             $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
@@ -399,5 +350,38 @@ class ServiceController
                 'message' => 'Error deleting service'
             ], 400);
         }
+    }
+    /**
+     * Validates and stores an uploaded image. Only real JPG/PNG/WEBP/GIF up to 5 MB.
+     * Returns the public URL, or null when no file was sent. Stops with 422 on invalid files.
+     */
+    private function handleImageUpload(): ?string
+    {
+        if (!isset($_FILES['image']) || $_FILES['image']['error'] === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        if ($_FILES['image']['error'] !== UPLOAD_ERR_OK || $_FILES['image']['size'] > 5 * 1024 * 1024) {
+            Response::json(['message' => 'Image upload failed (max 5 MB)'], 422);
+        }
+
+        $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($_FILES['image']['tmp_name']);
+
+        if (!isset($allowed[$mime]) || @getimagesize($_FILES['image']['tmp_name']) === false) {
+            Response::json(['message' => 'Only JPG, PNG, WEBP or GIF images are allowed'], 422);
+        }
+
+        $uploadDir = dirname(__DIR__, 3) . '/public/uploads/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Extension comes from the detected MIME type, never from the client file name
+        $filename = 'service_' . bin2hex(random_bytes(12)) . '.' . $allowed[$mime];
+
+        if (!move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $filename)) {
+            Response::json(['message' => 'Could not save the image'], 500);
+        }
+        return '/uploads/' . $filename;
     }
 }

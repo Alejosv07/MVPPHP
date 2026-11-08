@@ -4,16 +4,25 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Models\ReservationModel;
 use App\Models\AuditModel;
-use App\Utils\Response;
+use App\Models\ReservationModel;
+use App\Utils\Auth;
 use App\Utils\EmailService;
-use App\Config\Database;
+use App\Utils\RateLimiter;
+use App\Utils\Response;
 use Exception;
-use PDO;
 
+/**
+ * Access rules (router + this class):
+ *  - POST without token: public booking request (forced to PENDING, no price, no staff)
+ *  - Everything else: ADMIN, or STAFF limited to their own assignments
+ */
 class ReservationController
 {
+    private const STATUSES = ['PENDING', 'CONFIRMED', 'INITIATED', 'ON_THE_WAY', 'RESCHEDULED', 'COMPLETED', 'CANCELLED', 'REJECTED'];
+    private const STAFF_STATUSES = ['INITIATED', 'ON_THE_WAY', 'COMPLETED'];
+    private const FREQUENCIES = ['One-time', 'Weekly', 'Bi-weekly', 'Biweekly', 'Monthly'];
+
     private ReservationModel $model;
     private AuditModel $auditModel;
 
@@ -23,337 +32,236 @@ class ReservationController
         $this->auditModel = new AuditModel();
     }
 
+    private function input(): array
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        return is_array($data) ? $data : [];
+    }
+
     public function handle(string $method, ?int $id, ?string $subResource): void
     {
-        if (!$id && isset($_GET['id'])) {
-            $id = (int)$_GET['id'];
-        }
-
         if ($subResource === 'history' && $id) {
+            $this->assertCanAccess($id);
             Response::json($this->model->getHistory($id));
-            return;
-        }
-
-        if ($method === 'GET' && isset($_GET['action'])) {
-            $this->handleEmailAction();
-            return;
         }
 
         match ($method) {
-            'GET'    => $id ? $this->getOne($id) : $this->getAllFiltered(),
-            'POST'   => $this->create(),
-            'PUT'    => $id ? $this->update($id) : Response::json(['message' => 'ID is required'], 400),
-            default  => Response::json(['message' => 'Method not allowed'], 405)
+            'GET'   => $id ? $this->getOne($id) : $this->getAllFiltered(),
+            'POST'  => $this->create(),
+            'PUT'   => $id ? $this->update($id) : Response::json(['message' => 'ID is required'], 400),
+            default => Response::json(['message' => 'Method not allowed'], 405)
         };
+    }
+
+    public function publicReviews(): void
+    {
+        Response::json($this->model->getPublicReviews());
+    }
+
+    /** STAFF may only touch reservations assigned to them. Returns the reservation. */
+    private function assertCanAccess(int $id): array
+    {
+        $reservation = $this->model->getById($id);
+        if (!$reservation) {
+            Response::json(['message' => 'Reservation not found'], 404);
+        }
+        if (Auth::isStaff() && (int)($reservation['staff_id'] ?? 0) !== Auth::userId()) {
+            Response::json(['message' => 'Reservation not found'], 404);
+        }
+        return $reservation;
     }
 
     private function getAllFiltered(): void
     {
         $month = isset($_GET['month']) ? (int)$_GET['month'] : null;
         $year = isset($_GET['year']) ? (int)$_GET['year'] : null;
-        $staffId = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : null;
-        $search = isset($_GET['search']) ? trim($_GET['search']) : null;
+        $search = isset($_GET['search']) ? mb_substr(trim((string)$_GET['search']), 0, 100) : null;
+
+        // Staff always see only their own jobs, whatever the client sends
+        $staffId = Auth::isStaff()
+            ? Auth::userId()
+            : (isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : null);
 
         if ($month && $year) {
             Response::json($this->model->getByMonthAndYear($month, $year, $staffId, $search));
-        } else {
-            Response::json($this->model->getAll($staffId, $search));
         }
+        Response::json($this->model->getAll($staffId, $search));
     }
 
     private function getOne(int $id): void
     {
-        $reservation = $this->model->getById($id);
-        if ($reservation) {
-            Response::json($reservation);
-        } else {
-            Response::json(['message' => 'Reservation not found'], 404);
+        Response::json($this->assertCanAccess($id));
+    }
+
+    private function validateBooking(array $data): ?string
+    {
+        $required = ['first_name', 'last_name', 'email', 'phone_number', 'service_id', 'service_date', 'preferred_time', 'service_address'];
+        foreach ($required as $field) {
+            if (!isset($data[$field]) || trim((string)$data[$field]) === '') {
+                return "The field {$field} is required";
+            }
         }
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return 'Invalid email address';
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$data['service_date']) || !strtotime((string)$data['service_date'])) {
+            return 'Invalid service date';
+        }
+        if (!preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', (string)$data['preferred_time'])) {
+            return 'Invalid preferred time';
+        }
+        if (!preg_match('/^[0-9+()\-.\s]{7,20}$/', (string)$data['phone_number'])) {
+            return 'Invalid phone number';
+        }
+        foreach (['first_name' => 80, 'last_name' => 80, 'service_address' => 255, 'special_instructions' => 2000] as $field => $max) {
+            if (isset($data[$field]) && mb_strlen((string)$data[$field]) > $max) {
+                return "The field {$field} is too long";
+            }
+        }
+        return null;
     }
 
     private function create(): void
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = $this->input();
+        $isStaffUser = Auth::user() !== null;
 
-        $required = ['first_name', 'last_name', 'email', 'phone_number', 'service_id', 'service_date', 'preferred_time', 'service_address'];
-        foreach ($required as $field) {
-            if (empty($data[$field])) {
-                Response::json(['message' => "The field {$field} is required"], 422);
-                return;
+        if ($isStaffUser) {
+            Auth::require(['ADMIN']);
+        } else {
+            // Anonymous booking form
+            RateLimiter::hit('booking-ip', Auth::clientIp(), 10, 3600);
+
+            if (empty($data['accept_terms'])) {
+                Response::json(['message' => 'You must accept the Terms of Service and Privacy Policy'], 422);
             }
+            if (($data['service_date'] ?? '') < date('Y-m-d')) {
+                Response::json(['message' => 'The service date cannot be in the past'], 422);
+            }
+
+            $data['status'] = 'PENDING';
+            $data['total_price'] = 0.00;
+            unset($data['staff_id'], $data['user_id']);
         }
 
+        if ($error = $this->validateBooking($data)) {
+            Response::json(['message' => $error], 422);
+        }
+
+        $data['email'] = strtolower(trim((string)$data['email']));
+        $data['bedrooms'] = max(0, min(20, (float)($data['bedrooms'] ?? 1)));
+        $data['bathrooms'] = max(0, min(20, (float)($data['bathrooms'] ?? 1)));
+        if (!in_array($data['frequency'] ?? 'One-time', self::FREQUENCIES, true)) {
+            $data['frequency'] = 'One-time';
+        }
+        if (!in_array($data['status'] ?? 'PENDING', self::STATUSES, true)) {
+            $data['status'] = 'PENDING';
+        }
+        $data['user_id'] = Auth::userId();
+
         try {
-            $db = (new Database())->getConnection();
-
             $id = $this->model->createWithCustomer($data);
-
-            if ($id) {
-                $reservation = $this->model->getById($id);
-                if ($reservation) {
-                    EmailService::sendStatusUpdateEmail($reservation, 'PENDING');
+            if (!$isStaffUser) {
+                $this->model->recordConsent($id, !empty($data['sms_consent']), Auth::clientIp());
+            }
+            $reservation = $this->model->getById($id);
+            if ($reservation) {
+                EmailService::sendStatusUpdateEmail($reservation, 'PENDING');
+                if (!$isStaffUser) {
+                    EmailService::sendNewBookingAlert($reservation); // only for website requests
                 }
             }
 
             Response::json(['message' => 'Reservation created successfully', 'id' => $id], 201);
         } catch (Exception $e) {
-            Response::json(['message' => 'Error saving reservation', 'error_detail' => $e->getMessage()], 500);
+            error_log('Reservation create failed: ' . $e->getMessage());
+            Response::json(['message' => 'We could not save your request. Please try again or contact us.'], 500);
         }
     }
 
-    private function update(int $id, array $data = []): void
+    private function update(int $id): void
     {
-        $payload = json_decode(file_get_contents('php://input'), true);
+        $current = $this->assertCanAccess($id);
+        $payload = $this->input();
 
         if (isset($payload['status']) && !isset($payload['first_name'])) {
-            $this->updateStatusOnly($id, $payload);
+            $this->updateStatusOnly($id, $payload, $current);
             return;
         }
 
+        Auth::require(['ADMIN']); // full edits are admin-only
+
+        if ($error = $this->validateBooking($payload)) {
+            Response::json(['message' => $error], 422);
+        }
+
         try {
-            $success = $this->model->update($id, $payload);
-            if ($success) {
+            if ($this->model->update($id, $payload)) {
+                $this->log('UPDATE', $id, ['method' => 'ADMIN_EDIT']);
                 Response::json(['message' => 'Reservation updated successfully']);
-            } else {
-                Response::json(['message' => 'Reservation not found or no changes made'], 404);
             }
+            Response::json(['message' => 'Reservation not found or no changes made'], 404);
         } catch (Exception $e) {
-            Response::json(['message' => 'Error updating reservation', 'detail' => $e->getMessage()], 500);
+            error_log('Reservation update failed: ' . $e->getMessage());
+            Response::json(['message' => 'Error updating reservation'], 500);
         }
     }
 
-    private function updateStatusOnly(int $id, array $data): void
+    private function updateStatusOnly(int $id, array $data, array $current): void
     {
-        if (empty($data['status'])) {
-            Response::json(['message' => 'New status is required'], 422);
-            return;
+        $status = strtoupper(trim((string)($data['status'] ?? '')));
+
+        if (!in_array($status, self::STATUSES, true)) {
+            Response::json(['message' => 'Invalid status'], 422);
+        }
+
+        $isStaff = Auth::isStaff();
+        if ($isStaff && !in_array($status, self::STAFF_STATUSES, true)) {
+            Response::json(['message' => 'Staff can only mark a job as On the way, Initiated or Completed'], 403);
+        }
+
+        $comment = mb_substr((string)($data['comment'] ?? 'Status updated via admin panel'), 0, 500);
+
+        // Staff cannot change price, date, time or assignment
+        $totalPrice = (!$isStaff && isset($data['total_price'])) ? (float)$data['total_price'] : null;
+        $serviceDate = (!$isStaff && !empty($data['service_date'])) ? (string)$data['service_date'] : null;
+        $preferredTime = (!$isStaff && !empty($data['preferred_time'])) ? (string)$data['preferred_time'] : null;
+        $staffId = (!$isStaff && isset($data['staff_id']) && $data['staff_id'] !== '') ? (int)$data['staff_id'] : null;
+
+        if ($serviceDate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $serviceDate)) {
+            Response::json(['message' => 'Invalid service date'], 422);
         }
 
         try {
-            $userId = $data['user_id'] ?? null;
-            $comment = $data['comment'] ?? "Status updated via admin panel";
-            $totalPrice = isset($data['total_price']) ? (float)$data['total_price'] : null;
-            $serviceDate = $data['service_date'] ?? null;
-            $preferredTime = $data['preferred_time'] ?? null;
-            $staffId = isset($data['staff_id']) ? ($data['staff_id'] !== '' ? (int)$data['staff_id'] : null) : null;
-
-            $success = $this->model->updateStatusWithDetails($id, $data['status'], $userId, $comment, $totalPrice, $serviceDate, $preferredTime, $staffId);
+            $success = $this->model->updateStatusWithDetails($id, $status, Auth::userId(), $comment, $totalPrice, $serviceDate, $preferredTime, $staffId);
 
             if ($success) {
-                $reservation = $this->model->getById($id);
-                if ($reservation) {
-                    EmailService::sendStatusUpdateEmail($reservation, $data['status']);
+                $this->log('UPDATE', $id, ['previous_status' => $current['status'], 'new_status' => $status]);
+
+                // Only email the customer when something they care about changed
+                $priceChanged = $totalPrice !== null && (float)$current['total_price'] !== $totalPrice;
+                $dateChanged = $serviceDate !== null && $serviceDate !== $current['service_date'];
+                if ($status !== $current['status'] || $priceChanged || $dateChanged) {
+                    $reservation = $this->model->getById($id);
+                    if ($reservation) {
+                        EmailService::sendStatusUpdateEmail($reservation, $status);
+                    }
                 }
                 Response::json(['message' => 'Reservation updated successfully']);
-            } else {
-                Response::json(['message' => 'Reservation not found'], 404);
             }
+            Response::json(['message' => 'Reservation not found'], 404);
         } catch (Exception $e) {
-            Response::json(['message' => 'Error updating status', 'detail' => $e->getMessage()], 500);
+            error_log('Reservation status update failed: ' . $e->getMessage());
+            Response::json(['message' => 'Error updating status'], 500);
         }
     }
 
-    private function handleEmailAction(): void
+    private function log(string $action, int $entityId, array $details): void
     {
-        $id = (int)($_GET['id'] ?? 0);
-        $action = $_GET['action'] ?? '';
-        $token = $_GET['token'] ?? '';
-
-        $reservation = $this->model->getById($id);
-        if (!$reservation) {
-            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Reservation not found.</h2>");
-        }
-
-        $customerEmail = !empty($reservation['email']) ? $reservation['email'] : 'balrking07@gmail.com';
-        $secret = 'purenest_secret';
-        $expectedToken = hash('sha256', $id . $customerEmail . $secret);
-
-        if ($token !== $expectedToken || !in_array($action, ['confirm', 'cancel', 'reschedule', 'feedback'], true)) {
-            die("<h2 style='color:red; text-align:center; margin-top:50px;'>Invalid or expired link.</h2>");
-        }
-
-        if ($action === 'feedback' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-            $rating = (int)($_POST['rating'] ?? 5);
-            $comment = trim($_POST['comment'] ?? '');
-
-            $db = (new Database())->getConnection();
-            $updateStmt = $db->prepare("UPDATE reservations SET rating = :rating, feedback_comment = :comment WHERE id = :id");
-            $updateStmt->execute([':rating' => $rating, ':comment' => $comment, ':id' => $id]);
-
-            echo "
-            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
-                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
-                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
-                    <h2 style='color: #059669;'>Thank You for Your Feedback!</h2>
-                    <p style='color: #4b5563;'>We have saved your rating for reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong>.</p>
-                </div>
-            </div>";
-            return;
-        }
-
-        if ($action === 'feedback') {
-            header("Content-Type: text/html; charset=UTF-8");
-            echo "
-            <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
-                <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
-                    <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
-                    <h3 style='color: #475569; margin-bottom: 25px;'>Rate Our Service</h3>
-                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservation: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
-                    
-                    <form method='POST' action=''>
-                        <div style='margin-bottom: 20px; text-align: left;'>
-                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Rating (1 to 5):</label>
-                            <select name='rating' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none; background: #fff;'>
-                                <option value='5'>⭐⭐⭐⭐⭐ (5 - Excellent)</option>
-                                <option value='4'>⭐⭐⭐⭐ (4 - Very Good)</option>
-                                <option value='3'>⭐⭐⭐ (3 - Good)</option>
-                                <option value='2'>⭐⭐ (2 - Fair)</option>
-                                <option value='1'>⭐ (1 - Poor)</option>
-                            </select>
-                        </div>
-                        <div style='margin-bottom: 20px; text-align: left;'>
-                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Comment:</label>
-                            <textarea name='comment' rows='4' placeholder='Tell us about your experience...' style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'></textarea>
-                        </div>
-                        <button type='submit' style='width: 100%; background-color: #059669; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
-                            Submit Rating
-                        </button>
-                    </form>
-                </div>
-            </div>";
-            return;
-        }
-
-        if ($action === 'reschedule' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-            $newDate = $_POST['service_date'] ?? '';
-            $today = date('Y-m-d');
-
-            if (empty($newDate) || $newDate < $today) {
-                echo "<script>alert('Error: You cannot select a past date.'); window.history.back();</script>";
-                return;
-            }
-
-            $success = $this->model->updateStatusWithDetails(
-                $id,
-                'RESCHEDULED',
-                null,
-                "Service date rescheduled to {$newDate} by customer via email link.",
-                null,
-                $newDate,
-                null,
-                null
-            );
-
-            if ($success) {
-                $this->logActivity(
-                    userId: null,
-                    action: 'UPDATE',
-                    entityType: 'reservations',
-                    entityId: $id,
-                    details: ['method' => 'EMAIL_RESCHEDULE', 'new_date' => $newDate]
-                );
-
-                $updatedReservation = $this->model->getById($id);
-                if ($updatedReservation) {
-                    EmailService::sendStatusUpdateEmail($updatedReservation, 'RESCHEDULED');
-                }
-
-                echo "
-                <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
-                    <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
-                        <h1 style='color: #0f172a;'>Luxuria Pure</h1>
-                        <h2 style='color: #9333ea;'>Date Rescheduled Successfully!</h2>
-                        <p style='color: #4b5563;'>Your reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> has been updated to <strong>{$newDate}</strong>.</p>
-                    </div>
-                </div>";
-                return;
-            } else {
-                echo "<h2 style='color:red; text-align:center; margin-top:50px;'>Could not update the date.</h2>";
-                return;
-            }
-        }
-
-        if ($action === 'reschedule') {
-            $currentDate = $reservation['service_date'] ?? date('Y-m-d');
-            $minDate = date('Y-m-d');
-
-            header("Content-Type: text/html; charset=UTF-8");
-            echo "
-            <div style='font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 60px 20px; text-align: center;'>
-                <div style='max-width: 450px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'>
-                    <h1 style='color: #0f172a; font-size: 24px; margin-bottom: 10px;'>Luxuria Pure</h1>
-                    <h3 style='color: #475569; margin-bottom: 25px;'>Reschedule Service Date</h3>
-                    <p style='color: #64748b; font-size: 14px; margin-bottom: 20px;'>Reservation: <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong></p>
-                    
-                    <form method='POST' action=''>
-                        <div style='margin-bottom: 20px; text-align: left;'>
-                            <label style='display: block; font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; margin-bottom: 8px;'>Select New Date:</label>
-                            <input type='date' name='service_date' value='{$currentDate}' min='{$minDate}' required 
-                                style='width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none;'>
-                        </div>
-                        <button type='submit' style='width: 100%; background-color: #0f172a; color: #ffffff; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer;'>
-                            Save New Date
-                        </button>
-                    </form>
-                </div>
-            </div>";
-            return;
-        }
-
-        $newStatus = ($action === 'confirm') ? 'CONFIRMED' : 'CANCELLED';
-        $success = $this->model->updateStatus($id, $newStatus, null, "Status updated to {$newStatus} via email link");
-
-        if ($success) {
-            $this->logActivity(
-                userId: null,
-                action: 'UPDATE',
-                entityType: 'reservations',
-                entityId: $id,
-                details: ['method' => 'EMAIL_ACTION_LINK', 'new_status' => $newStatus]
-            );
-
-            $updatedReservation = $this->model->getById($id);
-            if ($updatedReservation) {
-                EmailService::sendStatusUpdateEmail($updatedReservation, $newStatus);
-            }
-
-            header("Content-Type: text/html; charset=UTF-8");
-            echo "
-            <div style='font-family: Arial, sans-serif; text-align: center; padding: 60px 20px; background-color: #f8f9fa;'>
-                <div style='max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e5e7eb;'>
-                    <h1 style='color: #0f172a;'>Luxuria Pure</h1>
-                    <h2 style='color: " . ($newStatus === 'CONFIRMED' ? '#15803d' : '#b91c1c') . ";'>
-                        Reservation " . ($newStatus === 'CONFIRMED' ? 'Confirmed' : 'Cancelled') . "!
-                    </h2>
-                    <p style='color: #4b5563;'>Your reservation <strong>#RES-" . str_pad((string)$id, 4, '0', STR_PAD_LEFT) . "</strong> status is now <strong>{$newStatus}</strong>.</p>
-                </div>
-            </div>";
-        } else {
-            echo "<h2 style='color:red; text-align:center; margin-top:50px;'>Error updating reservation.</h2>";
-        }
-    }
-
-    private function logActivity(?int $userId, string $action, string $entityType, int $entityId, array $details): void
-    {
-        $ipAddress = $_SERVER['HTTP_CLIENT_IP']
-            ?? $_SERVER['HTTP_X_FORWARDED_FOR']
-             ?? $_SERVER['REMOTE_ADDR']
-             ?? '127.0.0.1';
-
-        if (str_contains($ipAddress, ',')) {
-            $ipAddress = trim(explode(',', $ipAddress)[0]);
-        }
-
-        if ($ipAddress === '::1') {
-            $ipAddress = '127.0.0.1';
-        }
-
         try {
-            if (method_exists($this->auditModel, 'log')) {
-                $this->auditModel->log($userId, $action, $entityType, $entityId, json_encode($details), $ipAddress);
-            }
+            $this->auditModel->log(Auth::userId(), $action, 'reservations', $entityId, json_encode($details), Auth::clientIp());
         } catch (Exception $e) {
-            error_log("Failed to insert activity log: " . $e->getMessage());
+            error_log('Failed to insert activity log: ' . $e->getMessage());
         }
     }
 }

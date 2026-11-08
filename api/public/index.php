@@ -2,15 +2,8 @@
 
 declare(strict_types=1);
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
 
 spl_autoload_register(function (string $class): void {
     $prefix = 'App\\';
@@ -31,6 +24,8 @@ spl_autoload_register(function (string $class): void {
 
 require_once __DIR__ . '/../config/database.php';
 
+use App\Config\Config;
+use App\Utils\Auth;
 use App\Utils\Response;
 use App\Controllers\AuthController;
 use App\Controllers\CategoryController;
@@ -43,7 +38,36 @@ use App\Controllers\AuditController;
 use App\Controllers\SystemScheduleController;
 use App\Controllers\CustomerAuthController;
 use App\Controllers\ServiceZoneController;
+use App\Controllers\PublicReservationController;
 
+/* ---------- Security headers & CORS ---------- */
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+
+$allowedOrigins = array_filter(array_map('trim', explode(',', (string)Config::get('ALLOWED_ORIGINS'))));
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$isLocalOrigin = !Config::isProduction() && preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#', $origin);
+if ($origin && (in_array($origin, $allowedOrigins, true) || $isLocalOrigin)) {
+    header("Access-Control-Allow-Origin: {$origin}");
+    header('Vary: Origin');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    header('Access-Control-Max-Age: 600');
+}
+header('Content-Type: application/json; charset=UTF-8');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+set_exception_handler(function (Throwable $e): void {
+    error_log('Unhandled: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    Response::json(['message' => 'An unexpected error occurred. Please try again later.'], 500);
+});
+
+/* ---------- Routing ---------- */
 $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -51,25 +75,17 @@ if ($method === 'POST' && isset($_POST['_method']) && strtoupper($_POST['_method
     $method = 'PUT';
 } elseif ($method === 'POST' && empty($_POST)) {
     $input = json_decode(file_get_contents('php://input'), true);
-    if ($input) {
+    if (is_array($input)) {
         $_POST = $input;
     }
 }
 
-$uriPath = trim($requestPath, '/');
+$uriPath = trim((string)$requestPath, '/');
 $segments = explode('/', $uriPath);
 
 $validResources = [
-    'auth',
-    'reservations',
-    'categories',
-    'features',
-    'services',
-    'customers',
-    'admins',
-    'audit-logs',
-    'system-schedule',
-    'service-zones'
+    'auth', 'reservations', 'reviews', 'categories', 'features', 'services',
+    'customers', 'admins', 'audit-logs', 'system-schedule', 'service-zones'
 ];
 
 $resourceIndex = false;
@@ -95,34 +111,59 @@ if ($id === null && isset($_GET['id']) && is_numeric($_GET['id'])) {
     $id = (int)$_GET['id'];
 }
 
+$isRead = $method === 'GET';
+$emailActions = ['confirm', 'cancel', 'reschedule', 'feedback'];
+$action = $_GET['action'] ?? null;
+
+/*
+ * Access matrix
+ *  - Public catalog reads: services, categories, features, service zones, schedule
+ *  - Public writes: booking request, email-link actions (signed token), OTP flows
+ *  - Everything else requires a staff/admin token; most writes are ADMIN only
+ */
 match ($resource) {
     'auth' => match ($param1) {
-        'login'          => (new AuthController())->login(),
+        'login'           => (new AuthController())->login(),
         'forgot-password' => (new AuthController())->forgotPassword(),
         'reset-password'  => (new AuthController())->resetPassword(),
         'send-otp'        => (new CustomerAuthController())->sendOtp(),
         'verify-otp'      => (new CustomerAuthController())->verifyOtp(),
         default           => Response::json(['message' => 'Invalid authentication action'], 404)
     },
+
+    'reviews' => $isRead
+        ? (new ReservationController())->publicReviews()
+        : Response::json(['message' => 'Method not allowed'], 405),
+
     'reservations' => match (true) {
         $id !== null && $subResource === 'customer-rating' && $method === 'POST'
-        => (new CustomerAuthController())->submitCustomerRating($id),
+            => Auth::requireCustomer() ? (new CustomerAuthController())->submitCustomerRating($id) : null,
 
-        $id !== null && isset($_GET['action']) && $_GET['action'] === 'staff-rating' && $method === 'POST'
-        => (new CustomerAuthController())->submitStaffRating($id),
+        $id !== null && $action === 'staff-rating' && $method === 'POST'
+            => Auth::require(['ADMIN', 'STAFF']) ? (new CustomerAuthController())->submitStaffRating($id) : null,
 
-        isset($_GET['action']) && in_array($_GET['action'], ['confirm', 'cancel', 'reschedule', 'feedback'], true)
-        => (new App\Controllers\PublicReservationController())->handleAction(),
+        in_array($action, $emailActions, true)
+            => (new PublicReservationController())->handleAction(),
 
-        default => (new ReservationController())->handle($method, $id, $subResource)
+        // Public booking form (anonymous) or admin creation (with token)
+        $method === 'POST' && $id === null
+            => (new ReservationController())->handle($method, null, null),
+
+        default => Auth::require(['ADMIN', 'STAFF'])
+            ? (new ReservationController())->handle($method, $id, $subResource)
+            : null
     },
-    'categories'      => (new CategoryController())->handle($method, $id),
-    'features'        => (new FeatureController())->handle($method, $id),
-    'services'        => (new ServiceController())->handle($method, $id),
-    'customers'       => (new CustomerController())->handle($method, $id),
-    'admins'          => (new AdminController())->handle($method, $id, $subResource),
-    'audit-logs'      => (new AuditController())->handle($param1),
-    'system-schedule' => (new SystemScheduleController())->handle($method),
-    'service-zones'   => (new ServiceZoneController())->handle($method, $id, $subResource),
+
+    'categories'      => ($isRead || Auth::require(['ADMIN'])) ? (new CategoryController())->handle($method, $id) : null,
+    'features'        => ($isRead || Auth::require(['ADMIN'])) ? (new FeatureController())->handle($method, $id) : null,
+    'services'        => ($isRead || Auth::require(['ADMIN'])) ? (new ServiceController())->handle($method, $id) : null,
+    'system-schedule' => ($isRead || Auth::require(['ADMIN'])) ? (new SystemScheduleController())->handle($method) : null,
+    'service-zones'   => ($isRead || Auth::require(['ADMIN'])) ? (new ServiceZoneController())->handle($method, $id, $subResource) : null,
+
+    // Staff list is needed by admin screens only
+    'admins'          => Auth::require(['ADMIN']) ? (new AdminController())->handle($method, $id, $subResource) : null,
+    'customers'       => Auth::require(['ADMIN']) ? (new CustomerController())->handle($method, $id) : null,
+    'audit-logs'      => Auth::require(['ADMIN']) ? (new AuditController())->handle($param1) : null,
+
     default           => Response::json(['message' => 'Endpoint not found'], 404)
 };

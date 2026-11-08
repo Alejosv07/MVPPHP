@@ -26,7 +26,8 @@ class SystemScheduleController {
                 default => Response::json(['message' => 'Método no permitido'], 405)
             };
         } catch (\Exception $e) {
-            Response::json(['message' => 'Error en el servidor: ' . $e->getMessage()], 500);
+            error_log('Schedule error: ' . $e->getMessage());
+            Response::json(['message' => 'Server error'], 500);
         }
     }
 
@@ -37,7 +38,7 @@ class SystemScheduleController {
             $inputData = json_decode($rawInput, true) ?? [];
         }
 
-        $userId = $inputData['user_id'] ?? $_SESSION['user_id'] ?? null;
+        $userId = \App\Utils\Auth::userId();
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
         $saved = $this->model->saveSchedule($inputData);

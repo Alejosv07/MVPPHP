@@ -43,20 +43,4 @@ class AuthModel
         return $stmt->rowCount() > 0;
     }
 
-    public function updatePasswordByCodeOnly(string $code, string $hashedPassword): bool
-    {
-        $stmt = $this->db->prepare("SELECT id FROM users WHERE reset_code = :code AND reset_expires_at > NOW()");
-        $stmt->execute([':code' => $code]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$user) {
-            return false;
-        }
-
-        $updateStmt = $this->db->prepare("UPDATE users SET password = :password, reset_code = NULL, reset_expires_at = NULL WHERE id = :id");
-        return $updateStmt->execute([
-            ':password' => $hashedPassword,
-            ':id' => $user['id']
-        ]);
-    }
 }

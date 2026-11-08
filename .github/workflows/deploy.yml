@@ -18,6 +18,21 @@ jobs:
           server: ftp.mutechlabs.com
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          # Encrypted FTP (credentials are no longer sent in clear text)
+          protocol: ftps
           port: 21
           server-dir: /public_html/
+          # Never upload (or delete on the server) secrets, runtime data or tooling
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .github/**
+            api/config/secrets.php
+            api/storage/**
+            **/*.sql
+            **/*.log
+            php_errorlog
+            Dockerfile
+            docker-compose.yml
+            *.md

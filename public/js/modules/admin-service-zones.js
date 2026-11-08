@@ -37,12 +37,12 @@ async function loadZones() {
 
         if (tbody) {
             zones.forEach(z => {
-                const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${a.area_name}</span>`).join(' ') : 'No areas';
+                const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${escapeHTML(a.area_name)}</span>`).join(' ') : 'No areas';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-surface-warm/5 transition-colors">
                         <td class="py-4 px-6 text-sm font-bold text-primary">#ZONE-${z.id}</td>
-                        <td class="py-4 px-6 text-sm font-medium text-on-background">${z.city_name}</td>
+                        <td class="py-4 px-6 text-sm font-medium text-on-background">${escapeHTML(z.city_name)}</td>
                         <td class="py-4 px-6 text-sm text-on-surface-variant font-bold">${z.state_code}</td>
                         <td class="py-4 px-6 text-sm flex flex-wrap gap-1.5 max-w-md">${areasList}</td>
                         <td class="py-4 px-6 text-sm text-right space-x-2">
@@ -60,7 +60,7 @@ async function loadZones() {
 
         if (mobileContainer) {
             zones.forEach(z => {
-                const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${a.area_name}</span>`).join(' ') : 'No areas';
+                const areasList = z.areas ? z.areas.map(a => `<span class="px-2 py-0.5 bg-surface-container-low border border-outline-variant/30 rounded text-xs font-medium text-primary">${escapeHTML(a.area_name)}</span>`).join(' ') : 'No areas';
 
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'p-5 space-y-4 hover:bg-surface-warm/50 transition-colors';
@@ -72,7 +72,7 @@ async function loadZones() {
                     
                     <div>
                         <span class="block text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider">City / Region</span>
-                        <span class="font-semibold text-primary text-base">${z.city_name}</span>
+                        <span class="font-semibold text-primary text-base">${escapeHTML(z.city_name)}</span>
                     </div>
 
                     <div>
@@ -188,4 +188,9 @@ function setupForm() {
             Modal.error('Error saving zone: ' + err.message, 'Error');
         }
     });
+}
+
+function escapeHTML(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
 }

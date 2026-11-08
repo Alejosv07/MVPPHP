@@ -25,8 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 showAlert('Login successful! Redirecting...', 'success');
                 localStorage.setItem('purenest_user', JSON.stringify(response.data.user));
 
+                const role = ((response.data.user && response.data.user.role) || '').toUpperCase();
                 setTimeout(() => {
-                    window.location.href = 'admin-index.html';
+                    window.location.href = role === 'STAFF' ? 'employee-execution.html' : 'admin-index.html';
                 }, 1000);
 
             } catch (error) {
@@ -35,8 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errLower = (error.message || '').toLowerCase();
                 if (errLower.includes('401') || errLower.includes('invalid credentials') || errLower.includes('credenciales')) {
                     friendlyMessage = 'Incorrect email or password. Please check your credentials and try again.';
-                } else if (errLower.includes('404') || errLower.includes('not found')) {
-                    friendlyMessage = 'No account found with this email address.';
+                } else if (errLower.includes('too many')) {
+                    friendlyMessage = 'Too many attempts. Please wait 15 minutes and try again.';
                 } else if (errLower.includes('422') || errLower.includes('required')) {
                     friendlyMessage = 'Please fill in all required fields properly.';
                 }
@@ -63,14 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtnReq.textContent = 'Sending...';
 
             try {
-                const response = await API.auth.requestPasswordReset(recoveryEmailStored);
-                
-                let msg = 'A recovery code has been generated. Please check your inbox.';
-                if (response && response.code) {
-                    msg += ` (Test code: ${response.code})`;
-                }
-                
-                Modal.success(msg, 'Token Generated');
+                await API.auth.requestPasswordReset(recoveryEmailStored);
+
+                Modal.success('If this email belongs to an active account, a 6-digit code has been sent. Check your inbox (and spam folder).', 'Check Your Email');
 
                 switchTab('reset');
                 startTokenTimer();
@@ -100,13 +96,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const newPass = document.getElementById('new-pass').value;
             const confirmPass = document.getElementById('confirm-pass').value;
 
-            if (newPass.length < 8 || !/[A-Z]/.test(newPass) || newPass !== confirmPass) {
+            if (!recoveryEmailStored) {
+                const emailInput = document.getElementById('recovery-email');
+                recoveryEmailStored = emailInput ? emailInput.value.trim() : '';
+            }
+            if (!recoveryEmailStored) {
+                Modal.warning('Please enter your account email in the "Request" step first.', 'Email Required');
+                switchTab('request');
+                return;
+            }
+
+            if (newPass.length < 8 || !/[A-Z]/.test(newPass) || !/\d/.test(newPass) || newPass !== confirmPass) {
                 Modal.warning('Your new password must meet all security criteria and match confirmation.', 'Validation Error');
                 return;
             }
 
             try {
                 await API.auth.resetPassword({
+                    email: recoveryEmailStored,
                     code: tokenCode,
                     password: newPass
                 });

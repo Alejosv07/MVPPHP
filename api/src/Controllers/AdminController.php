@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Config\Database;
 use App\Models\AdminModel;
 use App\Models\AuditModel;
+use App\Utils\Auth;
 use App\Utils\Response;
 use Exception;
 
+/** All routes here are ADMIN-only (enforced in api/public/index.php). */
 class AdminController
 {
+    private const ROLES = ['ADMIN', 'STAFF'];
+
     private AdminModel $model;
     private AuditModel $auditModel;
 
@@ -20,151 +25,151 @@ class AdminController
         $this->auditModel = new AuditModel();
     }
 
+    private function input(): array
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function audit(string $action, int $entityId, array $details): void
+    {
+        $this->auditModel->log(Auth::userId(), $action, 'USER', $entityId, json_encode($details), Auth::clientIp());
+    }
+
     public function handle(string $method, ?int $id, ?string $subResource): void
     {
-        if (!$id && isset($_GET['id'])) {
-            $id = (int)$_GET['id'];
-        }
-
         if ($id !== null && $subResource === 'reset-token' && $method === 'POST') {
             $this->issueResetToken($id);
             return;
         }
 
         match ($method) {
-            'GET'     => $id ? $this->getOne($id) : Response::json($this->model->getAll()),
-            'POST'    => $this->create(),
-            'PUT'     => $id ? $this->update($id) : Response::json(['message' => 'ID is required'], 400),
-            'DELETE'  => $id ? $this->delete($id) : Response::json(['message' => 'ID is required'], 400),
-            default   => Response::json(['message' => 'Method not allowed'], 405)
+            'GET'    => $id ? $this->getOne($id) : Response::json($this->model->getAll()),
+            'POST'   => $this->create(),
+            'PUT'    => $id ? $this->update($id) : Response::json(['message' => 'ID is required'], 400),
+            'DELETE' => $id ? $this->delete($id) : Response::json(['message' => 'ID is required'], 400),
+            default  => Response::json(['message' => 'Method not allowed'], 405)
         };
     }
 
     private function getOne(int $id): void
     {
         $admin = $this->model->getById($id);
-        if ($admin) {
-            Response::json($admin);
-        } else {
-            Response::json(['message' => 'Administrator not found'], 404);
+        $admin ? Response::json($admin) : Response::json(['message' => 'User not found'], 404);
+    }
+
+    private function validate(array $data, bool $isCreate): ?string
+    {
+        if ($isCreate) {
+            foreach (['name', 'email', 'password'] as $field) {
+                if (empty($data[$field])) {
+                    return "The field {$field} is required";
+                }
+            }
         }
+        if (isset($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return 'Invalid email address';
+        }
+        if (isset($data['role']) && !in_array(strtoupper((string)$data['role']), self::ROLES, true)) {
+            return 'Invalid role';
+        }
+        if (!empty($data['password']) && (strlen((string)$data['password']) < 8)) {
+            return 'Password must be at least 8 characters';
+        }
+        return null;
     }
 
     private function create(): void
     {
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        $required = ['name', 'email', 'password'];
-        foreach ($required as $field) {
-            if (empty($data[$field])) {
-                Response::json(['message' => "The field {$field} is required"], 422);
-                return;
-            }
+        $data = $this->input();
+        if ($error = $this->validate($data, true)) {
+            Response::json(['message' => $error], 422);
+        }
+        if (isset($data['role'])) {
+            $data['role'] = strtoupper((string)$data['role']);
         }
 
         try {
             $id = $this->model->create($data);
-            
-            $userId = isset($data['logged_user_id']) ? (int)$data['logged_user_id'] : null;
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-            $this->auditModel->log($userId, 'CREATE', 'USER', $id, json_encode(['email' => $data['email']]), $ip);
-
-            Response::json(['message' => 'Administrator created successfully', 'id' => $id], 201);
+            $this->audit('CREATE', $id, ['email' => $data['email'], 'role' => $data['role'] ?? 'ADMIN']);
+            Response::json(['message' => 'User created successfully', 'id' => $id], 201);
         } catch (Exception $e) {
-            Response::json([
-                'message' => 'Error saving administrator',
-                'error_detail' => $e->getMessage()
-            ], 500);
+            error_log('Admin create failed: ' . $e->getMessage());
+            Response::json(['message' => 'Could not create user. The email may already be in use.'], 500);
         }
     }
 
     private function update(int $id): void
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = $this->input();
+        unset($data['reset_code']); // reset codes are issued only via /reset-token
+
+        if ($error = $this->validate($data, false)) {
+            Response::json(['message' => $error], 422);
+        }
+        if (isset($data['role'])) {
+            $data['role'] = strtoupper((string)$data['role']);
+        }
+        if ($id === Auth::userId() && ((isset($data['is_active']) && !(int)$data['is_active']) || (($data['role'] ?? 'ADMIN') !== 'ADMIN'))) {
+            Response::json(['message' => 'You cannot deactivate or demote your own account'], 422);
+        }
 
         try {
-            $success = $this->model->update($id, $data);
-
-            if ($success) {
-                $userId = isset($data['logged_user_id']) ? (int)$data['logged_user_id'] : null;
-                $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-                $this->auditModel->log($userId, 'UPDATE', 'USER', $id, json_encode($data), $ip);
-
-                Response::json(['message' => 'Administrator updated successfully']);
-            } else {
-                Response::json(['message' => 'Administrator not found or no changes made'], 404);
+            if ($this->model->update($id, $data)) {
+                $logged = $data;
+                unset($logged['password'], $logged['logged_user_id'], $logged['user_id']);
+                if (!empty($data['password'])) {
+                    $logged['password_changed'] = true;
+                }
+                $this->audit('UPDATE', $id, $logged);
+                Response::json(['message' => 'User updated successfully']);
             }
+            Response::json(['message' => 'User not found or no changes made'], 404);
         } catch (Exception $e) {
-            Response::json([
-                'message' => 'Error updating administrator',
-                'detail' => $e->getMessage()
-            ], 500);
+            error_log('Admin update failed: ' . $e->getMessage());
+            Response::json(['message' => 'Error updating user'], 500);
         }
     }
 
+    /** Admin generates a one-time code to hand over to a staff member. */
     private function issueResetToken(int $id): void
     {
-        $admin = $this->model->getById($id);
-        if (!$admin) {
-            Response::json(['message' => 'Administrator not found'], 404);
-            return;
+        if (!$this->model->getById($id)) {
+            Response::json(['message' => 'User not found'], 404);
         }
 
         $resetCode = (string)random_int(100000, 999999);
+        $db = (new Database())->getConnection();
+        $db->prepare('UPDATE users SET reset_code = :code, reset_expires_at = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = :id')
+            ->execute([':code' => $resetCode, ':id' => $id]);
 
-        try {
-            $db = (new \App\Config\Database())->getConnection();
-            $stmt = $db->prepare("UPDATE users SET reset_code = :code, reset_expires_at = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = :id");
-            $stmt->execute([':code' => $resetCode, ':id' => $id]);
+        $stmt = $db->prepare('SELECT reset_expires_at FROM users WHERE id = :id');
+        $stmt->execute([':id' => $id]);
 
-            $stmtSelect = $db->prepare("SELECT reset_code, reset_expires_at FROM users WHERE id = :id");
-            $stmtSelect->execute([':id' => $id]);
-            $updatedAdmin = $stmtSelect->fetch(\PDO::FETCH_ASSOC);
+        $this->audit('ISSUE_RESET_TOKEN', $id, ['issued' => true]);
 
-            if ($updatedAdmin) {
-                $data = json_decode(file_get_contents('php://input'), true) ?? [];
-                $userId = isset($data['logged_user_id']) ? (int)$data['logged_user_id'] : null;
-                $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-                
-                $this->auditModel->log($userId, 'ISSUE_RESET_TOKEN', 'USER', $id, json_encode(['reset_code' => $resetCode]), $ip);
-
-                Response::json([
-                    'message' => 'Password reset link issued successfully',
-                    'reset_code' => $updatedAdmin['reset_code'],
-                    'reset_expires_at' => $updatedAdmin['reset_expires_at']
-                ]);
-            } else {
-                Response::json(['message' => 'Failed to issue reset token'], 400);
-            }
-        } catch (Exception $e) {
-            Response::json([
-                'message' => 'Error issuing reset token',
-                'detail' => $e->getMessage()
-            ], 500);
-        }
+        Response::json([
+            'message'          => 'Password reset code issued successfully',
+            'reset_code'       => $resetCode,
+            'reset_expires_at' => $stmt->fetchColumn(),
+        ]);
     }
 
     private function delete(int $id): void
     {
+        if ($id === Auth::userId()) {
+            Response::json(['message' => 'You cannot delete your own account'], 422);
+        }
+
         try {
-            $success = $this->model->delete($id);
-
-            if ($success) {
-                $data = json_decode(file_get_contents('php://input'), true) ?? [];
-                $userId = isset($data['logged_user_id']) ? (int)$data['logged_user_id'] : null;
-                $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-                
-                $this->auditModel->log($userId, 'DELETE', 'USER', $id, json_encode(['deleted_id' => $id]), $ip);
-
-                Response::json(['message' => 'Administrator deleted successfully']);
-            } else {
-                Response::json(['message' => 'Administrator not found'], 404);
+            if ($this->model->delete($id)) {
+                $this->audit('DELETE', $id, ['deleted_id' => $id]);
+                Response::json(['message' => 'User deleted successfully']);
             }
+            Response::json(['message' => 'User not found'], 404);
         } catch (Exception $e) {
-            Response::json([
-                'message' => 'Error deleting administrator',
-                'detail' => $e->getMessage()
-            ], 500);
+            error_log('Admin delete failed: ' . $e->getMessage());
+            Response::json(['message' => 'This user has related records and cannot be deleted. Deactivate it instead.'], 409);
         }
     }
 }

@@ -30,7 +30,8 @@ class AuditController {
                 Response::json($data);
             }
         } catch (\Exception $e) {
-            Response::json(['message' => 'Error retrieving audit logs: ' . $e->getMessage()], 500);
+            error_log('Audit error: ' . $e->getMessage());
+            Response::json(['message' => 'Error retrieving audit logs'], 500);
         }
     }
 }

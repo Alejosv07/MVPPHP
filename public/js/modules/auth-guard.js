@@ -1,41 +1,37 @@
 (() => {
-    const publicPages = [
-        '/login.html',
-        '/index.html',
-        '/'
-    ];
+    // Client-side guard for UX only. Real protection is enforced by the API (Bearer token).
+    const publicPages = ['login.html', 'index.html'];
     const currentPath = window.location.pathname;
-    const user = localStorage.getItem('purenest_user');
+    const isPublicPage = currentPath.endsWith('/') || publicPages.some(page => currentPath.endsWith(page));
 
-    const isPublicPage = publicPages.some(
-        page => currentPath.endsWith(page) || currentPath === page
-    );
+    function readSession() {
+        try {
+            const raw = localStorage.getItem('purenest_user');
+            const user = raw && raw !== 'undefined' ? JSON.parse(raw) : null;
+            if (!user || !user.token) return null;
 
-    if (!user && !isPublicPage) {
-        window.location.href = `${window.location.origin}/login.html`;
+            // Token = base64url(payload).signature ; check expiry locally
+            const payload = JSON.parse(atob(user.token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/')));
+            if (!payload.exp || payload.exp * 1000 < Date.now()) return null;
+            return user;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    const user = readSession();
+
+    if (!user) {
+        localStorage.removeItem('purenest_user');
+        localStorage.removeItem('luxuriapure_user');
+        if (!isPublicPage) {
+            window.location.replace('login.html');
+        }
         return;
     }
-    document.addEventListener('DOMContentLoaded', () => {
-        const rawUser =
-            localStorage.getItem('purenest_user') ||
-            localStorage.getItem('luxuriapure_user');
 
-        if (!rawUser) {
-            window.location.href = 'login.html';
-            return;
-        }
-        try {
-            const user = JSON.parse(rawUser);
-            const role = (user.role || '').toUpperCase();
-            const currentPage = window.location.pathname;
-            if (
-                (role === 'STAFF' || role === 'EMPLOYEE') &&
-                !currentPage.includes('employee-execution.html')
-            ) {
-                window.location.href = 'employee-execution.html';
-            }
-        } catch (e) {
-            console.error('Error in auth guard', e);
-        }
-    });
+    const role = (user.role || '').toUpperCase();
+    if (role === 'STAFF' && !currentPath.includes('employee-execution.html') && !isPublicPage) {
+        window.location.replace('employee-execution.html');
+    }
 })();
