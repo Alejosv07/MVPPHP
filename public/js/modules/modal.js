@@ -95,24 +95,30 @@ class GlobalModal {
         this.btnConfirm.parentNode.replaceChild(newConfirmBtn, this.btnConfirm);
         this.btnConfirm = newConfirmBtn;
 
-        this.btnConfirm.addEventListener('click', async () => {
+        // Every show() gets an id. The modal is shared, so if onConfirm opens another
+        // modal (e.g. "Service deactivated"), this click must not close that new one.
+        const showId = this.showId = (this.showId || 0) + 1;
+        const confirmBtn = this.btnConfirm;
+
+        confirmBtn.addEventListener('click', async () => {
             if (onConfirm) {
-                this.btnConfirm.disabled = true;
-                this.btnConfirm.classList.add('opacity-50');
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('opacity-50');
 
                 try {
                     const shouldClose = await onConfirm();
                     if (shouldClose === false) {
-                        this.resetTheme();
+                        if (this.showId === showId) this.resetTheme();
                         return;
                     }
                 } catch (err) {
                     console.error(err);
                 } finally {
-                    this.resetTheme();
+                    if (this.showId === showId) this.resetTheme();
                 }
             }
-            this.close();
+            // Another modal was opened meanwhile: leave it on screen
+            if (this.showId === showId) this.close();
         });
 
         this.overlay.classList.remove('opacity-0', 'pointer-events-none');
