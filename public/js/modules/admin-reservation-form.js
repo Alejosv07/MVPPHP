@@ -265,9 +265,8 @@ function setupFormEvents() {
         submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
         try {
-            const finalInstructions = userNotes
-                ? `${userNotes} | Frequency: ${selectedFrequency}`
-                : `Booked via admin panel. Frequency: ${selectedFrequency}`;
+            // Frequency has its own column; notes are only what the customer/admin wrote
+            const finalInstructions = userNotes || '';
 
             const payload = {
                 first_name: firstName,
@@ -287,6 +286,9 @@ function setupFormEvents() {
             };
 
             if (editingReservationId) {
+                // Price and status change only through the reservation actions (quote / confirm / cancel)
+                delete payload.total_price;
+                delete payload.status;
                 await API.reservations.update(editingReservationId, payload);
                 Modal.show({
                     type: 'success',

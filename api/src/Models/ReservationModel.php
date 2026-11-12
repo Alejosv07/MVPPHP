@@ -189,11 +189,12 @@ public function getAll(?int $staffId = null, ?string $search = null): array
 
             $stmtHistory = $this->db->prepare("
                 INSERT INTO reservation_history (reservation_id, user_id, previous_status, new_status, comment)
-                VALUES (:reservation_id, :user_id, NULL, 'PENDING', 'Reservation created successfully.')
+                VALUES (:reservation_id, :user_id, NULL, :status, 'Reservation created successfully.')
             ");
             $stmtHistory->execute([
                 ':reservation_id' => $reservationId,
-                ':user_id'        => $data['user_id'] ?? null
+                ':user_id'        => $data['user_id'] ?? null,
+                ':status'         => $data['status'] ?? 'PENDING'
             ]);
 
             $this->db->commit();
@@ -242,8 +243,7 @@ public function getAll(?int $staffId = null, ?string $search = null): array
                     special_instructions = :special_instructions, 
                     bedrooms = :bedrooms, 
                     bathrooms = :bathrooms, 
-                    frequency = :frequency, 
-                    total_price = :total_price
+                    frequency = :frequency
                 WHERE id = :id
             ");
             $stmtUpdate->execute([
@@ -255,7 +255,6 @@ public function getAll(?int $staffId = null, ?string $search = null): array
                 ':bedrooms'             => $data['bedrooms'] ?? 1,
                 ':bathrooms'            => $data['bathrooms'] ?? 1,
                 ':frequency'            => $data['frequency'] ?? 'One-time',
-                ':total_price'          => $data['total_price'] ?? 0.00,
                 ':id'                   => $id
             ]);
 
@@ -297,6 +296,28 @@ public function getAll(?int $staffId = null, ?string $search = null): array
         return $updated;
     }
 
+    public function addHistory(int $id, ?int $userId, ?string $previousStatus, string $newStatus, string $comment): void
+    {
+        $this->db->prepare("
+            INSERT INTO reservation_history (reservation_id, user_id, previous_status, new_status, comment)
+            VALUES (:id, :user_id, :prev_status, :new_status, :comment)
+        ")->execute([
+            ':id'          => $id,
+            ':user_id'     => $userId,
+            ':prev_status' => $previousStatus,
+            ':new_status'  => $newStatus,
+            ':comment'     => mb_substr($comment, 0, 1000),
+        ]);
+    }
+
+    /** Active user who can take jobs */
+    public function isAssignableUser(int $userId): bool
+    {
+        $stmt = $this->db->prepare("SELECT 1 FROM users WHERE id = :id AND is_active = 1 LIMIT 1");
+        $stmt->execute([':id' => $userId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function getHistory(int $reservationId): array
     {
         $stmt = $this->db->prepare("
@@ -310,7 +331,11 @@ public function getAll(?int $staffId = null, ?string $search = null): array
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function updateStatusWithDetails(int $id, string $status, ?int $userId, ?string $comment, ?float $totalPrice, ?string $serviceDate, ?string $preferredTime, ?int $staffId = null): bool
+    /**
+     * Status change plus optional price/date/time/staff. Null means "keep the current value";
+     * $unassignStaff removes the cleaner.
+     */
+    public function updateStatusWithDetails(int $id, string $status, ?int $userId, ?string $comment, ?float $totalPrice, ?string $serviceDate, ?string $preferredTime, ?int $staffId = null, bool $unassignStaff = false): bool
     {
         $stmtPrev = $this->db->prepare("SELECT status, total_price, service_date, preferred_time, staff_id FROM reservations WHERE id = :id LIMIT 1");
         $stmtPrev->execute([':id' => $id]);
@@ -322,7 +347,7 @@ public function getAll(?int $staffId = null, ?string $search = null): array
         $finalPrice = $totalPrice !== null ? $totalPrice : $prev['total_price'];
         $finalDate = $serviceDate !== null ? $serviceDate : $prev['service_date'];
         $finalTime = $preferredTime !== null ? $preferredTime : $prev['preferred_time'];
-        $finalStaff = $staffId !== null ? $staffId : $prev['staff_id'];
+        $finalStaff = $unassignStaff ? null : ($staffId !== null ? $staffId : $prev['staff_id']);
 
         $stmt = $this->db->prepare("
             UPDATE reservations 

@@ -1,5 +1,6 @@
 import { API } from './api.js';
 import { Modal } from './modal.js';
+import { renderReservationActions, statusBadge, formatDateTime } from './reservation-actions.js';
 
 let allReservations = [];
 let filteredReservations = [];
@@ -7,7 +8,7 @@ let globalStaffList = [];
 let globalServicesList = [];
 let currentStatusTab = 'ALL';
 let activeReservationId = null;
-let activeActionMode = null;
+
 
 let currentPage = 1;
 const itemsPerPage = 10;
@@ -124,7 +125,7 @@ function setupEventListeners() {
                 });
                 e.currentTarget.className = 'px-4 py-2 font-body-md text-body-md font-medium text-primary bg-surface-container-low rounded-lg whitespace-nowrap transition-colors';
 
-                currentStatusTab = e.currentTarget.textContent.trim().toUpperCase().replace(/\s+/g, '_');
+                currentStatusTab = e.currentTarget.dataset.status || 'ALL';
                 currentPage = 1;
                 applyAllFilters();
             });
@@ -181,168 +182,14 @@ function setupEventListeners() {
 
 function setupModalActions() {
     const modal = document.getElementById('reservation-modal');
-    const closeBtn = document.getElementById('modal-close-btn');
-    const backdrop = document.getElementById('modal-backdrop');
-
     const closeModal = () => {
         if (modal) modal.classList.add('hidden', 'pointer-events-none');
         activeReservationId = null;
-        activeActionMode = null;
-        const container = document.getElementById('modal-action-inputs');
-        if (container) container.classList.add('hidden');
     };
-
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    if (backdrop) backdrop.addEventListener('click', closeModal);
-
-    const btnQuoteAction = document.getElementById('modal-btn-quote-action');
-    const btnRescheduleAction = document.getElementById('modal-btn-reschedule-action');
-    const btnCancelAction = document.getElementById('modal-btn-reject-action');
-
-    if (btnQuoteAction) {
-        const newBtnQuote = btnQuoteAction.cloneNode(true);
-        btnQuoteAction.parentNode.replaceChild(newBtnQuote, btnQuoteAction);
-
-        newBtnQuote.addEventListener('click', async () => {
-            const container = document.getElementById('modal-action-inputs');
-            const pWrapper = document.getElementById('price-input-wrapper');
-            const rWrapper = document.getElementById('reason-input-wrapper');
-            const resWrapper = document.getElementById('reschedule-input-wrapper');
-
-            if (activeActionMode !== 'quote') {
-                activeActionMode = 'quote';
-                if (container) container.classList.remove('hidden');
-                if (pWrapper) pWrapper.classList.remove('hidden');
-                if (rWrapper) rWrapper.classList.add('hidden');
-                if (resWrapper) resWrapper.classList.add('hidden');
-
-                const priceInput = document.getElementById('modal-input-price');
-                if (priceInput) priceInput.focus();
-
-                newBtnQuote.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Send Quote & Notify';
-                return;
-            }
-
-            const priceVal = document.getElementById('modal-input-price').value;
-            if (!priceVal || Number(priceVal) <= 0) {
-                Modal.error('Please enter a valid price greater than $0.00.', 'Validation Error');
-                return;
-            }
-
-            const staffIdVal = document.getElementById('modal-staff')?.value;
-            const currentRes = allReservations.find(r => String(r.id) === String(activeReservationId));
-            const currentStatus = currentRes ? currentRes.status : 'PENDING';
-
-            activeActionMode = null;
-            if (container) container.classList.add('hidden');
-            if (pWrapper) pWrapper.classList.add('hidden');
-            newBtnQuote.innerHTML = '<span class="material-symbols-outlined text-sm">payments</span> Set Price & Quote';
-
-            await updateModalStatusWithDetails(activeReservationId, currentStatus, {
-                total_price: Number(priceVal),
-                staff_id: staffIdVal ? Number(staffIdVal) : null,
-                comment: `Admin assigned/updated total price to $${Number(priceVal).toFixed(2)}`
-            });
-        });
-    }
-
-    if (btnRescheduleAction) {
-        const newBtnReschedule = btnRescheduleAction.cloneNode(true);
-        btnRescheduleAction.parentNode.replaceChild(newBtnReschedule, btnRescheduleAction);
-
-        newBtnReschedule.addEventListener('click', async () => {
-            const container = document.getElementById('modal-action-inputs');
-            const pWrapper = document.getElementById('price-input-wrapper');
-            const rWrapper = document.getElementById('reason-input-wrapper');
-            const resWrapper = document.getElementById('reschedule-input-wrapper');
-
-            if (activeActionMode !== 'reschedule') {
-                activeActionMode = 'reschedule';
-                if (container) container.classList.remove('hidden');
-                if (resWrapper) resWrapper.classList.remove('hidden');
-                if (pWrapper) pWrapper.classList.add('hidden');
-                if (rWrapper) rWrapper.classList.add('hidden');
-
-                const rescheduleInput = document.getElementById('modal-input-reschedule-datetime');
-                if (rescheduleInput) {
-                    const currentDatetime = document.getElementById('modal-datetime')?.value;
-                    if (currentDatetime) rescheduleInput.value = currentDatetime;
-                    rescheduleInput.focus();
-                }
-
-                newBtnReschedule.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Confirm Reschedule';
-                return;
-            }
-
-            const datetimeInput = document.getElementById('modal-input-reschedule-datetime').value;
-            if (!datetimeInput) {
-                Modal.error('Please select a new date and time for the reservation.', 'Validation Error');
-                return;
-            }
-
-            const [datePart, timePart] = datetimeInput.split('T');
-            const serviceDate = datePart;
-            const preferredTime = timePart ? (timePart.length === 5 ? timePart + ':00' : timePart) : '09:00:00';
-            const staffIdVal = document.getElementById('modal-staff')?.value;
-
-            activeActionMode = null;
-            if (container) container.classList.add('hidden');
-            if (resWrapper) resWrapper.classList.add('hidden');
-            newBtnReschedule.innerHTML = '<span class="material-symbols-outlined text-sm">event_repeat</span> Reschedule Service';
-
-            await updateModalStatusWithDetails(activeReservationId, 'RESCHEDULED', {
-                service_date: serviceDate,
-                preferred_time: preferredTime,
-                staff_id: staffIdVal ? Number(staffIdVal) : null,
-                comment: `Rescheduled by admin to ${serviceDate} at ${preferredTime}`
-            });
-        });
-    }
-
-    if (btnCancelAction) {
-        const newBtnCancel = btnCancelAction.cloneNode(true);
-        btnCancelAction.parentNode.replaceChild(newBtnCancel, btnCancelAction);
-
-        newBtnCancel.addEventListener('click', async () => {
-            const container = document.getElementById('modal-action-inputs');
-            const pWrapper = document.getElementById('price-input-wrapper');
-            const rWrapper = document.getElementById('reason-input-wrapper');
-            const resWrapper = document.getElementById('reschedule-input-wrapper');
-
-            if (activeActionMode !== 'cancel') {
-                activeActionMode = 'cancel';
-                if (container) container.classList.remove('hidden');
-                if (rWrapper) rWrapper.classList.remove('hidden');
-                if (pWrapper) pWrapper.classList.add('hidden');
-                if (resWrapper) resWrapper.classList.add('hidden');
-
-                const reasonInput = document.getElementById('modal-input-reason');
-                if (reasonInput) reasonInput.focus();
-
-                newBtnCancel.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Confirm Rejected';
-                return;
-            }
-
-            const reasonVal = document.getElementById('modal-input-reason').value.trim();
-            if (!reasonVal) {
-                Modal.error('Please provide a reason for cancelling the service.', 'Validation Error');
-                return;
-            }
-
-            const staffIdVal = document.getElementById('modal-staff')?.value;
-
-            activeActionMode = null;
-            if (container) container.classList.add('hidden');
-            if (rWrapper) rWrapper.classList.add('hidden');
-            newBtnCancel.innerHTML = '<span class="material-symbols-outlined text-sm">cancel</span> Rejected Service';
-
-            await updateModalStatusWithDetails(activeReservationId, 'REJECTED', {
-                staff_id: staffIdVal ? Number(staffIdVal) : null,
-                comment: `Cancelled by admin. Reason: ${reasonVal}`
-            });
-        });
-    }
+    document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
+    document.getElementById('modal-backdrop')?.addEventListener('click', closeModal);
 }
+
 
 function applyAllFilters() {
     const selects = document.querySelectorAll('select');
@@ -356,12 +203,8 @@ function applyAllFilters() {
     const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
     filteredReservations = allReservations.filter(res => {
-        if (currentStatusTab !== 'ALL') {
-            if (currentStatusTab === 'CANCELLED') {
-                if (res.status !== 'CANCELLED' && res.status !== 'REJECTED') return false;
-            } else if (res.status !== currentStatusTab) {
-                return false;
-            }
+        if (currentStatusTab !== 'ALL' && res.status !== currentStatusTab) {
+            return false;
         }
 
         if (query) {
@@ -585,7 +428,6 @@ async function showReservationDetailsModal(res) {
     const inputBathrooms = document.getElementById('modal-bathrooms');
     const inputFrequency = document.getElementById('modal-frequency');
     const inputPrice = document.getElementById('modal-price');
-    const inputModalPriceSet = document.getElementById('modal-input-price');
     const inputDatetime = document.getElementById('modal-datetime');
     const textareaNotes = document.getElementById('modal-notes');
 
@@ -597,8 +439,7 @@ async function showReservationDetailsModal(res) {
     if (inputBathrooms) inputBathrooms.value = res.bathrooms !== undefined ? `${res.bathrooms} Bathroom(s)` : 'N/A';
     if (inputFrequency) inputFrequency.value = res.frequency || 'One-time';
     if (inputPrice) inputPrice.value = res.total_price && Number(res.total_price) > 0 ? `$${Number(res.total_price).toFixed(2)}` : 'Pending Quote';
-    if (inputModalPriceSet) inputModalPriceSet.value = res.total_price && Number(res.total_price) > 0 ? res.total_price : '';
-    if (inputDatetime) inputDatetime.value = `${res.service_date || ''}T${res.preferred_time ? res.preferred_time.substring(0, 5) : '09:00'}`;
+    if (inputDatetime) inputDatetime.value = formatDateTime(res.service_date, res.preferred_time);
     if (textareaNotes) textareaNotes.value = res.special_instructions || '';
 
     const serviceSelect = document.getElementById('modal-service');
@@ -629,120 +470,27 @@ async function showReservationDetailsModal(res) {
         }
     }
 
-    let bookingDetailsContainer = document.querySelector('#reservation-modal .grid.grid-cols-1.md\\:grid-cols-2.gap-8 > div:nth-child(2) .flex.flex-col.gap-4');
-    if (bookingDetailsContainer && !document.getElementById('modal-staff-container')) {
-        const staffDiv = document.createElement('div');
-        staffDiv.id = 'modal-staff-container';
-        staffDiv.className = 'flex flex-col gap-2';
-        staffDiv.innerHTML = `
-            <label class="text-xs font-label-caps text-outline uppercase">Assigned Staff</label>
-            <div class="flex gap-2">
-                <select id="modal-staff" class="flex-1 px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 transition-all font-body-md text-on-surface">
-                    <option value="">-- Unassigned --</option>
-                </select>
-                <button id="modal-btn-assign-staff" class="px-4 py-3 rounded-lg border border-primary bg-primary text-on-primary font-label-caps text-label-caps hover:bg-primary/90 transition-all flex items-center justify-center gap-1 cursor-pointer">
-                    <span class="material-symbols-outlined text-sm">person_add</span> Assign
-                </button>
-            </div>
-        `;
-        bookingDetailsContainer.prepend(staffDiv);
-    }
-
-    const staffSelect = document.getElementById('modal-staff');
-    if (staffSelect) {
-        staffSelect.innerHTML = '<option value="">-- Unassigned --</option>';
-        if (Array.isArray(globalStaffList)) {
-            globalStaffList.forEach(u => {
-                const opt = document.createElement('option');
-                opt.value = u.id;
-                opt.textContent = `${u.name} (${u.role || 'STAFF'})`;
-                staffSelect.appendChild(opt);
-            });
-        }
-        staffSelect.value = res.staff_id || res.admin_id || "";
-    }
-
-    const btnAssignStaff = document.getElementById('modal-btn-assign-staff');
-    if (btnAssignStaff) {
-        const newBtnAssign = btnAssignStaff.cloneNode(true);
-        btnAssignStaff.parentNode.replaceChild(newBtnAssign, btnAssignStaff);
-
-        newBtnAssign.addEventListener('click', async () => {
-            const staffIdVal = document.getElementById('modal-staff')?.value;
-
-            try {
-                await updateModalStatusWithDetails(activeReservationId, res.status, {
-                    staff_id: staffIdVal ? Number(staffIdVal) : null,
-                    comment: staffIdVal ? `Assigned staff ID ${staffIdVal}` : 'Staff unassigned',
-                    total_price: res.total_price ? Number(res.total_price) : 0.00,
-                    service_date: res.service_date,
-                    preferred_time: res.preferred_time
-                });
-
-                modal.classList.add('hidden', 'pointer-events-none');
-                await loadReservationsData();
-                applyAllFilters();
-                Modal.success('Staff assignment updated successfully.', 'Success');
-            } catch (err) {
-                Modal.error(err.message || 'Failed to assign staff.', 'Error');
-            }
-        });
-    }
+    renderReservationActions(document.getElementById('modal-actions'), res, {
+        staffList: globalStaffList,
+        onDone: async (message) => {
+            modal.classList.add('hidden', 'pointer-events-none');
+            activeReservationId = null;
+            await loadReservationsData();
+            Modal.success(message || 'Reservation updated.', 'Done');
+        },
+    });
 
     modal.classList.remove('hidden', 'pointer-events-none');
 }
 
-async function updateModalStatusWithDetails(targetId, newStatus, extraData = {}) {
-    if (!targetId) {
-        Modal.error('Reservation ID is missing.', 'Error');
-        return;
-    }
-
-    try {
-        const rawUser = localStorage.getItem('luxuriapure_user') || localStorage.getItem('purenest_user');
-        const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
-        const currentUserId = user.id || null;
-
-        await API.reservations.update(targetId, {
-            status: newStatus,
-            user_id: currentUserId,
-            ...extraData
-        });
-
-        const modal = document.getElementById('reservation-modal');
-        if (modal) modal.classList.add('hidden', 'pointer-events-none');
-
-        await loadReservationsData();
-        Modal.success('Reservation updated successfully and email notification sent.', 'Success');
-    } catch (err) {
-        Modal.error(err.message || 'Failed to update reservation status.', 'Update Error');
-    }
-}
-
 function getStatusBadge(status) {
-    return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-label-caps tracking-wide ${getStatusBadgeClass(status)}">${status}</span>`;
-}
-
-function getStatusBadgeClass(status) {
-    switch (status) {
-        case 'PENDING': return 'bg-tertiary-fixed text-tertiary-container';
-        case 'CONFIRMED': return 'bg-primary-fixed text-primary-container';
-        case 'INITIATED': return 'bg-blue-100 text-blue-800';
-        case 'ON_THE_WAY': return 'bg-amber-100 text-amber-800';
-        case 'RESCHEDULED': return 'bg-purple-100 text-purple-800';
-        case 'COMPLETED': return 'bg-emerald-100 text-emerald-800';
-        case 'CANCELLED': return 'bg-error-container text-on-error-container';
-        case 'REJECTED': return 'bg-surface-variant text-on-surface-variant border border-outline-variant/55';
-        default: return 'bg-surface-variant text-on-surface-variant';
-    }
+    return statusBadge(status);
 }
 
 function formatDate(dateStr, timeStr) {
-    if (!dateStr) return 'N/A';
-    const date = new Date(`${dateStr}T${timeStr || '00:00:00'}`);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
-        (timeStr ? ` · ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : '');
+    return formatDateTime(dateStr, timeStr);
 }
+
 
 function getInitials(name) {
     return name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'GS';

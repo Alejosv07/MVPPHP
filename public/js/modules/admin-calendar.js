@@ -1,5 +1,6 @@
 import { API } from './api.js';
 import { Modal } from './modal.js';
+import { renderReservationActions, statusBadgeClass, formatDateTime, STATUS_LABELS } from './reservation-actions.js';
 
 let currentDate = new Date();
 let globalReservations = [];
@@ -128,21 +129,21 @@ function renderCalendar() {
                 if (status === 'CONFIRMED') {
                     cellClass = 'aspect-square p-1 md:p-2 rounded-lg bg-primary-fixed-dim border border-primary-fixed hover:brightness-95 cursor-pointer transition-all flex flex-col justify-between shadow-sm relative day-slot overflow-hidden';
                     badgeHTML = `<div class="w-full bg-primary-container text-on-primary-container text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">Confirmed</div>`;
-                } else if (status === 'PENDING') {
+                } else if (status === 'PENDING' || status === 'QUOTED') {
                     cellClass = 'aspect-square p-1 md:p-2 rounded-lg bg-surface-container-lowest border border-tertiary-fixed-dim hover:border-tertiary-container cursor-pointer transition-colors flex flex-col justify-between relative day-slot overflow-hidden';
-                    badgeHTML = `<div class="w-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">Pending</div>`;
+                    badgeHTML = `<div class="w-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">${status === 'QUOTED' ? 'Quote sent' : 'Pending'}</div>`;
                 } else if (status === 'COMPLETED') {
                     cellClass = 'aspect-square p-1 md:p-2 rounded-lg bg-emerald-50 border border-emerald-300 hover:brightness-95 cursor-pointer transition-all flex flex-col justify-between shadow-sm relative day-slot overflow-hidden';
                     badgeHTML = `<div class="w-full bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">Completed</div>`;
                 } else if (status === 'INITIATED' || status === 'ON_THE_WAY') {
                     cellClass = 'aspect-square p-1 md:p-2 rounded-lg bg-blue-50 border border-blue-300 hover:brightness-95 cursor-pointer transition-all flex flex-col justify-between shadow-sm relative day-slot overflow-hidden';
-                    badgeHTML = `<div class="w-full bg-blue-100 text-blue-800 text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">${status.replace(/_/g, ' ')}</div>`;
+                    badgeHTML = `<div class="w-full bg-blue-100 text-blue-800 text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">${STATUS_LABELS[status] || status}</div>`;
                 } else if (status === 'RESCHEDULED') {
                     cellClass = 'aspect-square p-1 md:p-2 rounded-lg bg-purple-50 border border-purple-300 hover:brightness-95 cursor-pointer transition-all flex flex-col justify-between shadow-sm relative day-slot overflow-hidden';
                     badgeHTML = `<div class="w-full bg-purple-100 text-purple-800 text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">Rescheduled</div>`;
                 } else {
                     cellClass = 'aspect-square p-1 md:p-2 rounded-lg bg-error-container/20 border border-error/40 hover:brightness-95 cursor-pointer transition-all flex flex-col justify-between shadow-sm relative day-slot overflow-hidden';
-                    badgeHTML = `<div class="w-full bg-error-container text-on-error-container text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">${status}</div>`;
+                    badgeHTML = `<div class="w-full bg-error-container text-on-error-container text-[10px] uppercase font-bold tracking-wider px-1 py-0.5 rounded-sm truncate mt-auto">${STATUS_LABELS[status] || status}</div>`;
                 }
             } else {
                 badgeHTML = `
@@ -222,7 +223,7 @@ async function openReservationDetailModal(res) {
             <header class="px-8 py-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface-warm">
                 <div class="flex items-center gap-4">
                     <h2 class="font-headline-sm text-headline-sm text-primary">Reservation #RES-${String(res.id).padStart(4, '0')}</h2>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-label-caps ${getStatusBadgeClass(res.status)}">${res.status}</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-label-caps ${getStatusBadgeClass(res.status)}">${STATUS_LABELS[res.status] || res.status}</span>
                 </div>
                 <button class="text-outline hover:text-primary transition-colors" id="close-dyn-modal">
                     <span class="material-symbols-outlined">close</span>
@@ -258,17 +259,6 @@ async function openReservationDetailModal(res) {
                                 <label class="text-xs font-label-caps text-outline uppercase">Service Type</label>
                                 <input class="pointer-events-none w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface-bright font-body-md" type="text" value="${escapeHTML(res.service_name || 'Standard Cleaning')}">
                             </div>
-                            <div class="flex flex-col gap-2">
-                                <label class="text-xs font-label-caps text-outline uppercase">Assigned Staff</label>
-                                <div class="flex gap-2">
-                                    <select id="dyn-modal-staff" class="flex-1 px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 transition-all font-body-md text-on-surface">
-                                        <option value="">-- Unassigned --</option>
-                                    </select>
-                                    <button id="dyn-modal-btn-assign-staff" class="px-4 py-3 rounded-lg border border-primary bg-primary text-on-primary font-label-caps text-label-caps hover:bg-primary/90 transition-all flex items-center justify-center gap-1 cursor-pointer">
-                                        <span class="material-symbols-outlined text-sm">person_add</span> Assign
-                                    </button>
-                                </div>
-                            </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="flex flex-col gap-2">
                                     <label class="text-xs font-label-caps text-outline uppercase">Bedrooms</label>
@@ -291,34 +281,12 @@ async function openReservationDetailModal(res) {
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label class="text-xs font-label-caps text-outline uppercase">Date & Time</label>
-                                <input class="pointer-events-none w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface-bright font-body-md" type="text" value="${res.service_date} @ ${res.preferred_time || '09:00 AM'}">
+                                <input class="pointer-events-none w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface-bright font-body-md" type="text" value="${escapeHTML(formatDateTime(res.service_date, res.preferred_time))}">
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="mt-12 pt-8 border-t border-outline-variant/30 flex flex-wrap gap-4">
-                    <div class="w-full flex flex-col gap-4">
-                        <div id="modal-action-inputs" class="flex flex-col gap-3 p-4 rounded-xl bg-surface-variant/30 border border-outline-variant/30 hidden">
-                            <div id="price-input-wrapper" class="flex flex-col gap-1.5 hidden">
-                                <label class="text-xs font-label-caps text-primary font-bold uppercase">Set Real Price ($)</label>
-                                <input type="number" step="0.01" id="modal-input-price" placeholder="e.g. 150.00" class="w-full px-4 py-2.5 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 font-body-md" value="${res.total_price || ''}">
-                            </div>
-                            <div id="reschedule-input-wrapper" class="flex flex-col gap-1.5 hidden">
-                                <label class="text-xs font-label-caps text-gold font-bold uppercase">Select New Date & Time</label>
-                                <input type="datetime-local" id="modal-input-reschedule-datetime" class="w-full px-4 py-2.5 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 font-body-md">
-                            </div>
-                            <div id="reason-input-wrapper" class="flex flex-col gap-1.5 hidden">
-                                <label class="text-xs font-label-caps text-error font-bold uppercase">Rejected Reason / Notes</label>
-                                <textarea id="modal-input-reason" placeholder="Explain why the service is being cancelled..." class="w-full px-4 py-2.5 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 font-body-md resize-none" rows="2"></textarea>
-                            </div>
-                        </div>
-                        <div class="flex flex-wrap gap-3 justify-end">
-                            <button id="dyn-modal-btn-quote" class="px-5 py-2.5 rounded-lg border border-primary-fixed bg-primary-fixed text-primary-container font-label-caps text-label-caps hover:bg-primary-fixed/80 transition-all flex items-center justify-center gap-2 cursor-pointer"><span class="material-symbols-outlined text-sm">payments</span> Set Price & Quote</button>
-                            <button id="dyn-modal-btn-reschedule" class="flex-1 md:flex-none px-6 py-3 rounded-lg border border-outline-variant/50 bg-surface-container text-navy font-label-caps text-label-caps hover:bg-surface-variant transition-all flex items-center justify-center gap-2 cursor-pointer"><span class="material-symbols-outlined text-sm">event_repeat</span> Reschedule Service</button>
-                            <button id="dyn-modal-btn-reject" class="px-5 py-2.5 rounded-lg border border-error/30 text-error font-label-caps text-label-caps hover:bg-error-container transition-all flex items-center justify-center gap-2 cursor-pointer"><span class="material-symbols-outlined text-sm">cancel</span> Rejected Service</button>
-                        </div>
-                    </div>
-                </div>
+                <div id="dyn-modal-actions" class="mt-10 pt-6 border-t border-outline-variant/30"></div>
             </div>
         </div>
     `;
@@ -328,147 +296,14 @@ async function openReservationDetailModal(res) {
     const closeBtn = modal.querySelector('#close-dyn-modal');
     closeBtn.addEventListener('click', () => modal.remove());
 
-    const staffSelect = modal.querySelector('#dyn-modal-staff');
-    if (staffSelect) {
-        staffSelect.innerHTML = '<option value="">-- Unassigned --</option>';
-        if (Array.isArray(globalStaffList)) {
-            globalStaffList.forEach(u => {
-                const opt = document.createElement('option');
-                opt.value = u.id;
-                opt.textContent = `${u.name} (${u.role || 'STAFF'})`;
-                staffSelect.appendChild(opt);
-            });
-        }
-        staffSelect.value = res.staff_id || res.admin_id || "";
-    }
-
-    setupDynModalActions(modal, res);
-}
-
-function setupDynModalActions(modal, res) {
-    const btnQuote = modal.querySelector('#dyn-modal-btn-quote');
-    const btnReschedule = modal.querySelector('#dyn-modal-btn-reschedule');
-    const btnReject = modal.querySelector('#dyn-modal-btn-reject');
-    const btnAssignStaff = modal.querySelector('#dyn-modal-btn-assign-staff');
-
-    const container = modal.querySelector('#modal-action-inputs');
-    const pWrapper = modal.querySelector('#price-input-wrapper');
-    const rWrapper = modal.querySelector('#reason-input-wrapper');
-    const resWrapper = modal.querySelector('#reschedule-input-wrapper');
-
-    let activeAction = null;
-
-    if (btnAssignStaff) {
-        btnAssignStaff.addEventListener('click', async () => {
-            const staffIdVal = modal.querySelector('#dyn-modal-staff')?.value;
+    renderReservationActions(modal.querySelector('#dyn-modal-actions'), res, {
+        staffList: globalStaffList,
+        onDone: async (message) => {
             modal.remove();
-            await updateReservationAction(res.id, res.status, {
-                staff_id: staffIdVal ? Number(staffIdVal) : null,
-                comment: staffIdVal ? `Assigned staff ID ${staffIdVal}` : 'Staff unassigned'
-            });
-        });
-    }
-
-    btnQuote.addEventListener('click', async () => {
-        if (activeAction !== 'quote') {
-            activeAction = 'quote';
-            container.classList.remove('hidden');
-            pWrapper.classList.remove('hidden');
-            rWrapper.classList.add('hidden');
-            resWrapper.classList.add('hidden');
-            btnQuote.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Send Quote & Notify';
-            return;
-        }
-
-        const priceVal = modal.querySelector('#modal-input-price').value;
-        if (!priceVal || Number(priceVal) <= 0) {
-            Modal.error('Please enter a valid price greater than $0.00.', 'Validation Error');
-            return;
-        }
-
-        const staffIdVal = modal.querySelector('#dyn-modal-staff')?.value;
-        modal.remove();
-        await updateReservationAction(res.id, res.status, {
-            total_price: Number(priceVal),
-            staff_id: staffIdVal ? Number(staffIdVal) : null,
-            comment: `Admin assigned/updated total price to $${Number(priceVal).toFixed(2)}`
-        });
+            await loadCalendarData();
+            Modal.success(message || 'Reservation updated.', 'Done');
+        },
     });
-
-    btnReschedule.addEventListener('click', async () => {
-        if (activeAction !== 'reschedule') {
-            activeAction = 'reschedule';
-            container.classList.remove('hidden');
-            resWrapper.classList.remove('hidden');
-            pWrapper.classList.add('hidden');
-            rWrapper.classList.add('hidden');
-            btnReschedule.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Confirm Reschedule';
-            return;
-        }
-
-        const dtVal = modal.querySelector('#modal-input-reschedule-datetime').value;
-        if (!dtVal) {
-            Modal.error('Please select a new date and time for the reservation.', 'Validation Error');
-            return;
-        }
-
-        const [datePart, timePart] = dtVal.split('T');
-        const serviceDate = datePart;
-        const preferredTime = timePart ? (timePart.length === 5 ? timePart + ':00' : timePart) : '09:00:00';
-        const staffIdVal = modal.querySelector('#dyn-modal-staff')?.value;
-
-        modal.remove();
-        await updateReservationAction(res.id, 'RESCHEDULED', {
-            service_date: serviceDate,
-            preferred_time: preferredTime,
-            staff_id: staffIdVal ? Number(staffIdVal) : null,
-            comment: `Rescheduled by admin to ${serviceDate} at ${preferredTime}`
-        });
-    });
-
-    btnReject.addEventListener('click', async () => {
-        if (activeAction !== 'reject') {
-            activeAction = 'reject';
-            container.classList.remove('hidden');
-            rWrapper.classList.remove('hidden');
-            pWrapper.classList.add('hidden');
-            resWrapper.classList.add('hidden');
-            btnReject.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Confirm Rejection';
-            return;
-        }
-
-        const reasonVal = modal.querySelector('#modal-input-reason').value.trim();
-        if (!reasonVal) {
-            Modal.error('Please provide a reason for cancelling the service.', 'Validation Error');
-            return;
-        }
-
-        const staffIdVal = modal.querySelector('#dyn-modal-staff')?.value;
-        modal.remove();
-        await updateReservationAction(res.id, 'REJECTED', {
-            staff_id: staffIdVal ? Number(staffIdVal) : null,
-            comment: `Cancelled by admin. Reason: ${reasonVal}`
-        });
-    });
-}
-
-async function updateReservationAction(targetId, newStatus, extraData = {}) {
-    try {
-        const rawUser = localStorage.getItem('luxuriapure_user') || localStorage.getItem('purenest_user');
-        const user = (rawUser && rawUser !== 'undefined') ? JSON.parse(rawUser) : {};
-        const currentUserId = user.id || null;
-
-        await API.reservations.update(targetId, {
-            status: newStatus,
-            user_id: currentUserId,
-            ...extraData
-        });
-
-        await loadCalendarData();
-        Modal.success('Reservation updated successfully and email notification sent.', 'Success');
-    } catch (err) {
-        Modal.error(err.message || 'Failed to update reservation status.', 'Update Error');
-    }
 }
 
 function buildAgendaItemCard(res) {
@@ -481,7 +316,7 @@ function buildAgendaItemCard(res) {
     if (res.status === 'CONFIRMED') {
         indicatorColor = 'bg-primary-fixed-dim';
         badgeClasses = 'bg-primary-fixed-dim/20 text-on-primary-fixed-variant';
-    } else if (res.status === 'PENDING') {
+    } else if (res.status === 'PENDING' || res.status === 'QUOTED') {
         indicatorColor = 'bg-tertiary-fixed-dim';
         badgeClasses = 'bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant';
     } else if (res.status === 'COMPLETED') {
@@ -525,7 +360,7 @@ function buildAgendaItemCard(res) {
         <div class="pl-3">
             <div class="flex justify-between items-start mb-2">
                 <p class="font-label-caps text-[10px] text-on-surface-variant">${dateHeader}</p>
-                <span class="px-2 py-0.5 ${badgeClasses} rounded text-[10px] font-bold uppercase tracking-wider">${res.status}</span>
+                <span class="px-2 py-0.5 ${badgeClasses} rounded text-[10px] font-bold uppercase tracking-wider">${STATUS_LABELS[res.status] || res.status}</span>
             </div>
             <h4 class="font-body-md font-medium text-on-surface mb-1">${escapeHTML(res.service_name || 'Standard Cleaning')}</h4>
             <p class="font-body-md text-sm text-on-surface-variant mb-2">${timeRange}</p>
@@ -561,7 +396,7 @@ function renderAgenda(filteredList = null) {
         if (currentFilter === 'CANCELLED') {
             list = list.filter(r => r.status === 'CANCELLED' || r.status === 'REJECTED');
         } else {
-            list = list.filter(r => r.status === currentFilter);
+            list = list.filter(r => r.status === currentFilter || (currentFilter === 'PENDING' && r.status === 'QUOTED'));
         }
     }
 
@@ -588,7 +423,7 @@ function showMobileDayAgendaModal(dateStr, reservations) {
             <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1 text-left cursor-pointer hover:bg-surface-variant/30" onclick="window.triggerModalStatusFromMobile(${res.id})">
                 <div class="flex justify-between items-center">
                     <span class="text-[11px] font-bold text-primary">${escapeHTML(res.service_name || 'Standard Cleaning')}</span>
-                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase">${res.status}</span>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase">${STATUS_LABELS[res.status] || res.status}</span>
                 </div>
                 <span class="text-xs text-on-surface-variant">${formatTimeRange(res.preferred_time)}</span>
             </div>
@@ -671,17 +506,7 @@ function filterAgendaByDate(dateStr) {
 }
 
 function getStatusBadgeClass(status) {
-    switch (status) {
-        case 'PENDING': return 'bg-tertiary-fixed text-tertiary-container';
-        case 'CONFIRMED': return 'bg-primary-fixed text-primary-container';
-        case 'INITIATED': return 'bg-blue-100 text-blue-800';
-        case 'ON_THE_WAY': return 'bg-amber-100 text-amber-800';
-        case 'RESCHEDULED': return 'bg-purple-100 text-purple-800';
-        case 'COMPLETED': return 'bg-emerald-100 text-emerald-800';
-        case 'CANCELLED': return 'bg-error-container text-on-error-container';
-        case 'REJECTED': return 'bg-surface-variant text-on-surface-variant border border-outline-variant/55';
-        default: return 'bg-surface-variant text-on-surface-variant';
-    }
+    return statusBadgeClass(status);
 }
 
 function formatDateHeader(dateStr) {

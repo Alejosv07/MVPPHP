@@ -34,13 +34,17 @@ class EmailService
             "<span style='display:inline-block;padding:5px 14px;border-radius:50px;color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:{$copy['color']};margin-bottom:20px'>" . self::e($copy['badge']) . "</span>
             <h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>Hello " . self::e($name) . ",</h2>
             <p style='font-size:15px;line-height:1.6;color:#475569;margin:0 0 24px'>{$copy['message']}</p>"
+            . self::reasonBox($context['reason'] ?? '')
             . self::staffNotice($reservation, $status)
             . self::detailsTable($reservation)
             . self::actionButtons($reservation, $copy['actions'])
             . "<p style='font-size:13px;color:#64748b;margin-top:20px;line-height:1.5;text-align:center'>Questions? Just reply to this email or call us at " . self::e((string)Config::get('BUSINESS_PHONE')) . '.</p>'
         );
 
-        $text = "Hello {$name},\n\n" . strip_tags($copy['message']) . "\n\n" . self::detailsText($reservation)
+        $reason = trim((string)($context['reason'] ?? ''));
+        $text = "Hello {$name},\n\n" . strip_tags($copy['message']) . "\n\n"
+            . ($reason !== '' ? "Note from our team: {$reason}\n\n" : '')
+            . self::detailsText($reservation)
             . "\nQuestions? Reply to this email or call " . Config::get('BUSINESS_PHONE') . ".\n";
 
         return self::send($to, $name, "{$copy['subject']} · {$ref}", $html, $text);
@@ -66,20 +70,112 @@ class EmailService
 
     public static function sendCustomerActionAlert(array $reservation, string $status): bool
     {
-        $ref = self::ref($reservation);
         $name = self::customerName($reservation);
-        $verb = ['CONFIRMED' => 'confirmed', 'CANCELLED' => 'cancelled', 'RESCHEDULED' => 'rescheduled'][$status] ?? strtolower($status);
+        $verb = [
+            'CONFIRMED'   => 'accepted the quote for',
+            'CANCELLED'   => 'cancelled',
+            'RESCHEDULED' => 'asked for a new date for',
+        ][$status] ?? strtolower($status);
+        $todo = $status === 'RESCHEDULED'
+            ? 'Check availability and press <strong>Confirm</strong> in the admin panel (or Reschedule to propose another date).'
+            : '';
 
-        $html = self::layout("Customer {$verb} {$ref}",
-            "<h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>" . self::e($name) . " {$verb} {$ref}</h2>"
-            . self::detailsTable($reservation),
+        return self::sendTeamAlert($reservation, "{$name} {$verb} " . self::ref($reservation), $todo);
+    }
+
+    /** Internal notification to the bookings inbox. $note may contain trusted HTML. */
+    public static function sendTeamAlert(array $reservation, string $headline, string $note = ''): bool
+    {
+        $admin = rtrim((string)Config::get('SITE_URL'), '/') . '/admin-reservation-index.html';
+
+        $html = self::layout($headline,
+            "<h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>" . self::e($headline) . '</h2>'
+            . ($note !== '' ? "<p style='font-size:15px;line-height:1.6;color:#475569;margin:0 0 20px'>{$note}</p>" : '')
+            . self::detailsTable($reservation)
+            . "<div style='text-align:center;margin:28px 0'><a href='" . self::e($admin) . "' style='background:#0f172a;color:#fff;padding:12px 22px;text-decoration:none;border-radius:6px;font-weight:bold;font-size:13px'>Open admin panel</a></div>",
             false
         );
 
-        return self::send((string)Config::get('MAIL_BOOKINGS'), 'Bookings', "Customer {$verb} {$ref} - {$name}", $html,
-            "{$name} {$verb} {$ref}\n" . self::detailsText($reservation), (string)($reservation['email'] ?? ''));
+        return self::send((string)Config::get('MAIL_BOOKINGS'), 'Bookings', $headline, $html,
+            $headline . "\n" . strip_tags($note) . "\n\n" . self::detailsText($reservation), (string)($reservation['email'] ?? ''));
     }
 
+    /**
+     * Compares a reservation before/after a change and emails the cleaner(s) involved.
+     * Cleaners only hear about confirmed jobs: nothing while it is a request or a quote.
+     * Both arrays must come from a query that joins staff_name/staff_email.
+     */
+    public static function notifyStaffOfChange(array $before, array $after): void
+    {
+        foreach (self::staffEmailsFor($before, $after) as [$who, $kind]) {
+            if ($who === 'old') {
+                // The cleaner who was going: the job as they knew it (their date/time)
+                self::sendStaffJobEmail(array_merge($after, [
+                    'staff_name'     => $before['staff_name'] ?? '',
+                    'staff_email'    => $before['staff_email'] ?? '',
+                    'service_date'   => $before['service_date'] ?? $after['service_date'] ?? '',
+                    'preferred_time' => $before['preferred_time'] ?? $after['preferred_time'] ?? '',
+                ]), $kind);
+            } else {
+                self::sendStaffJobEmail($after, $kind);
+            }
+        }
+    }
+
+    /**
+     * Pure decision behind notifyStaffOfChange: list of [who ('old'|'new'), kind].
+     * @return array<int, array{0: string, 1: string}>
+     */
+    public static function staffEmailsFor(array $before, array $after): array
+    {
+        $active = ['CONFIRMED', 'ON_THE_WAY', 'INITIATED'];
+        $oldStaff = (int)($before['staff_id'] ?? 0);
+        $newStaff = (int)($after['staff_id'] ?? 0);
+        $wasActive = $oldStaff > 0 && in_array($before['status'] ?? '', $active, true);
+        $isActive = $newStaff > 0 && in_array($after['status'] ?? '', $active, true);
+        $staffChanged = $oldStaff !== $newStaff;
+
+        if (($after['status'] ?? '') === 'COMPLETED') {
+            return [];
+        }
+
+        $emails = [];
+        // A job on hold (date being changed) that ends up cancelled: release the cleaner
+        if ($oldStaff > 0 && ($before['status'] ?? '') === 'RESCHEDULED'
+            && in_array($after['status'] ?? '', ['CANCELLED', 'REJECTED'], true)) {
+            return [['old', 'cancelled']];
+        }
+        if ($wasActive && (!$isActive || $staffChanged)) {
+            $emails[] = ['old', match (true) {
+                in_array($after['status'] ?? '', ['CANCELLED', 'REJECTED'], true) => 'cancelled',
+                $staffChanged => 'removed',
+                default => 'on_hold',
+            }];
+        }
+
+        if ($isActive && (!$wasActive || $staffChanged)) {
+            $emails[] = ['new', 'assigned'];
+        } elseif ($isActive && $wasActive) {
+            $changed = substr((string)($before['preferred_time'] ?? ''), 0, 5) !== substr((string)($after['preferred_time'] ?? ''), 0, 5);
+            foreach (['service_date', 'service_address', 'service_id'] as $field) {
+                $changed = $changed || (string)($before[$field] ?? '') !== (string)($after[$field] ?? '');
+            }
+            if ($changed) {
+                $emails[] = ['new', 'updated'];
+            }
+        }
+        return $emails;
+    }
+
+    /**
+     * Emails to the assigned cleaner. They only hear about jobs that are actually happening:
+     *  assigned  - job confirmed and assigned to you (full details)
+     *  updated   - date/time/address of a confirmed job changed
+     *  on_hold   - the date is being changed; wait for the new confirmation
+     *  cancelled - job cancelled
+     *  removed   - job given to another cleaner
+     *  reminder  - your job is tomorrow
+     */
     public static function sendStaffJobEmail(array $reservation, string $kind): bool
     {
         $to = trim((string)($reservation['staff_email'] ?? ''));
@@ -95,11 +191,14 @@ class EmailService
         $panel = rtrim((string)Config::get('SITE_URL'), '/') . '/employee-execution.html';
 
         [$subject, $headline, $message] = match ($kind) {
-            'cancelled'   => ["Job cancelled: {$short}", 'Job cancelled', "Job {$ref} on <strong>{$date}</strong> has been cancelled. You don't need to go to this address."],
-            'rescheduled' => ["Job moved to {$short}", 'Job rescheduled', "Job {$ref} has a new date: <strong>{$date}</strong>. Please check your schedule."],
-            default       => ["New job assigned: {$short}", 'New job assigned', "You have been assigned job {$ref} on <strong>{$date}</strong>. The details are below."],
+            'cancelled' => ["Job cancelled: {$short}", 'Job cancelled', "Job {$ref} on <strong>{$date}</strong> has been cancelled. You don't need to go to this address."],
+            'removed'   => ["Job reassigned: {$short}", 'Job reassigned', "Job {$ref} on <strong>{$date}</strong> has been given to another cleaner. You don't need to go to this address."],
+            'on_hold'   => ["Job on hold: {$short}", 'Job on hold', "The date of job {$ref} (<strong>{$date}</strong>) is being changed. <strong>Don't go to this address</strong> until you receive the confirmation with the new date."],
+            'updated'   => ["Job updated: {$short}", 'Job details updated', "The details of job {$ref} have changed. It is now on <strong>{$date}</strong>. Please review them below."],
+            'reminder'  => ["Tomorrow: job {$ref}", 'Your job is tomorrow', "Reminder: you have job {$ref} on <strong>{$date}</strong>. The details are below."],
+            default     => ["New job confirmed: {$short}", 'New job assigned', "You have been assigned job {$ref} on <strong>{$date}</strong>. The customer has confirmed it. The details are below."],
         };
-        $withDetails = $kind !== 'cancelled';
+        $withDetails = !in_array($kind, ['cancelled', 'removed', 'on_hold'], true);
 
         $html = self::layout($headline,
             "<h2 style='font-family:Georgia,serif;font-size:22px;font-weight:normal;margin:0 0 12px'>Hello " . self::e($first) . ",</h2>
@@ -170,28 +269,34 @@ class EmailService
         $hasPrice = (float)($res['total_price'] ?? 0) > 0;
         $byCustomer = ($ctx['by'] ?? 'team') === 'customer';
         $updated = !empty($ctx['updated']);
+        $newDateConfirmed = ($ctx['from'] ?? '') === 'RESCHEDULED';
         $bookings = self::e((string)Config::get('MAIL_REPLY_TO'));
         $policy = "<a href='" . self::e(rtrim((string)Config::get('SITE_URL'), '/')) . "/cancellation-policy.html' style='color:#475569'>Cancellation Policy</a>";
 
+        $quote = [
+            'subject' => "Your quote is ready: please confirm {$short}", 'badge' => 'Quote ready', 'color' => '#b45309',
+            'headline' => 'Your quote is ready',
+            'message' => "Thank you for choosing Luxuria Pure. Your price for <strong>{$date}</strong> is below. <strong>Your appointment is booked only after you press Confirm.</strong>",
+            'actions' => ['confirm', 'reschedule', 'cancel'],
+        ];
+
         $copy = match ($status) {
-            // With a price it is a quote to accept; without one there is nothing to confirm yet
-            'PENDING' => $hasPrice
-                ? [
-                    'subject' => "Your quote is ready: please confirm {$short}", 'badge' => 'Quote ready', 'color' => '#b45309',
-                    'headline' => 'Your quote is ready',
-                    'message' => "Thank you for choosing Luxuria Pure. Your price for <strong>{$date}</strong> is below. <strong>Your appointment is booked only after you press Confirm.</strong>",
-                    'actions' => ['confirm', 'reschedule', 'cancel'],
-                ]
-                : [
-                    'subject' => 'We received your booking request', 'badge' => 'Request received', 'color' => '#b45309',
-                    'headline' => 'Booking request received',
-                    'message' => "Thank you for choosing Luxuria Pure. We've received your request for <strong>{$date}</strong>. Our team will check availability and email you a price quote within one business day. <strong>Nothing is booked or charged until you accept the quote.</strong>",
-                    'actions' => ['cancel'],
-                ],
+            'QUOTED' => $quote,
+            // Legacy rows: a PENDING request that already has a price is a quote
+            'PENDING' => $hasPrice ? $quote : [
+                'subject' => 'We received your booking request', 'badge' => 'Request received', 'color' => '#b45309',
+                'headline' => 'Booking request received',
+                'message' => "Thank you for choosing Luxuria Pure. We've received your request for <strong>{$date}</strong>. Our team will check availability and email you a price quote within one business day. <strong>Nothing is booked or charged until you accept the quote.</strong>",
+                'actions' => ['cancel'],
+            ],
             'CONFIRMED' => [
-                'subject' => $byCustomer ? "Thanks! Your cleaning on {$short} is confirmed" : "Your cleaning on {$short} is confirmed",
+                'subject' => match (true) {
+                    $byCustomer => "Thanks! Your cleaning on {$short} is confirmed",
+                    $newDateConfirmed => "Your new date is confirmed: {$short}",
+                    default => "Your cleaning on {$short} is confirmed",
+                },
                 'badge' => 'Confirmed', 'color' => '#15803d',
-                'headline' => 'Your cleaning is confirmed',
+                'headline' => $newDateConfirmed && !$byCustomer ? 'Your new date is confirmed' : 'Your cleaning is confirmed',
                 'message' => "Your appointment for <strong>{$date}</strong> is confirmed. Please make sure our team can access the property at the scheduled time. You can reschedule or cancel for free up to 48 hours before the service ({$policy}).",
                 'actions' => ['reschedule', 'cancel'],
             ],
@@ -242,7 +347,9 @@ class EmailService
             'REJECTED' => [
                 'subject' => "We can't take your booking for {$short}", 'badge' => 'Not available', 'color' => '#b91c1c',
                 'headline' => 'We are unable to take this booking',
-                'message' => "Unfortunately we can't accommodate this request (the date may be fully booked or the address may be outside our service area). You have not been charged. Reply to this email and we'll gladly suggest another option.",
+                'message' => "Unfortunately we can't accommodate this request"
+                    . (trim((string)($ctx['reason'] ?? '')) === '' ? ' (the date may be fully booked or the address may be outside our service area)' : '')
+                    . ". You have not been charged. Reply to this email and we'll gladly suggest another option.",
                 'actions' => [],
             ],
             'REMINDER' => self::reminderCopy($date, (int)($ctx['days_left'] ?? 3), $policy),
@@ -259,8 +366,23 @@ class EmailService
             $copy['badge'] = 'Updated';
             $copy['message'] = "We've updated the details of your appointment. Please review them below. " . $copy['message'];
         }
+        if ($updated && !$byCustomer && $status === 'QUOTED') {
+            $copy['subject'] = "Your updated quote: please confirm {$short}";
+            $copy['badge'] = 'Updated quote';
+            $copy['headline'] = 'Your quote has been updated';
+        }
 
         return $copy;
+    }
+
+    private static function reasonBox(string $reason): string
+    {
+        $reason = trim($reason);
+        if ($reason === '') {
+            return '';
+        }
+        return "<div style='background:#f8fafc;border-left:3px solid #94a3b8;padding:12px 16px;margin:0 0 24px;font-size:14px;line-height:1.5;color:#334155'><strong>Note from our team:</strong><br>"
+            . nl2br(self::e($reason)) . '</div>';
     }
 
     private static function reminderCopy(string $date, int $daysLeft, string $policy): array

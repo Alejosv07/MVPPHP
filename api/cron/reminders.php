@@ -22,19 +22,41 @@ $sql = "
     JOIN customers c ON r.customer_id = c.id
     JOIN services s ON r.service_id = s.id
     LEFT JOIN users u ON r.staff_id = u.id
-    WHERE r.status IN ('CONFIRMED', 'RESCHEDULED')
-      AND r.service_date IN (DATE_ADD(CURDATE(), INTERVAL 3 DAY), DATE_ADD(CURDATE(), INTERVAL 1 DAY))
+    WHERE r.service_date IN (DATE_ADD(CURDATE(), INTERVAL 3 DAY), DATE_ADD(CURDATE(), INTERVAL 1 DAY))
+      AND r.status IN ('PENDING', 'QUOTED', 'CONFIRMED', 'RESCHEDULED')
 ";
 
 $reservations = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 $sent = 0;
+$staffSent = 0;
+$alerts = 0;
 
 $today = new DateTimeImmutable('today');
 foreach ($reservations as $res) {
     $daysLeft = (int)$today->diff(new DateTimeImmutable((string)$res['service_date']))->days;
-    if (EmailService::sendStatusUpdateEmail($res, 'REMINDER', ['days_left' => $daysLeft])) {
-        $sent++;
+    $ref = sprintf('#RES-%04d', (int)$res['id']);
+
+    // Only confirmed appointments get reminders; anything else is still waiting on someone
+    if ($res['status'] === 'CONFIRMED') {
+        if (EmailService::sendStatusUpdateEmail($res, 'REMINDER', ['days_left' => $daysLeft])) {
+            $sent++;
+        }
+        if ($daysLeft <= 1 && !empty($res['staff_email']) && EmailService::sendStaffJobEmail($res, 'reminder')) {
+            $staffSent++;
+        }
+    }
+
+    // Tell the office about bookings that are close and not ready
+    $problem = match (true) {
+        $res['status'] === 'PENDING'     => 'still has no quote',
+        $res['status'] === 'QUOTED'      => 'the customer has not accepted the quote yet',
+        $res['status'] === 'RESCHEDULED' => 'the new date has not been confirmed yet',
+        empty($res['staff_id'])          => 'has no cleaner assigned',
+        default                          => null,
+    };
+    if ($problem !== null && EmailService::sendTeamAlert($res, "Needs attention: {$ref} in {$daysLeft} day(s) {$problem}")) {
+        $alerts++;
     }
 }
 
-echo "Reminders processed: " . count($reservations) . ", sent: {$sent}\n";
+echo "Reservations checked: " . count($reservations) . ", customer reminders: {$sent}, cleaner reminders: {$staffSent}, office alerts: {$alerts}\n";

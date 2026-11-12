@@ -161,7 +161,8 @@ function populateDaysSelector() {
         }
     }
 
-    daySelect.value = String(currentDay);
+    // Show the whole month by default so upcoming jobs are visible; "Today" is one click away
+    daySelect.value = 'all';
 }
 
 async function loadReservations() {
@@ -198,18 +199,11 @@ async function loadReservations() {
         let statusFilter = statusSelect && statusSelect.value !== 'all' ? statusSelect.value.trim().toUpperCase() : null;
 
         data = data.filter(res => {
+            // The API already returns only this cleaner's confirmed jobs
             if (!res.service_date) return false;
 
-            if (!isAdmin && loggedUser && loggedUser.id) {
-                const resAssignedId = res.assigned_to ?? res.employee_id ?? res.user_id;
-                if (resAssignedId !== undefined && resAssignedId !== null && String(resAssignedId) !== String(loggedUser.id)) {
-                    return false;
-                }
-            }
-
             const normalizedResStatus = (res.status || '').trim().toUpperCase();
-
-            if (normalizedResStatus === 'PENDING') {
+            if (['PENDING', 'QUOTED', 'REJECTED'].includes(normalizedResStatus)) {
                 return false;
             }
 
@@ -240,6 +234,7 @@ async function loadReservations() {
             return true;
         });
 
+        data.sort((a, b) => `${a.service_date} ${a.preferred_time}`.localeCompare(`${b.service_date} ${b.preferred_time}`));
         renderReservationsTable(data);
         updateDashboardMetrics(data);
 
@@ -276,11 +271,7 @@ function renderReservationsTable(reservations) {
         const initials = getInitials(res.first_name || 'N', res.last_name || 'A');
         const statusKey = (res.status || '').trim().toUpperCase();
         const statusConfig = getStatusUIConfig(statusKey);
-        const statusDisplayLabel = statusKey.replace(/_/g, ' ');
-
-        const isDisabled = statusKey === 'COMPLETED' || statusKey === 'CANCELLED';
-        const disabledClass = isDisabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:bg-surface-container-high';
-        const disabledAttr = isDisabled ? 'disabled' : '';
+        const statusDisplayLabel = staffStatusLabel(statusKey);
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-surface-container-low/45 transition-colors cursor-pointer';
@@ -288,8 +279,8 @@ function renderReservationsTable(reservations) {
 
         tr.innerHTML = `
             <td class="py-4 px-4 align-top">
-                <div class="font-headline-sm text-[16px] text-on-surface font-semibold">${escapeHTML(res.preferred_time || '08:00 AM')}</div>
-                <div class="text-xs text-outline font-medium">${escapeHTML(res.frequency || 'One-time')}</div>
+                <div class="font-headline-sm text-[16px] text-on-surface font-semibold whitespace-nowrap">${escapeHTML(formatTime(res.preferred_time))}</div>
+                <div class="text-xs text-outline font-medium whitespace-nowrap">${escapeHTML(formatShortDate(res.service_date))}</div>
             </td>
             
             <td class="py-4 px-4 align-top">
@@ -320,16 +311,8 @@ function renderReservationsTable(reservations) {
             </td>
 
             <td class="py-4 px-4 align-top">
-                <div class="flex items-center justify-center gap-1">
-                    <button ${disabledAttr} onclick="event.stopPropagation(); updateStatus(${res.id}, 'ON_THE_WAY')" class="p-1.5 rounded bg-surface-container ${disabledClass} text-on-surface transition-colors" title="${isDisabled ? 'Action Disabled' : 'Mark On The Way'}">
-                        <span class="material-symbols-outlined text-[16px]">local_shipping</span>
-                    </button>
-                    <button ${disabledAttr} onclick="event.stopPropagation(); updateStatus(${res.id}, 'INITIATED')" class="p-1.5 rounded bg-surface-container ${disabledClass} text-on-surface transition-colors" title="${isDisabled ? 'Action Disabled' : 'Mark Initiated'}">
-                        <span class="material-symbols-outlined text-[16px]">play_arrow</span>
-                    </button>
-                    <button ${disabledAttr} onclick="event.stopPropagation(); updateStatus(${res.id}, 'COMPLETED')" class="p-1.5 rounded bg-surface-container ${disabledClass} text-on-surface transition-colors" title="${isDisabled ? 'Action Disabled' : 'Mark Completed'}">
-                        <span class="material-symbols-outlined text-[16px]">check_circle</span>
-                    </button>
+                <div class="flex items-center justify-center gap-1" onclick="event.stopPropagation()">
+                    ${stepButtons(res, 'p-1.5')}
                 </div>
             </td>
 
@@ -364,8 +347,8 @@ function renderReservationsTable(reservations) {
                         <p class="text-outline text-xs">${escapeHTML(res.phone_number || 'No Phone')}</p>
                     </div>
                     <div class="text-right shrink-0">
-                        <div class="font-headline-sm text-sm font-semibold text-on-surface">${escapeHTML(res.preferred_time || '08:00 AM')}</div>
-                        <div class="text-[11px] text-outline">${escapeHTML(res.frequency || 'One-time')}</div>
+                        <div class="font-headline-sm text-sm font-semibold text-on-surface">${escapeHTML(formatTime(res.preferred_time))}</div>
+                        <div class="text-[11px] text-outline">${escapeHTML(formatShortDate(res.service_date))}</div>
                     </div>
                 </div>
 
@@ -376,15 +359,7 @@ function renderReservationsTable(reservations) {
 
                 <div class="flex items-center justify-between pt-2 border-t border-outline-variant/10">
                     <div class="flex items-center gap-1" onclick="event.stopPropagation()">
-                        <button ${disabledAttr} onclick="updateStatus(${res.id}, 'ON_THE_WAY')" class="p-2 rounded bg-surface-container ${disabledClass} text-on-surface transition-colors" title="Mark On The Way">
-                            <span class="material-symbols-outlined text-[16px]">local_shipping</span>
-                        </button>
-                        <button ${disabledAttr} onclick="updateStatus(${res.id}, 'INITIATED')" class="p-2 rounded bg-surface-container ${disabledClass} text-on-surface transition-colors" title="Mark Initiated">
-                            <span class="material-symbols-outlined text-[16px]">play_arrow</span>
-                        </button>
-                        <button ${disabledAttr} onclick="updateStatus(${res.id}, 'COMPLETED')" class="p-2 rounded bg-surface-container ${disabledClass} text-on-surface transition-colors" title="Mark Completed">
-                            <span class="material-symbols-outlined text-[16px]">check_circle</span>
-                        </button>
+                        ${stepButtons(res, 'p-2')}
                     </div>
                     <span class="text-xs font-semibold text-primary flex items-center gap-1">
                         <span>Details</span>
@@ -417,19 +392,19 @@ window.selectReservation = async function (id) {
         const totalPrice = res.total_price || res.precio_total || res.total || '0.00';
 
         const serviceName = res.service_name || res.nombre_servicio || 'General Service';
-        const serviceDate = res.service_date || res.fecha_servicio || 'N/A';
-        const preferredTime = res.preferred_time || res.hora || '08:00 AM';
+        const serviceDate = formatShortDate(res.service_date);
+        const preferredTime = formatTime(res.preferred_time);
         const serviceAddress = res.service_address || res.direccion || 'No Address Provided';
         const instructions = res.special_instructions || res.notas || res.observaciones || 'No additional instructions provided.';
 
         const statusKey = (res.status || res.estado || 'INITIATED').trim().toUpperCase();
         const statusConfig = getStatusUIConfig(statusKey);
-        const statusDisplayLabel = statusKey.replace(/_/g, ' ');
+        const statusDisplayLabel = staffStatusLabel(statusKey);
 
-        const isInitiated = statusKey === 'INITIATED';
-        const disabledClass = isInitiated ? 'hover:opacity-90' : 'opacity-40 cursor-not-allowed pointer-events-none';
-        const disabledAttr = isInitiated ? '' : 'disabled';
-        const buttonText = isInitiated ? 'Mark Completed & Notify Customer' : 'Service Not Initiated';
+        const blocked = stepBlockedReason(res, 'COMPLETED');
+        const disabledClass = blocked ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:opacity-90';
+        const disabledAttr = blocked ? 'disabled' : '';
+        const buttonText = blocked ? blocked : 'Mark Completed & Notify Customer';
 
         detailsPanel.innerHTML = `
             <div class="flex items-start justify-between pb-4 bg-surface-container-low/30 -mx-6 -mt-6 p-6 rounded-t-xl">
@@ -500,12 +475,76 @@ window.selectReservation = async function (id) {
                     <span class="material-symbols-outlined text-[18px]">verified</span>
                     <span>${buttonText}</span>
                 </button>
-                <p class="text-[11px] text-center text-outline mt-2">Sends standardized departure status update.</p>
+                <p class="text-[11px] text-center text-outline mt-2">The customer receives an email and is asked to rate the service.</p>
             </div>
         `;
     } catch (error) {
         console.error('Error loading reservation details:', error);
     }
+}
+
+/* ---------- Job steps (same rules as the API: BookingRules.php) ---------- */
+
+const STAFF_NEXT = {
+    CONFIRMED: ['ON_THE_WAY', 'INITIATED'],
+    ON_THE_WAY: ['INITIATED'],
+    INITIATED: ['COMPLETED'],
+};
+
+const STEPS = [
+    { to: 'ON_THE_WAY', icon: 'local_shipping', label: 'On the way' },
+    { to: 'INITIATED', icon: 'play_arrow', label: 'Start cleaning' },
+    { to: 'COMPLETED', icon: 'check_circle', label: 'Complete' },
+];
+
+function localISODate(d = new Date()) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Why this step can't be done now, or '' when it can. */
+function stepBlockedReason(res, to) {
+    const status = (res.status || '').toUpperCase();
+    if (['COMPLETED', 'CANCELLED'].includes(status)) return 'Job closed';
+    if (status === 'RESCHEDULED') return 'On hold: new date pending';
+    if (!(STAFF_NEXT[status] || []).includes(to)) {
+        return to === 'COMPLETED' ? 'Start the cleaning first' : 'Already done';
+    }
+    if (res.service_date > localISODate()) return `Available on ${formatShortDate(res.service_date)}`;
+    return '';
+}
+
+function stepButtons(res, padding) {
+    return STEPS.map(step => {
+        const blocked = stepBlockedReason(res, step.to);
+        const state = blocked ? 'opacity-30 cursor-not-allowed' : 'hover:bg-primary hover:text-on-primary';
+        return `<button type="button" ${blocked ? 'disabled' : ''} onclick="updateStatus(${Number(res.id)}, '${step.to}')"
+            class="${padding} rounded bg-surface-container ${state} text-on-surface transition-colors"
+            title="${escapeHTML(blocked ? `${step.label}: ${blocked}` : step.label)}" aria-label="${escapeHTML(step.label)}">
+            <span class="material-symbols-outlined text-[16px]">${step.icon}</span>
+        </button>`;
+    }).join('');
+}
+
+function staffStatusLabel(status) {
+    return {
+        CONFIRMED: 'Scheduled', ON_THE_WAY: 'On the way', INITIATED: 'In progress',
+        COMPLETED: 'Completed', CANCELLED: 'Cancelled', RESCHEDULED: 'On hold',
+    }[status] || status.replace(/_/g, ' ');
+}
+
+function formatTime(time) {
+    if (!time) return 'Time TBD';
+    const [h, m] = time.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m || 0, 0, 0);
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatShortDate(date) {
+    if (!date) return 'N/A';
+    const d = new Date(`${date}T00:00:00`);
+    if (date === localISODate()) return 'Today';
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 window.updateStatus = async function (id, newStatus) {
@@ -514,17 +553,29 @@ window.updateStatus = async function (id, newStatus) {
         return;
     }
 
-    try {
-        const loggedUser = getLoggedUser();
-        await API.reservations.update(id, { 
-            status: newStatus,
-            user_id: loggedUser ? loggedUser.id : null 
-        });
-        await loadReservations();
-    } catch (error) {
-        console.error('Error updating status:', error);
-        alert('Could not update status.');
-    }
+    const copy = {
+        ON_THE_WAY: ['Heading to the customer?', 'The customer will receive an email saying you are on the way.', 'Yes, I\'m on the way'],
+        INITIATED: ['Start the cleaning?', 'The customer will receive an email saying the cleaning has started.', 'Start cleaning'],
+    }[newStatus];
+
+    Modal.show({
+        type: 'info',
+        title: copy[0],
+        message: copy[1],
+        confirmText: copy[2],
+        showCancel: true,
+        onConfirm: async () => {
+            try {
+                await API.reservations.update(id, { status: newStatus });
+                await loadReservations();
+                await selectReservation(id);
+            } catch (error) {
+                console.error('Error updating status:', error);
+                Modal.error(error.message || 'Could not update the job. Please try again.', 'Could not update');
+                return false;
+            }
+        },
+    });
 };
 
 function showCompletionRatingModal(reservationId) {
@@ -584,7 +635,7 @@ function showCompletionRatingModal(reservationId) {
                 }
             } catch (error) {
                 console.error('Error completing reservation:', error);
-                alert('An error occurred while completing the reservation.');
+                Modal.error(error.message || 'Could not complete the job. Please try again.', 'Could not update');
             }
             return false;
         }
@@ -686,6 +737,13 @@ function updateDashboardMetrics(reservations) {
     const elCompleted = document.getElementById('metric-completed');
 
     if (elTotal) elTotal.textContent = total;
+    const totalLabel = document.getElementById('metric-total-label');
+    if (totalLabel) totalLabel.textContent = total === 1 ? '1 job in this view' : `${total} jobs in this view`;
+    const title = document.getElementById('jobs-title');
+    const daySelect = document.querySelectorAll('select')[0];
+    if (title && daySelect) {
+        title.textContent = daySelect.value === String(new Date().getDate()) ? "Today's Jobs" : 'My Jobs';
+    }
     if (elPending) elPending.textContent = pendingCount;
     if (elActive) elActive.textContent = activeCount;
     if (elCompleted) elCompleted.textContent = completedCount;

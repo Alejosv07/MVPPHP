@@ -129,7 +129,7 @@ function calculateKPIs(reservations, startDate, endDate) {
             if (sName.includes('deep') || sName.includes('post') || sName.includes('super')) {
                 premiumServiceRevenue += val;
             }
-        } else if (status === 'PENDING' || status === 'CONFIRMED' || status === 'INITIATED' || status === 'ON_THE_WAY') {
+        } else if (['PENDING', 'QUOTED', 'CONFIRMED', 'RESCHEDULED', 'INITIATED', 'ON_THE_WAY'].includes(status)) {
             pendingRevenue += val; 
         }
 
@@ -275,7 +275,7 @@ function updateCharts(reservations) {
         if (status === 'COMPLETED') {
             dates[d].completed++;
             dates[d].revenue += getReservationValue(res);
-        } else if (status === 'PENDING' || status === 'CONFIRMED' || status === 'INITIATED' || status === 'ON_THE_WAY') {
+        } else if (['PENDING', 'QUOTED', 'CONFIRMED', 'RESCHEDULED', 'INITIATED', 'ON_THE_WAY'].includes(status)) {
             dates[d].pending++;
         } else if (status === 'CANCELLED' || status === 'REJECTED') {
             dates[d].cancelled++;

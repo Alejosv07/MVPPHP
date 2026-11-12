@@ -214,19 +214,6 @@
                                 <select id="modal-service"
                                     class="pointer-events-none w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface-bright focus:border-primary focus:ring-0 transition-all font-body-md"></select>
                             </div>
-                            <div class="flex flex-col gap-2">
-                                <label class="text-xs font-label-caps text-outline uppercase">Assigned Staff</label>
-                                <div class="flex gap-2">
-                                    <select id="modal-staff"
-                                        class="flex-1 px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 transition-all font-body-md text-on-surface">
-                                        <option value="">-- Unassigned --</option>
-                                    </select>
-                                    <button id="modal-btn-assign-staff"
-                                        class="px-4 py-3 rounded-lg border border-primary bg-primary text-on-primary font-label-caps text-label-caps hover:bg-primary/90 transition-all flex items-center justify-center gap-1 cursor-pointer">
-                                        <span class="material-symbols-outlined text-sm">person_add</span> Assign
-                                    </button>
-                                </div>
-                            </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="flex flex-col gap-2">
                                     <label class="text-xs font-label-caps text-outline uppercase">Bedrooms</label>
@@ -259,7 +246,7 @@
                                 <label class="text-xs font-label-caps text-outline uppercase">Date & Time</label>
                                 <input id="modal-datetime"
                                     class="pointer-events-none w-full px-4 py-3 rounded-lg border border-outline-variant/50 bg-surface-bright focus:border-primary focus:ring-0 transition-all font-body-md"
-                                    type="datetime-local">
+                                    type="text" readonly>
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label class="text-xs font-label-caps text-outline uppercase">Additional Notes</label>
@@ -270,48 +257,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-12 pt-8 border-t border-outline-variant/30 flex flex-wrap gap-4">
-                    <div class="w-full flex flex-col gap-4">
-                        <div id="modal-action-inputs"
-                            class="flex flex-col gap-3 p-4 rounded-xl bg-surface-variant/30 border border-outline-variant/30 hidden">
-                            <div id="price-input-wrapper" class="flex flex-col gap-1.5 hidden">
-                                <label class="text-xs font-label-caps text-primary font-bold uppercase">Set Real Price
-                                    ($)</label>
-                                <input type="number" step="0.01" id="modal-input-price" placeholder="e.g. 150.00"
-                                    class="w-full px-4 py-2.5 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 font-body-md">
-                            </div>
-                            <div id="reschedule-input-wrapper" class="flex flex-col gap-1.5 hidden">
-                                <label class="text-xs font-label-caps text-gold font-bold uppercase">Select New Date &
-                                    Time</label>
-                                <input type="datetime-local" id="modal-input-reschedule-datetime"
-                                    class="w-full px-4 py-2.5 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 font-body-md">
-                            </div>
-                            <div id="reason-input-wrapper" class="flex flex-col gap-1.5 hidden">
-                                <label class="text-xs font-label-caps text-error font-bold uppercase">Rejected Reason /
-                                    Notes</label>
-                                <textarea id="modal-input-reason"
-                                    placeholder="Explain why the service is being cancelled..."
-                                    class="w-full px-4 py-2.5 rounded-lg border border-outline-variant/50 bg-surface focus:border-primary focus:ring-0 font-body-md resize-none"
-                                    rows="2"></textarea>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-3 justify-end">
-                            <button id="modal-btn-quote-action"
-                                class="px-5 py-2.5 rounded-lg border border-primary-fixed bg-primary-fixed text-primary-container font-label-caps text-label-caps hover:bg-primary-fixed/80 transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-sm">payments</span> Set Price & Quote
-                            </button>
-                            <button id="modal-btn-reschedule-action"
-                                class="flex-1 md:flex-none px-6 py-3 rounded-lg border border-outline-variant/50 bg-surface-container text-navy font-label-caps text-label-caps hover:bg-surface-variant transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-sm">event_repeat</span> Reschedule Service
-                            </button>
-                            <button id="modal-btn-reject-action"
-                                class="px-5 py-2.5 rounded-lg border border-error/30 text-error font-label-caps text-label-caps hover:bg-error-container transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-sm">cancel</span> Rejected Service
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Status actions + cleaner assignment (js/modules/reservation-actions.js) -->
+                <div id="modal-actions" class="mt-10 pt-6 border-t border-outline-variant/30"></div>
             </div>
         </div>
     </div>

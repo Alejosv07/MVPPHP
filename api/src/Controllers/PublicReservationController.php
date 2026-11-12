@@ -8,6 +8,7 @@ use App\Config\Config;
 use App\Config\Database;
 use App\Models\AuditModel;
 use App\Utils\Auth;
+use App\Utils\BookingRules;
 use App\Utils\EmailService;
 use App\Utils\RateLimiter;
 use PDO;
@@ -20,7 +21,7 @@ use PDO;
  */
 class PublicReservationController
 {
-    private const ACTIONABLE = ['PENDING', 'CONFIRMED', 'RESCHEDULED'];
+    private const ACTIONABLE = ['PENDING', 'QUOTED', 'CONFIRMED', 'RESCHEDULED'];
 
     private PDO $db;
 
@@ -63,9 +64,25 @@ class PublicReservationController
             $this->page('No changes possible', "<p>Reservation <strong>{$ref}</strong> is currently <strong>{$label}</strong> and can no longer be changed online. Please contact us at " . self::e((string)Config::get('MAIL_SUPPORT')) . ' or ' . self::e((string)Config::get('BUSINESS_PHONE')) . '.</p>');
         }
 
-        // There is nothing to accept until the team has sent a price
-        if ($action === 'confirm' && (float)($reservation['total_price'] ?? 0) <= 0) {
-            $this->page('Quote pending', "<p>We're still preparing the price for reservation <strong>{$ref}</strong>. You'll receive an email with a Confirm button as soon as it's ready.</p>");
+        if ($action === 'confirm') {
+            // There is nothing to accept until the team has sent a price
+            if ((float)($reservation['total_price'] ?? 0) <= 0) {
+                $this->page('Quote pending', "<p>We're still preparing the price for reservation <strong>{$ref}</strong>. You'll receive an email with a Confirm button as soon as it's ready.</p>");
+            }
+            if ($status === 'CONFIRMED') {
+                $this->page('Already confirmed', "<p>Reservation <strong>{$ref}</strong> is already confirmed. See you soon!</p>", 'success');
+            }
+            // A date the customer asked for must be approved by the team, not by the customer
+            if ($status === 'RESCHEDULED' && $this->rescheduledByCustomer($id)) {
+                $this->page('We are checking your new date', "<p>We received your request to move reservation <strong>{$ref}</strong>. Our team will confirm the new date by email shortly.</p>");
+            }
+        }
+
+        // Changes close to the appointment are handled by phone (Cancellation Policy)
+        if ($action === 'reschedule' && $status === 'CONFIRMED'
+            && BookingRules::isWithin((string)$reservation['service_date'], (string)$reservation['preferred_time'], 48)) {
+            $this->page('Please contact us', "<p>Your appointment <strong>{$ref}</strong> is less than 48 hours away, so it can't be moved online. Please call us at "
+                . self::e((string)Config::get('BUSINESS_PHONE')) . ' or reply to our email and we will help you.</p>');
         }
 
         match ($action) {
@@ -90,6 +107,15 @@ class PublicReservationController
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
+    /** True when the last move to RESCHEDULED came from the customer (email link history rows have no user). */
+    private function rescheduledByCustomer(int $id): bool
+    {
+        $stmt = $this->db->prepare("SELECT user_id FROM reservation_history WHERE reservation_id = :id AND new_status = 'RESCHEDULED' ORDER BY id DESC LIMIT 1");
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row !== false && $row['user_id'] === null;
+    }
+
     /* ---------- Actions ---------- */
 
     private function changeStatus(array $reservation, string $newStatus, string $ref): never
@@ -102,9 +128,7 @@ class PublicReservationController
         if ($updated = $this->find($id)) {
             EmailService::sendStatusUpdateEmail($updated, $newStatus, ['by' => 'customer']);
             EmailService::sendCustomerActionAlert($updated, $newStatus);
-            if ($newStatus === 'CANCELLED') {
-                EmailService::sendStaffJobEmail($updated, 'cancelled');
-            }
+            EmailService::notifyStaffOfChange($reservation, $updated);
         }
 
         $newStatus === 'CONFIRMED'
@@ -115,27 +139,38 @@ class PublicReservationController
     private function reschedule(array $reservation, string $ref): never
     {
         $newDate = (string)($_POST['service_date'] ?? '');
+        $newTime = (string)($_POST['preferred_time'] ?? substr((string)$reservation['preferred_time'], 0, 5));
         $d = \DateTimeImmutable::createFromFormat('Y-m-d', $newDate);
+        $back = '<p>Please go back and try again.</p>';
 
         if (!$d || $d->format('Y-m-d') !== $newDate || $newDate <= date('Y-m-d') || $newDate > date('Y-m-d', strtotime('+1 year'))) {
-            $this->page('Invalid date', '<p>Please choose a future date within the next 12 months.</p><p>Please go back and try again.</p>', 'error');
+            $this->page('Invalid date', '<p>Please choose a future date within the next 12 months.</p>' . $back, 'error');
         }
-        if ($newDate === (string)$reservation['service_date']) {
-            $this->page('Same date', '<p>That is already the date of your appointment. Please go back and choose a different date.</p>', 'error');
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $newTime)) {
+            $this->page('Invalid time', '<p>Please choose a valid time.</p>' . $back, 'error');
+        }
+        if ($newDate === (string)$reservation['service_date'] && $newTime === substr((string)$reservation['preferred_time'], 0, 5)) {
+            $this->page('Same date', '<p>That is already the date and time of your appointment. Please choose a different one.</p>' . $back, 'error');
+        }
+        $service = (new \App\Models\ServiceModel())->getById((int)$reservation['service_id']);
+        if ($error = BookingRules::scheduleError($newDate, $newTime, $service)) {
+            $this->page('Date not available', '<p>' . self::e($error) . '</p>' . $back, 'error');
         }
 
         $id = (int)$reservation['id'];
-        $this->db->prepare("UPDATE reservations SET service_date = :d, status = 'RESCHEDULED' WHERE id = :id")
-            ->execute([':d' => $newDate, ':id' => $id]);
-        $this->history($id, $reservation['status'], 'RESCHEDULED', "Service date rescheduled to {$newDate} by customer via email link.");
+        $this->db->prepare("UPDATE reservations SET service_date = :d, preferred_time = :t, status = 'RESCHEDULED' WHERE id = :id")
+            ->execute([':d' => $newDate, ':t' => $newTime . ':00', ':id' => $id]);
+        $this->history($id, $reservation['status'], 'RESCHEDULED', "Customer asked to move the service to {$newDate} {$newTime} via email link.");
 
         if ($updated = $this->find($id)) {
             EmailService::sendStatusUpdateEmail($updated, 'RESCHEDULED', ['by' => 'customer']);
             EmailService::sendCustomerActionAlert($updated, 'RESCHEDULED');
-            EmailService::sendStaffJobEmail($updated, 'rescheduled');
+            // The cleaner is told to hold; they get the new date once the office confirms it
+            EmailService::notifyStaffOfChange($reservation, $updated);
         }
 
-        $this->page('Date updated', "<p>Reservation <strong>{$ref}</strong> has been moved to <strong>" . self::e(date('F j, Y', strtotime($newDate))) . '</strong>. Our team will confirm the new date shortly.</p>', 'success');
+        $when = self::e(date('F j, Y', strtotime($newDate)) . ' at ' . date('g:i A', strtotime($newTime)));
+        $this->page('Request received', "<p>We received your request to move reservation <strong>{$ref}</strong> to <strong>{$when}</strong>. Our team will check availability and confirm by email shortly.</p>", 'success');
     }
 
     private function saveFeedback(int $id, string $ref): never
@@ -148,6 +183,12 @@ class PublicReservationController
             VALUES (:id, :rating, :comment)
             ON DUPLICATE KEY UPDATE customer_rating = VALUES(customer_rating), customer_notes = VALUES(customer_notes)
         ')->execute([':id' => $id, ':rating' => $rating, ':comment' => $comment ?: null]);
+
+        if ($reservation = $this->find($id)) {
+            $note = str_repeat('★', $rating) . str_repeat('☆', 5 - $rating) . ' (' . $rating . '/5)'
+                . ($comment !== '' ? '<br>"' . self::e($comment) . '"' : '');
+            EmailService::sendTeamAlert($reservation, "New {$rating}-star rating for {$ref}", $note);
+        }
 
         $this->page('Thank you for your feedback!', "<p>Your rating for reservation <strong>{$ref}</strong> has been saved.</p>", 'success');
     }
@@ -178,14 +219,21 @@ class PublicReservationController
     private function rescheduleForm(array $reservation, string $ref): never
     {
         $min = date('Y-m-d', strtotime('+1 day'));
+        $max = date('Y-m-d', strtotime('+1 year'));
         $current = self::e((string)($reservation['service_date'] ?? $min));
+        $time = self::e(substr((string)($reservation['preferred_time'] ?? '09:00'), 0, 5));
+        $label = "display:block;text-align:left;font-size:12px;font-weight:bold;color:#475569;text-transform:uppercase;margin-bottom:8px";
+        $input = "width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:6px;font-size:15px;box-sizing:border-box;margin-bottom:20px";
 
         $this->page('Reschedule service', "
             <p>Reservation <strong>{$ref}</strong></p>
             <form method='POST'>
-                <label style='display:block;text-align:left;font-size:12px;font-weight:bold;color:#475569;text-transform:uppercase;margin-bottom:8px'>Select new date</label>
-                <input type='date' name='service_date' value='{$current}' min='{$min}' required style='width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:6px;font-size:15px;box-sizing:border-box;margin-bottom:20px'>
-                <button type='submit' style='width:100%;background:#0f172a;color:#fff;padding:14px;border:0;border-radius:6px;font-weight:bold;font-size:14px;cursor:pointer'>Save new date</button>
+                <label style='{$label}'>New date</label>
+                <input type='date' name='service_date' value='{$current}' min='{$min}' max='{$max}' required style='{$input}'>
+                <label style='{$label}'>Preferred time</label>
+                <input type='time' name='preferred_time' value='{$time}' required style='{$input}'>
+                <p style='font-size:13px;color:#64748b;margin:0 0 20px'>Our team will confirm the new date by email. Your current appointment stays on hold until then.</p>
+                <button type='submit' style='width:100%;background:#0f172a;color:#fff;padding:14px;border:0;border-radius:6px;font-weight:bold;font-size:14px;cursor:pointer'>Request new date</button>
             </form>");
     }
 

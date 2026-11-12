@@ -706,7 +706,8 @@ function setupEstimateForm() {
         }
 
         try {
-            const finalInstructions = userNotes ? `${userNotes} | Frequency: ${selectedFrequency}` : `Booked via public site. Frequency: ${selectedFrequency}`;
+            // Frequency is saved in its own field; notes keep only what the customer wrote
+            const finalInstructions = userNotes || '';
             const payload = {
                 first_name: firstName,
                 last_name: lastName,
@@ -925,6 +926,11 @@ function setupSupportWidget() {
 
                                         reservations.forEach(found => {
                                             const statusColor = found.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : found.status === 'CONFIRMED' ? 'bg-primary-fixed text-primary-container' : 'bg-tertiary-fixed text-tertiary-container';
+                                            const statusLabel = {
+                                                PENDING: 'Request received', QUOTED: 'Quote ready: check your email', CONFIRMED: 'Confirmed',
+                                                RESCHEDULED: 'New date pending', ON_THE_WAY: 'Cleaner on the way', INITIATED: 'In progress',
+                                                COMPLETED: 'Completed', CANCELLED: 'Cancelled', REJECTED: 'Not available',
+                                            }[found.status] || found.status || 'Request received';
                                             const displayPrice = Number(found.total_price || 0) > 0 ? `$${Number(found.total_price).toFixed(2)}` : 'Pending Quote';
                                             const isCompleted = found.status === 'COMPLETED';
 
@@ -971,7 +977,7 @@ function setupSupportWidget() {
                                                 <div class="p-3 rounded-lg border border-outline-variant/30 bg-surface flex flex-col gap-1.5 shadow-sm">
                                                     <div class="flex justify-between items-center">
                                                         <span class="text-xs font-bold text-primary">#RES-${String(found.id).padStart(4, '0')} ${escapeHTML(found.service_name || 'Cleaning Service')}</span>
-                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${found.status || 'PENDING'}</span>
+                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${escapeHTML(statusLabel)}</span>
                                                     </div>
                                                     <div class="text-xs text-on-surface-variant flex flex-col gap-0.5">
                                                         <span><b>Date:</b> ${found.service_date} at ${found.preferred_time || 'N/A'}</span>

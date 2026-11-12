@@ -118,6 +118,14 @@ class CustomerAuthController
         ');
         $stmt->execute([':reservation_id' => $reservationId, ':rating' => $rating, ':notes' => $notes ?: null]);
 
+        $full = (new \App\Models\ReservationModel())->getById($reservationId);
+        if ($full) {
+            $ref = sprintf('#RES-%04d', $reservationId);
+            $note = str_repeat('★', $rating) . str_repeat('☆', 5 - $rating) . " ({$rating}/5)"
+                . ($notes !== '' ? '<br>"' . htmlspecialchars($notes, ENT_QUOTES, 'UTF-8') . '"' : '');
+            EmailService::sendTeamAlert($full, "New {$rating}-star rating for {$ref}", $note);
+        }
+
         Response::json(['message' => 'Customer rating saved successfully']);
     }
 
