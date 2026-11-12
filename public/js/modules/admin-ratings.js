@@ -304,12 +304,12 @@ function renderRatingsTable(data) {
         if (!isIndividualView && entityId) {
             const nameLink = document.createElement('button');
             nameLink.type = 'button';
-            nameLink.textContent = safeTargetName;
+            nameLink.textContent = targetName;
             nameLink.className = 'hover:text-primary-fixed hover:underline text-left focus:outline-none cursor-pointer';
             nameLink.onclick = () => showIndividualHistory(entityId, targetName);
             nameCell.appendChild(nameLink);
         } else {
-            nameCell.textContent = safeTargetName;
+            nameCell.textContent = targetName;
         }
         tr.appendChild(nameCell);
 
@@ -320,13 +320,13 @@ function renderRatingsTable(data) {
 
         const notesCell = document.createElement('td');
         notesCell.className = 'py-3 px-4 max-w-xs truncate';
-        notesCell.title = safeNotes;
-        notesCell.textContent = safeNotes;
+        notesCell.title = notes;
+        notesCell.textContent = notes;
         tr.appendChild(notesCell);
 
         const serviceCell = document.createElement('td');
         serviceCell.className = 'py-3 px-4 text-xs';
-        serviceCell.textContent = safeService;
+        serviceCell.textContent = serviceName;
         tr.appendChild(serviceCell);
 
         tbody.appendChild(tr);
@@ -343,7 +343,7 @@ function renderRatingsTable(data) {
                 <div>
                     <div class="text-xs font-label-caps text-on-surface-variant">${currentViewType === 'client' ? 'Client' : 'Staff Member'}</div>
                     <div class="text-sm font-semibold text-primary">
-                        ${!isIndividualView && entityId ? `<button type="button" onclick="window.triggerIndividualView(${entityId}, '${safeTargetName.replace(/'/g, "\\'")}')" class="hover:underline text-left text-primary">${safeTargetName}</button>` : safeTargetName}
+                        ${!isIndividualView && entityId ? `<button type="button" class="js-individual-view hover:underline text-left text-primary" data-entity-id="${escapeHTML(String(entityId))}" data-entity-name="${safeTargetName}">${safeTargetName}</button>` : safeTargetName}
                     </div>
                 </div>
                 <div class="flex items-center gap-1">
@@ -359,6 +359,14 @@ function renderRatingsTable(data) {
 
     if (mobileCardsContainer) {
         mobileCardsContainer.innerHTML = cardsHTML;
+        // Event delegation instead of inline onclick: names come from customers and must never reach JS source
+        if (!mobileCardsContainer.dataset.bound) {
+            mobileCardsContainer.dataset.bound = '1';
+            mobileCardsContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.js-individual-view');
+                if (btn) showIndividualHistory(btn.dataset.entityId, btn.dataset.entityName);
+            });
+        }
     }
 }
 
@@ -367,5 +375,5 @@ window.triggerIndividualView = function(entityId, entityName) {
 };
 
 function escapeHTML(str) {
-    return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
+    return str ? String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)) : '';
 }

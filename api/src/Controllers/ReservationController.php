@@ -104,11 +104,23 @@ class ReservationController
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             return 'Invalid email address';
         }
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$data['service_date']) || !strtotime((string)$data['service_date'])) {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', (string)$data['service_date']);
+        if (!$date || $date->format('Y-m-d') !== (string)$data['service_date']) {
             return 'Invalid service date';
         }
-        if (!preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', (string)$data['preferred_time'])) {
+        if (!preg_match('/^([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', (string)$data['preferred_time'])) {
             return 'Invalid preferred time';
+        }
+        if (!ctype_digit((string)$data['service_id'])) {
+            return 'Invalid service';
+        }
+        $service = (new \App\Models\ServiceModel())->getById((int)$data['service_id']);
+        if (!$service) {
+            return 'The selected service is not available';
+        }
+        // Customers can only book services that are currently offered
+        if (Auth::user() === null && isset($service['is_active']) && !(int)$service['is_active']) {
+            return 'The selected service is not available';
         }
         if (!preg_match('/^[0-9+()\-.\s]{7,20}$/', (string)$data['phone_number'])) {
             return 'Invalid phone number';
@@ -135,8 +147,12 @@ class ReservationController
             if (empty($data['accept_terms'])) {
                 Response::json(['message' => 'You must accept the Terms of Service and Privacy Policy'], 422);
             }
-            if (($data['service_date'] ?? '') < date('Y-m-d')) {
+            $requested = (string)($data['service_date'] ?? '');
+            if ($requested < date('Y-m-d')) {
                 Response::json(['message' => 'The service date cannot be in the past'], 422);
+            }
+            if ($requested > date('Y-m-d', strtotime('+1 year'))) {
+                Response::json(['message' => 'Please choose a date within the next 12 months'], 422);
             }
 
             $data['status'] = 'PENDING';
@@ -166,7 +182,8 @@ class ReservationController
             }
             $reservation = $this->model->getById($id);
             if ($reservation) {
-                EmailService::sendStatusUpdateEmail($reservation, 'PENDING');
+                // Website requests are always PENDING; admin-created bookings get the email of the status chosen
+                EmailService::sendStatusUpdateEmail($reservation, (string)$reservation['status']);
                 if (!$isStaffUser) {
                     EmailService::sendNewBookingAlert($reservation); // only for website requests
                 }
@@ -231,6 +248,12 @@ class ReservationController
         if ($serviceDate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $serviceDate)) {
             Response::json(['message' => 'Invalid service date'], 422);
         }
+        if ($preferredTime !== null && !preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $preferredTime)) {
+            Response::json(['message' => 'Invalid preferred time'], 422);
+        }
+        if ($totalPrice !== null && ($totalPrice < 0 || $totalPrice > 100000)) {
+            Response::json(['message' => 'Invalid price'], 422);
+        }
 
         try {
             $success = $this->model->updateStatusWithDetails($id, $status, Auth::userId(), $comment, $totalPrice, $serviceDate, $preferredTime, $staffId);
@@ -238,21 +261,54 @@ class ReservationController
             if ($success) {
                 $this->log('UPDATE', $id, ['previous_status' => $current['status'], 'new_status' => $status]);
 
-                // Only email the customer when something they care about changed
-                $priceChanged = $totalPrice !== null && (float)$current['total_price'] !== $totalPrice;
-                $dateChanged = $serviceDate !== null && $serviceDate !== $current['service_date'];
-                if ($status !== $current['status'] || $priceChanged || $dateChanged) {
-                    $reservation = $this->model->getById($id);
-                    if ($reservation) {
-                        EmailService::sendStatusUpdateEmail($reservation, $status);
-                    }
-                }
+                $this->notifyChanges($id, $current, $status, $totalPrice, $serviceDate, $preferredTime, $staffId);
                 Response::json(['message' => 'Reservation updated successfully']);
             }
             Response::json(['message' => 'Reservation not found'], 404);
         } catch (Exception $e) {
             error_log('Reservation status update failed: ' . $e->getMessage());
             Response::json(['message' => 'Error updating status'], 500);
+        }
+    }
+
+    /**
+     * Emails only what changed, to the right person:
+     *  - customer: new status, or new price/date/time on the same status ("updated details")
+     *  - assigned cleaner: job assigned to them, job moved, job cancelled/rejected
+     */
+    private function notifyChanges(int $id, array $current, string $status, ?float $totalPrice, ?string $serviceDate, ?string $preferredTime, ?int $staffId): void
+    {
+        $statusChanged = $status !== $current['status'];
+        $priceChanged = $totalPrice !== null && (float)$current['total_price'] !== $totalPrice;
+        $dateChanged = ($serviceDate !== null && $serviceDate !== $current['service_date'])
+            || ($preferredTime !== null && substr($preferredTime, 0, 5) !== substr((string)$current['preferred_time'], 0, 5));
+        $staffChanged = $staffId !== null && $staffId !== (int)($current['staff_id'] ?? 0);
+
+        if (!$statusChanged && !$priceChanged && !$dateChanged && !$staffChanged) {
+            return;
+        }
+
+        $reservation = $this->model->getById($id);
+        if (!$reservation) {
+            return;
+        }
+
+        if ($statusChanged || $priceChanged || $dateChanged) {
+            EmailService::sendStatusUpdateEmail($reservation, $status, ['updated' => !$statusChanged]);
+        }
+
+        // Staff moving their own job (On the way / Started / Completed) needs no email to themselves
+        if (Auth::isStaff() || empty($reservation['staff_email'])) {
+            return;
+        }
+        if (in_array($status, ['CANCELLED', 'REJECTED'], true)) {
+            if ($statusChanged && !$staffChanged) {
+                EmailService::sendStaffJobEmail($reservation, 'cancelled');
+            }
+        } elseif ($staffChanged) {
+            EmailService::sendStaffJobEmail($reservation, 'assigned');
+        } elseif ($dateChanged) {
+            EmailService::sendStaffJobEmail($reservation, 'rescheduled');
         }
     }
 

@@ -29,6 +29,7 @@ class Database {
             ];
 
             self::$shared = new PDO($dsn, (string)Config::get('DB_USER'), (string)Config::get('DB_PASSWORD'), $options);
+            self::$shared->exec("SET time_zone = '" . (new \DateTime())->format('P') . "'");
         } catch (PDOException $e) {
             error_log('DB connection failed: ' . $e->getMessage());
             http_response_code(500);

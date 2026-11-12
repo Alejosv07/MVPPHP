@@ -113,7 +113,7 @@ async function populateDynamicFilters() {
             serviceSelect.innerHTML = '<option value="all">All Services</option>';
             availableServices.forEach(serviceName => {
                 const optionValue = serviceName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                serviceSelect.innerHTML += `<option value="${optionValue}" data-raw-name="${serviceName}">${serviceName}</option>`;
+                serviceSelect.innerHTML += `<option value="${escapeHTML(optionValue)}" data-raw-name="${escapeHTML(serviceName)}">${escapeHTML(serviceName)}</option>`;
             });
         }
 

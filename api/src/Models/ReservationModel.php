@@ -113,6 +113,7 @@ public function getAll(?int $staffId = null, ?string $search = null): array
                 c.phone_number,
                 s.name AS service_name,
                 u.name AS staff_name,
+                u.email AS staff_email,
                 rr.staff_rating,
                 rr.staff_notes,
                 rr.customer_rating,
@@ -373,7 +374,9 @@ public function getAll(?int $staffId = null, ?string $search = null): array
             JOIN reservations r ON r.id = rr.reservation_id
             LEFT JOIN customers c ON c.id = r.customer_id
             LEFT JOIN services s ON s.id = r.service_id
-            WHERE rr.customer_rating >= 4
+            -- Every rating is shown, good or bad: hiding reviews because of their score is
+            -- prohibited by the FTC Consumer Reviews and Testimonials Rule (16 CFR Part 465)
+            WHERE rr.customer_rating BETWEEN 1 AND 5
               AND rr.customer_notes IS NOT NULL AND rr.customer_notes <> ''
             ORDER BY r.service_date DESC
             LIMIT :lim

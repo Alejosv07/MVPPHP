@@ -53,6 +53,7 @@ class AuthController
             'sub'   => (int)$user['id'],
             'role'  => $user['role'],
             'name'  => $user['name'],
+            'pwv'   => Auth::passwordFingerprint((string)$user['password']),
         ], (int)Config::get('TOKEN_TTL'));
 
         Response::json([
@@ -113,6 +114,9 @@ class AuthController
 
         if ($this->model->updatePasswordWithCode($email, $code, $hashedPassword)) {
             RateLimiter::clear('reset-email', $email);
+            if ($user = $this->model->findByEmail($email)) {
+                EmailService::sendPasswordChangedEmail($user);
+            }
             Response::json(['message' => 'Password updated successfully']);
         }
 

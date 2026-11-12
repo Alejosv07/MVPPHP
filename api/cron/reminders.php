@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// CLI only: run from the hosting cron, e.g.  php /path/to/api/cron/reminders.php
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
@@ -17,9 +16,8 @@ use App\Utils\EmailService;
 
 $db = (new Database())->getConnection();
 
-// Reminder 3 days before (while free cancellation is still possible) and again the day before
 $sql = "
-    SELECT r.*, c.email, c.first_name, c.last_name, s.name AS service_name, u.name AS staff_name
+    SELECT r.*, c.email, c.first_name, c.last_name, s.name AS service_name, u.name AS staff_name, u.email AS staff_email
     FROM reservations r
     JOIN customers c ON r.customer_id = c.id
     JOIN services s ON r.service_id = s.id
@@ -31,8 +29,10 @@ $sql = "
 $reservations = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 $sent = 0;
 
+$today = new DateTimeImmutable('today');
 foreach ($reservations as $res) {
-    if (EmailService::sendStatusUpdateEmail($res, 'REMINDER')) {
+    $daysLeft = (int)$today->diff(new DateTimeImmutable((string)$res['service_date']))->days;
+    if (EmailService::sendStatusUpdateEmail($res, 'REMINDER', ['days_left' => $daysLeft])) {
         $sent++;
     }
 }

@@ -63,6 +63,11 @@ class PublicReservationController
             $this->page('No changes possible', "<p>Reservation <strong>{$ref}</strong> is currently <strong>{$label}</strong> and can no longer be changed online. Please contact us at " . self::e((string)Config::get('MAIL_SUPPORT')) . ' or ' . self::e((string)Config::get('BUSINESS_PHONE')) . '.</p>');
         }
 
+        // There is nothing to accept until the team has sent a price
+        if ($action === 'confirm' && (float)($reservation['total_price'] ?? 0) <= 0) {
+            $this->page('Quote pending', "<p>We're still preparing the price for reservation <strong>{$ref}</strong>. You'll receive an email with a Confirm button as soon as it's ready.</p>");
+        }
+
         match ($action) {
             'reschedule' => $isPost ? $this->reschedule($reservation, $ref) : $this->rescheduleForm($reservation, $ref),
             'confirm'    => $isPost ? $this->changeStatus($reservation, 'CONFIRMED', $ref) : $this->confirmForm($ref, 'confirm'),
@@ -74,7 +79,7 @@ class PublicReservationController
     private function find(int $id): ?array
     {
         $stmt = $this->db->prepare('
-            SELECT r.*, c.email, c.first_name, c.last_name, s.name AS service_name, u.name AS staff_name
+            SELECT r.*, c.email, c.first_name, c.last_name, s.name AS service_name, u.name AS staff_name, u.email AS staff_email
             FROM reservations r
             JOIN customers c ON r.customer_id = c.id
             JOIN services s ON r.service_id = s.id
@@ -95,8 +100,11 @@ class PublicReservationController
         $this->history($id, $reservation['status'], $newStatus, "Status updated to {$newStatus} by customer via email link.");
 
         if ($updated = $this->find($id)) {
-            EmailService::sendStatusUpdateEmail($updated, $newStatus);
+            EmailService::sendStatusUpdateEmail($updated, $newStatus, ['by' => 'customer']);
             EmailService::sendCustomerActionAlert($updated, $newStatus);
+            if ($newStatus === 'CANCELLED') {
+                EmailService::sendStaffJobEmail($updated, 'cancelled');
+            }
         }
 
         $newStatus === 'CONFIRMED'
@@ -109,8 +117,11 @@ class PublicReservationController
         $newDate = (string)($_POST['service_date'] ?? '');
         $d = \DateTimeImmutable::createFromFormat('Y-m-d', $newDate);
 
-        if (!$d || $d->format('Y-m-d') !== $newDate || $newDate <= date('Y-m-d')) {
-            $this->page('Invalid date', '<p>Please choose a valid future date.</p><p>Please go back and try again.</p>', 'error');
+        if (!$d || $d->format('Y-m-d') !== $newDate || $newDate <= date('Y-m-d') || $newDate > date('Y-m-d', strtotime('+1 year'))) {
+            $this->page('Invalid date', '<p>Please choose a future date within the next 12 months.</p><p>Please go back and try again.</p>', 'error');
+        }
+        if ($newDate === (string)$reservation['service_date']) {
+            $this->page('Same date', '<p>That is already the date of your appointment. Please go back and choose a different date.</p>', 'error');
         }
 
         $id = (int)$reservation['id'];
@@ -119,8 +130,9 @@ class PublicReservationController
         $this->history($id, $reservation['status'], 'RESCHEDULED', "Service date rescheduled to {$newDate} by customer via email link.");
 
         if ($updated = $this->find($id)) {
-            EmailService::sendStatusUpdateEmail($updated, 'RESCHEDULED');
+            EmailService::sendStatusUpdateEmail($updated, 'RESCHEDULED', ['by' => 'customer']);
             EmailService::sendCustomerActionAlert($updated, 'RESCHEDULED');
+            EmailService::sendStaffJobEmail($updated, 'rescheduled');
         }
 
         $this->page('Date updated', "<p>Reservation <strong>{$ref}</strong> has been moved to <strong>" . self::e(date('F j, Y', strtotime($newDate))) . '</strong>. Our team will confirm the new date shortly.</p>', 'success');

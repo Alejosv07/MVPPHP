@@ -87,11 +87,41 @@ final class Auth
         return self::$current ?: null;
     }
 
-    /** Current admin/staff user, or null when the request is anonymous. */
+    public static function passwordFingerprint(string $passwordHash): string
+    {
+        return substr(hash_hmac('sha256', 'pwv:' . $passwordHash, self::secret()), 0, 20);
+    }
+
     public static function user(): ?array
     {
+        static $checked = null;
+        if ($checked !== null) {
+            return $checked ?: null;
+        }
+
         $c = self::claims();
-        return ($c && ($c['scope'] ?? '') === 'user') ? $c : null;
+        if (!$c || ($c['scope'] ?? '') !== 'user' || empty($c['sub']) || empty($c['pwv'])) {
+            $checked = [];
+            return null;
+        }
+
+        $stmt = (new \App\Config\Database())->getConnection()
+            ->prepare('SELECT role, is_active, password, name FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => (int)$c['sub']]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$row
+            || !(int)$row['is_active']
+            || $row['role'] !== ($c['role'] ?? null)
+            || !hash_equals(self::passwordFingerprint((string)$row['password']), (string)$c['pwv'])
+        ) {
+            $checked = [];
+            return null;
+        }
+
+        $c['name'] = $row['name'];
+        $checked = $c;
+        return $c;
     }
 
     public static function userId(): ?int
@@ -123,7 +153,6 @@ final class Auth
         return $user;
     }
 
-    /** Customer scope (after OTP). Returns the customer ids allowed. */
     public static function requireCustomer(): array
     {
         $c = self::claims();
@@ -133,7 +162,6 @@ final class Auth
         return array_map('intval', (array)$c['cids']);
     }
 
-    /** Token embedded in the links of reservation emails. */
     public static function reservationLinkToken(int $reservationId, string $email): string
     {
         return hash_hmac('sha256', 'reservation:' . $reservationId . ':' . strtolower(trim($email)), self::secret());

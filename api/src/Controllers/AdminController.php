@@ -8,10 +8,10 @@ use App\Config\Database;
 use App\Models\AdminModel;
 use App\Models\AuditModel;
 use App\Utils\Auth;
+use App\Utils\EmailService;
 use App\Utils\Response;
 use Exception;
 
-/** All routes here are ADMIN-only (enforced in api/public/index.php). */
 class AdminController
 {
     private const ROLES = ['ADMIN', 'STAFF'];
@@ -73,8 +73,14 @@ class AdminController
         if (isset($data['role']) && !in_array(strtoupper((string)$data['role']), self::ROLES, true)) {
             return 'Invalid role';
         }
-        if (!empty($data['password']) && (strlen((string)$data['password']) < 8)) {
-            return 'Password must be at least 8 characters';
+        if (!empty($data['password'])) {
+            $pw = (string)$data['password'];
+            if (strlen($pw) < 8 || !preg_match('/[A-Z]/', $pw) || !preg_match('/\d/', $pw)) {
+                return 'Password must be at least 8 characters and include an uppercase letter and a number';
+            }
+        }
+        if (isset($data['name']) && mb_strlen(trim((string)$data['name'])) > 100) {
+            return 'Name is too long';
         }
         return null;
     }
@@ -120,6 +126,9 @@ class AdminController
                 unset($logged['password'], $logged['logged_user_id'], $logged['user_id']);
                 if (!empty($data['password'])) {
                     $logged['password_changed'] = true;
+                    if ($changed = $this->model->getById($id)) {
+                        EmailService::sendPasswordChangedEmail($changed);
+                    }
                 }
                 $this->audit('UPDATE', $id, $logged);
                 Response::json(['message' => 'User updated successfully']);

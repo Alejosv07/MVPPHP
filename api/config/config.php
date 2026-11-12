@@ -4,15 +4,6 @@ declare(strict_types=1);
 
 namespace App\Config;
 
-/**
- * Central configuration.
- *
- * Secrets are NEVER stored in git. They are read, in this order, from:
- *   1. Environment variables (e.g. DB_PASSWORD)
- *   2. api/config/secrets.php (git-ignored, upload it manually to the server)
- *
- * See api/config/secrets.example.php for the full list of keys.
- */
 final class Config
 {
     private static ?array $values = null;
@@ -24,6 +15,9 @@ final class Config
         'APP_SECRET'       => '',
         'ALLOWED_ORIGINS'  => 'https://cleaning.mutechlabs.com,https://luxuriapure.com,https://www.luxuriapure.com',
         'TOKEN_TTL'        => 43200, // 12h for staff/admin sessions
+        // All dates (48 h cancellation window, reminders, "date in the past" checks, email times)
+        // use the local time of the service area: D.C., Maryland and Virginia.
+        'TIMEZONE'         => 'America/New_York',
 
         'DB_HOST'          => 'localhost',
         'DB_NAME'          => '',
@@ -71,3 +65,6 @@ final class Config
         return self::get('APP_ENV') === 'production';
     }
 }
+
+// Apply the business time zone as soon as the configuration is loaded
+date_default_timezone_set((string)Config::get('TIMEZONE', 'America/New_York'));
