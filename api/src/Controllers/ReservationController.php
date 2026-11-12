@@ -379,7 +379,10 @@ class ReservationController
             Response::json(['message' => 'Reservation updated successfully', 'status' => $status]);
         } catch (Exception $e) {
             error_log('Reservation status update failed: ' . $e->getMessage());
-            Response::json(['message' => 'Error updating status'], 500);
+            $pendingMigration = $e instanceof \RuntimeException && str_contains($e->getMessage(), 'migration');
+            Response::json(['message' => $pendingMigration
+                ? 'The database needs an update before this action can be used (run the pending migration).'
+                : 'Error updating status'], 500);
         }
     }
 

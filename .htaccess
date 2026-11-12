@@ -27,6 +27,22 @@ DirectoryIndex index.html Default.html index.php
     Header always set Cross-Origin-Opener-Policy "same-origin"
 </IfModule>
 
+# Code must never be stale: the hosting default caches HTML 6 months and JS/CSS 1 year,
+# so after a deploy browsers kept running the old app. "no-cache" = always revalidate
+# (cheap 304 when unchanged). Images and fonts keep the long default cache.
+<IfModule mod_expires.c>
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType text/css "access plus 0 seconds"
+    ExpiresByType text/javascript "access plus 0 seconds"
+    ExpiresByType application/javascript "access plus 0 seconds"
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "(?i)\.(html?|js|mjs|css)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+        Header unset Expires
+    </FilesMatch>
+</IfModule>
+
 # Internal panels must not appear in search engines
 <IfModule mod_headers.c>
     <FilesMatch "^(admin-.*|employee-execution|login)\.html$">

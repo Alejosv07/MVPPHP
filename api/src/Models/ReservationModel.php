@@ -136,6 +136,8 @@ public function getAll(?int $staffId = null, ?string $search = null): array
         $this->db->beginTransaction();
 
         try {
+            $this->assertStatusSupported((string)($data['status'] ?? 'PENDING'));
+
             $stmtCustomer = $this->db->prepare("SELECT id FROM customers WHERE email = :email LIMIT 1");
             $stmtCustomer->execute([':email' => $data['email']]);
             $customer = $stmtCustomer->fetch(PDO::FETCH_ASSOC);
@@ -296,6 +298,26 @@ public function getAll(?int $staffId = null, ?string $search = null): array
         return $updated;
     }
 
+    /**
+     * MySQL in non-strict mode silently saves '' for a value missing from the ENUM.
+     * Fail loudly instead (e.g. QUOTED before database/migrations/2026-11-12_quoted_status.sql is applied).
+     */
+    public function assertStatusSupported(string $status): void
+    {
+        static $allowed = null;
+        if ($allowed === null) {
+            $type = (string)$this->db->query("
+                SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reservations' AND COLUMN_NAME = 'status'
+            ")->fetchColumn();
+            preg_match_all("/'([^']+)'/", $type, $m);
+            $allowed = $m[1];
+        }
+        if ($allowed && !in_array($status, $allowed, true)) {
+            throw new \RuntimeException("Status {$status} is not in the database ENUM. Run the pending migration in database/migrations.");
+        }
+    }
+
     public function addHistory(int $id, ?int $userId, ?string $previousStatus, string $newStatus, string $comment): void
     {
         $this->db->prepare("
@@ -349,8 +371,10 @@ public function getAll(?int $staffId = null, ?string $search = null): array
         $finalTime = $preferredTime !== null ? $preferredTime : $prev['preferred_time'];
         $finalStaff = $unassignStaff ? null : ($staffId !== null ? $staffId : $prev['staff_id']);
 
+        $this->assertStatusSupported($status);
+
         $stmt = $this->db->prepare("
-            UPDATE reservations 
+            UPDATE reservations
             SET status = :status, 
                 total_price = :total_price, 
                 service_date = :service_date, 
